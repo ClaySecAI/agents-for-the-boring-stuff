@@ -1,9 +1,11 @@
-# 1B: Private mode with a local model (LM Studio or Ollama)
+# Chapter 1B: Keeping contents local with LM Studio or Ollama
 
-Chapter 1 sends file contents to a cloud model. This variant keeps them on your
-machine: a model running locally reads every file, and the cloud model only ever sees
-a **metadata table**, never names or contents. See [the chapter README](../README.md)
-for the full "who sees what" table.
+[Chapter 1](../README.md) sends file contents to a cloud model. This variant keeps them on
+your machine. A model running locally reads every file, and the cloud model sees only a table
+of metadata: no names and no contents. The [who-sees-what table](../README.md#18-keeping-file-contents-on-your-machine)
+in Chapter 1 shows each stage.
+
+*Figure 1B.1: The private pipeline*
 
 ```
 your files --> LOCAL model --> classification.json --> make_plan.py --> plan + claude-view.txt
@@ -12,137 +14,147 @@ your files --> LOCAL model --> classification.json --> make_plan.py --> plan + c
           apply_plan.py <-- you approve <-- validate_plan.py: Claude sees claude-view.txt only
 ```
 
-## What you need
+## 1B.1 Requirements
 
 - [LM Studio](https://lmstudio.ai) or [Ollama](https://ollama.com), with one model downloaded
-- Python 3.9+ (standard library only, no pip install)
-- For the Claude validation step: the standalone `claude` CLI, signed in
+- Python 3.9 or later; the scripts use only the standard library
+- For the Claude validation step, the standalone `claude` command, signed in
 
-## Setup (LM Studio)
+## 1B.2 Starting the model server
+
+With LM Studio, start the server and load a model:
+
+*Listing 1B.1: Loading a model in LM Studio*
 
 ```bash
 lms server start
 lms load google/gemma-4-12b --identifier classifier --context-length 4096
 ```
 
-Two details that matter on a 24 GB Mac:
+Two details matter on a 24 GB Mac. First, cap the context length. The default asked for about
+45 GB of memory and the load was refused. Classifying the first 2 KB of one file needs a few
+thousand tokens of context, not 128,000. Second, the identifier `classifier` is the name
+`classify_local.py` asks for by default.
 
-- **Cap the context length.** The default asked for ~45 GB of memory and refused to load.
-  Classifying one file's first 2 KB needs a few thousand tokens, not 128k.
-- **The identifier `classifier`** is what the script asks for by default.
-
-**Ollama instead?** It serves the same API on a different port:
+Ollama serves the same API on a different port. Point the script at it:
 
 ```bash
-python3 classify_local.py <folder> --base-url http://localhost:11434/v1 --model <your-model>
+python3 1b-local-model/classify_local.py <folder> --base-url http://localhost:11434/v1 --model <your-model>
 ```
 
-## Reading PDFs and images (macOS, recommended)
+## 1B.3 Reading PDFs and images
 
-Without help, the classifier can only read plain text. A PDF or screenshot is a
-binary file to it, so it would be judged by filename alone. On a Mac you can fix that with
-one small helper that uses frameworks already built into macOS (no download, nothing
-leaves your machine):
+A plain-text reader sees a PDF or a screenshot as binary data, so without help the classifier
+would judge those files by filename alone. On a Mac, a small helper fixes that using
+frameworks that ship with macOS. Nothing is downloaded and nothing leaves the machine.
+
+*Listing 1B.2: Building the extraction helper*
 
 ```bash
 swiftc -O extract_text.swift -o extract_text     # run from chapters/01-files-and-folders/
 ```
 
-`classify_local.py` finds `extract_text` automatically and uses it for PDFs and images:
+`classify_local.py` finds `extract_text` on its own and uses it for PDFs and images:
 
-- **PDF with text:** reads its text layer (PDFKit).
-- **Scanned PDF:** renders the first page and reads it with on-device OCR (Vision).
-- **Image or screenshot:** on-device OCR, plus a few scene labels like "document".
+- a PDF with a text layer is read directly (PDFKit)
+- a scanned PDF has its first page rendered and read with on-device OCR (Vision)
+- an image or screenshot gets OCR text plus a few scene labels, such as "document"
 
-OCR isn't perfect (in our test it read "240" as "249"), so treat the result as a strong
-hint, not a transcript. Not on a Mac? Skip the helper, or swap in your own extractor
-such as `pdftotext` at the same spot in `read_head()`.
+OCR is imperfect. In one test it read "240" as "249", so treat the output as a strong hint
+and not a transcript. On other platforms, skip the helper or substitute your own extractor,
+such as `pdftotext`, inside `read_head()`.
 
-## Run it
+## 1B.4 Running the pipeline
 
 From `chapters/01-files-and-folders/`:
+
+*Listing 1B.3: From files to an approved plan*
 
 ```bash
 python3 make_mess.py practice/downloads
 python3 verify.py snapshot practice/downloads
 
-python3 1b-local-model/classify_local.py practice/downloads     # local model reads the files
+python3 1b-local-model/classify_local.py practice/downloads     # the local model reads the files
 python3 make_plan.py practice/classification.json practice/downloads
 python3 apply_plan.py --check practice/organize-plan.md practice/downloads
 ```
 
-Read `practice/organize-plan.md`. Then the Claude gate and the move:
+Read `practice/organize-plan.md`. When you are satisfied, send the metadata to Claude, then
+apply and verify:
+
+*Listing 1B.4: The Claude gate, the move and the check*
 
 ```bash
-python3 validate_plan.py practice/claude-view.txt     # Claude: approve, or flag files to look at
+python3 validate_plan.py practice/claude-view.txt   # Claude returns approve, or flags files to look at
 python3 apply_plan.py practice/organize-plan.md practice/downloads
 python3 verify.py check practice/downloads
 ```
 
-## Gotcha: "local" doesn't mean "leaves no trace"
-
-Nothing here leaves your machine, but your tools may still *keep* what you send them.
-LM Studio writes a server log, and ours held every prompt we sent, including the text pulled
-from real files (155 prompts in one day's log). Check before you call a run private:
-
-```bash
-ls ~/.lmstudio/server-logs/*/            # one log per day
-grep -c "Content start" ~/.lmstudio/server-logs/*/*.log
-```
-
-Delete the logs of any run that touched sensitive files, and treat the same question as
-standing advice for any tool you add: where does it keep a copy of what I gave it?
-
-## Big folders: `--top-level`
-
-For a folder with thousands of files in subfolders (a real Downloads), classify only the
-loose files and let each subfolder move as one unit. See "Real folders: top-level mode" in
-the [chapter README](../README.md).
+For a folder with thousands of files in subfolders, classify only the loose files and let each
+subfolder move as one unit. See [section 1.7](../README.md#17-folders-with-thousands-of-files).
 
 ```bash
 python3 1b-local-model/classify_local.py practice/downloads --top-level
 python3 make_plan.py --top-level practice/classification.json practice/downloads
 ```
 
-## How it works
+## 1B.5 How it works
 
-**The model can't leak because it can't write prose.** `classify_local.py` asks the
-server for JSON that matches a schema where `category` and `sensitivity` are
-**enums**. The server's constrained decoding means the model can only pick from the
-lists. There's no free-text field for file contents to slip through. The `Why`
-column in the plan holds label codes only, for the same reason.
+The model cannot leak file contents because it has nowhere to write them. `classify_local.py`
+asks the server for JSON that matches a schema in which `category` and `sensitivity` are
+enums. The server's constrained decoding limits the model to the listed values. The `Why`
+column in the plan holds label codes for the same reason.
 
-**It's a DLP pass, not just a sorter.** Each file also gets a sensitivity label
-(`financial`, `legal`, `government_id`, `health`, `credentials`, `personal`).
-`make_plan.py` routes those to `_sensitive/<kind>/` so you can see (and, later,
-encrypt or exclude) them. Copies of a sensitive file stay inside the sensitive area
-too. If a file can't be labelled, or the model says something outside the lists,
-it **fails closed**: the file is treated as sensitive, never as harmless.
+The pass also does data-loss prevention. Each file receives a sensitivity label: `financial`,
+`legal`, `government_id`, `health`, `credentials` or `personal`. `make_plan.py` routes labelled
+files to `_sensitive/<kind>/`, where you can see them and later encrypt or exclude them.
+Copies of a sensitive file stay inside that area. A file that cannot be labelled, or that
+receives a value outside the lists, is treated as sensitive. The code fails closed.
 
-**Duplicates, coverage and moves are plain code.** Hashing, the plan table,
-`--check` and the move are all deterministic. The model only supplies labels.
+Everything else is ordinary code: hashing, the plan table, the coverage check and the move.
+The model only supplies labels.
 
-## Gotcha: reasoning models eat your token budget
+## 1B.6 Two traps
 
-Our first run labelled **1 of 28** files. Gemma 4 is a reasoning model. It spent
-nearly all 200 output tokens "thinking" (197 of 200 in one probe) and returned an
-empty answer. The fix is one line in the request, `"reasoning_effort": "none"`,
-which cut a classification from about 15 s to about 4 s. For a lookup task like this,
-thinking is wasted. Lesson: **when a model gives empty or truncated output, look at the
-raw response before blaming the prompt.**
+### The model's log is a copy of your files
 
-## Choosing the model
+Nothing here leaves your machine, but your tools may keep what you send them. LM Studio writes
+a server log, and ours held every prompt we sent, including text extracted from real files.
+One day's log contained 155 prompts. Check before you call a run private:
 
-The right local model is one that fits in memory next to everything else you run, follows
-a JSON schema reliably, and reads documents well. We used `google/gemma-4-12b` (7.5 GB).
-It was already installed, and it's a sensible middle size for 24 GB. Larger models
-(like a 27B at 4-bit, ~16 GB) may read ambiguous files better but leave little room for
-the rest of your system. Try two and compare the plans. Same method as the Haiku test in
-the [chapter README](../README.md). Model names change quickly, so check what's current.
+```bash
+ls ~/.lmstudio/server-logs/*/
+grep -c "Content start" ~/.lmstudio/server-logs/*/*.log
+```
 
-## Things worth poking at
+Delete the logs from any run that touched sensitive files. Ask the same question of every tool
+you add: where does it keep a copy of what I gave it?
 
-- Swap the model and diff the plans. Where do small and large models disagree?
-- Put a file with a fake SSN in the folder. Does it land in `_sensitive/government_id/`?
-- Stop the LM Studio server mid-run. What happens to the files it didn't label?
-- Read `practice/claude-view.txt`. Could you work out what any file is from that alone?
+### Reasoning models can spend the whole token budget
+
+Our first run labelled 1 of 28 files. Gemma 4 is a reasoning model. It spent nearly all of the
+200 output tokens thinking (197 of 200 in one probe) and returned an empty answer. Setting
+`"reasoning_effort": "none"` in the request fixed it and cut a classification from about 15
+seconds to about 4. For a lookup task, thinking is wasted effort.
+
+When a model returns empty or truncated output, read the raw response before changing the
+prompt.
+
+## 1B.7 Choosing a model
+
+A good local model fits in memory beside everything else you run, follows a JSON schema
+reliably and reads documents well. We used `google/gemma-4-12b` (7.5 GB), which was already
+installed and is a reasonable middle size for 24 GB. A larger model, such as a 27B at 4-bit
+(about 16 GB), may read ambiguous files better but leaves little room for the rest of the
+system. Try two and compare their plans, using the method from
+[section 1.5](../README.md#15-choosing-a-model-for-the-job). Model names change quickly, so
+check what is current.
+
+## Exercises
+
+1. Swap the model and compare the plans. Where do a small and a large model disagree?
+2. Add a file containing a made-up social security number. Does it land in
+   `_sensitive/government_id/`?
+3. Stop the LM Studio server partway through a run. What happens to the files that were not
+   labelled?
+4. Read `practice/claude-view.txt`. Could you work out what any file is from that alone?

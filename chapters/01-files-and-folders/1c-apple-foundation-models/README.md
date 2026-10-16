@@ -1,32 +1,38 @@
-# 1C: Private mode with Apple's on-device model (Mac only, nothing to download)
+# Chapter 1C: Keeping contents local with Apple's on-device model
 
-Same privacy design as [1B](../1b-local-model/README.md), but the local model is the
-one already built into macOS. No LM Studio, no Ollama, no multi-gigabyte download, no
-server to start.
+This chapter uses the same privacy design as [Chapter 1B](../1b-local-model/README.md). The
+local model is the one already built into macOS, so there is no app to install, no model to
+download and no server to start.
 
-## What you need
+## 1C.1 Requirements
 
-- A Mac with Apple Intelligence turned on, running **macOS 26 or later**
-- Xcode or the Command Line Tools (for `swiftc`)
-- For the Claude validation step: the standalone `claude` CLI, signed in
+- A Mac with Apple Intelligence turned on, running macOS 26 or later
+- Xcode or the Command Line Tools, for `swiftc`
+- For the Claude validation step, the standalone `claude` command, signed in
 
-## Reading PDFs and images
+## 1C.2 Reading PDFs and images
 
-Apple's on-device text model can't open a PDF or look at a picture. So a small helper,
-[`extract_text.swift`](../extract_text.swift), pulls the text out first, using PDFKit and
-Vision (OCR), both built into macOS: a PDF's text layer, OCR for scanned PDFs, and OCR plus
-scene labels for images and screenshots. It's the same helper [1B](../1b-local-model/README.md)
-uses. Build it once, **next to** `classify_apple`, which looks for it there:
+Apple's on-device model works on text. It cannot open a PDF or look at a picture. A small
+helper, [`extract_text.swift`](../extract_text.swift), extracts the text first, using PDFKit and
+Vision (OCR), both part of macOS. It reads a PDF's text layer, applies OCR to scanned PDFs, and
+applies OCR plus scene labeling to images and screenshots. [Chapter 1B](../1b-local-model/README.md)
+uses the same helper.
+
+Build the helper once, next to `classify_apple`, which looks for it there:
+
+*Listing 1C.1: Building the helper*
 
 ```bash
 swiftc -O extract_text.swift -o extract_text
 ```
 
-Without it, PDFs and images are judged by filename only.
+Without the helper, PDFs and images are judged by filename alone.
 
-## Run it
+## 1C.3 Running the pipeline
 
 From `chapters/01-files-and-folders/`:
+
+*Listing 1C.2: The whole private pipeline*
 
 ```bash
 python3 make_mess.py practice/downloads
@@ -34,7 +40,7 @@ python3 verify.py snapshot practice/downloads
 
 swiftc -O extract_text.swift -o extract_text
 swiftc -O 1c-apple-foundation-models/classify_apple.swift -o classify_apple
-./classify_apple practice/downloads                              # on-device model reads the files
+./classify_apple practice/downloads                              # the on-device model reads the files
 python3 make_plan.py practice/classification.json practice/downloads
 python3 apply_plan.py --check practice/organize-plan.md practice/downloads
 python3 validate_plan.py practice/claude-view.txt                # Claude sees metadata only
@@ -42,65 +48,71 @@ python3 apply_plan.py practice/organize-plan.md practice/downloads
 python3 verify.py check practice/downloads
 ```
 
-On our M4 Pro, all 28 files were labelled in about 18 seconds.
+On an M4 Pro, all 28 files were labelled in about 18 seconds.
 
-## Big folders: `--top-level`
-
-For a folder with thousands of files in subfolders (a real Downloads), classify only the
-loose files and let each subfolder move as one unit. See "Real folders: top-level mode" in
-the [chapter README](../README.md).
+For a folder with thousands of files in subfolders, pass `--top-level` so that only loose files
+are classified and each subfolder moves as one unit. See
+[section 1.7](../README.md#17-folders-with-thousands-of-files).
 
 ```bash
 ./classify_apple practice/downloads --top-level
 python3 make_plan.py --top-level practice/classification.json practice/downloads
 ```
 
-## How it differs from 1B
+## 1C.4 How it differs from 1B
 
-| | 1B (LM Studio / Ollama) | 1C (Apple Foundation Models) |
+| | 1B (LM Studio or Ollama) | 1C (Apple Foundation Models) |
 |---|---|---|
-| Setup | Install an app, download a model, start a server | Nothing, if you're on macOS 26+ |
+| Setup | Install an app, download a model, start a server | None on macOS 26 or later |
 | Language | Python, over HTTP | Swift, calling a system framework |
-| Model | Your choice, any size that fits | One fixed ~3B-class model |
-| Keeps answers to the fixed lists via | JSON schema with enums | `@Generable` enums (guided generation) |
-| Works on | Mac, Windows, Linux | Apple Intelligence Macs only |
-| Context window | You set it | Small, so we classify one file at a time from its first 2 KB |
+| Model | Your choice, any size that fits | One fixed model of roughly 3B parameters |
+| Limits answers to the fixed lists with | A JSON schema containing enums | `@Generable` enums (guided generation) |
+| Platforms | Mac, Windows, Linux | Apple Intelligence Macs only |
+| Context window | You set it | Small, so each file is classified alone from its first 2 KB |
 
-The two rows in the middle are the same idea in two runtimes: **constrain the output
-type, not the prompt.** In Swift the enums *are* the schema:
+The fourth row shows one idea in two runtimes: constrain the output type, not the prompt. In
+Swift, the enums are the schema.
+
+*Listing 1C.3: The output types in `classify_apple.swift` (abridged)*
 
 ```swift
 @Generable enum Category { case documents, images, spreadsheets, ... }
 @Generable struct Classification { var category: Category; var sensitivity: Sensitivity }
 ```
 
-The model physically cannot answer outside them.
+The model cannot answer outside those types.
 
-## Notes from building it
+## 1C.5 Notes from building it
 
-- **One session per file.** A `LanguageModelSession` keeps history, and the context
-  window is small. A fresh session per file also keeps files from influencing each other.
-- **Safety guardrails can refuse.** The on-device model has its own content filters, and
-  they can throw on a file. The script catches that and leaves the file unlabelled, which
-  `make_plan.py` treats as sensitive. A refusal can't turn into "looks harmless".
-- **Don't run it while the Mac is busy.** On a real 60-file folder, our first run with PDF
-  extraction failed on 31 files with a `SensitiveContentAnalysis` error, even on
-  installers that had no extracted text. We had a 12B model running at the same time. Run
-  alone, 59 of 60 worked. The script retries once and then fails closed, but the lesson is
-  to check the *kind* of error before blaming the content.
-- **One real refusal is normal.** The model's guardrail declined one file ("May contain
-  sensitive content"). That file is treated as sensitive and sent to review, which is the
-  right outcome.
-- **Expect over-caution.** Told to prefer the sensitive label when unsure, this model
-  flagged 51 of our 60 real files as sensitive. Safe, but it makes `_sensitive/` the biggest
-  folder. Tighten the guidance in the `@Guide` text if that's too much for you.
-- **`swiftc` on a single file just works.** No Xcode project, no Package.swift.
-- Because it's a smaller model, expect some wrong labels. In our run it put a `.tar.gz`
-  under Images and a to-do list under `legal`. That's what the metadata review step and
-  your own read of the plan are for. See the [comparison in the chapter README](../README.md).
+Use one session per file. A `LanguageModelSession` keeps its history, and the context window is
+small. A fresh session also keeps one file from influencing the next.
 
-## Things worth poking at
+The on-device model has its own safety guardrails, and they can refuse a file. The script
+catches the error and leaves the file unlabelled, and `make_plan.py` treats an unlabelled file as
+sensitive. A refusal cannot turn into "looks harmless". In our 60-file test, one file was
+declined with the message "May contain sensitive content". It was sent to review, which is the
+right outcome.
 
-- Run 1B and 1C on the same folder and diff the plans.
-- Turn Apple Intelligence off in System Settings and run it. What does the error say?
-- Add a file that mentions something the on-device model might refuse. Where does it end up?
+Do not run the classifier while the Mac is busy. On the same 60 files, our first run with PDF
+extraction failed on 31 of them with a `SensitiveContentAnalysis` error, including installers
+that had no extracted text. A 12B model was running at the same time. Run alone, 59 of 60
+succeeded. The script now retries once and then fails closed. The general point is to check the
+kind of error before blaming the data.
+
+Expect over-caution. When unsure, the model was told to prefer a sensitive label, and it flagged
+51 of the 60 real files, which makes `_sensitive/` the largest folder. Tighten the `@Guide`
+text in the Swift file if that is too many for you.
+
+Expect wrong labels too. On the fixture it filed a `.tar.gz` under Images and a to-do list under
+`legal`. The metadata review and your own reading of the plan exist to catch these. The
+[comparison in Chapter 1](../README.md#19-what-real-files-taught-us) has the numbers.
+
+A single Swift file compiles with plain `swiftc`. No Xcode project and no `Package.swift` are
+needed.
+
+## Exercises
+
+1. Run 1B and 1C on the same folder and compare the plans.
+2. Turn Apple Intelligence off in System Settings and run the classifier. What does the error
+   say?
+3. Add a file whose text the on-device model might refuse. Where does it end up?
