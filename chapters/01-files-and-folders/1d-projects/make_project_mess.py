@@ -6,6 +6,13 @@
 scanned PDF looks when nothing can read it. Names, download sources and dates are untouched, so
 this mode shows how much the other signals are worth when the contents say nothing.
 
+--hold-out PROJECT leaves that project off projects.json. Its files then belong to no listed
+project, and the answer key says Unsorted. It shows what the model does with files that nothing
+on your list covers: file them under the nearest project, or leave them unsorted.
+
+--statements adds three account histories that share one account number but say little about
+what the account is for, to test linking files by a shared identifier.
+
 Writes three things:
 
   <target_dir>/            59 small files named the way real downloads are named
@@ -29,6 +36,7 @@ Everything here is invented.
 """
 from __future__ import annotations
 
+import argparse
 import datetime
 import json
 import os
@@ -149,10 +157,33 @@ def set_download_source(path: Path, url: str) -> None:
                    check=True, capture_output=True)
 
 
+# --statements: three monthly account histories that share one account number. Only the first
+# says what the account is for. The other two are tables of payments, so a model reading them
+# one at a time has nothing to go on. All three belong to "Car purchase".
+STATEMENTS = [
+    ("account_history.pdf", f"ACCOUNT HISTORY\nSunrise Motors Financial\nAccount number: 8841-2290-17\nBorrower: {PERSON}\nPayment received 02/01  $551.20\nPayment received 03/01  $551.20\nInterest paid year to date: $214.08", [], False),
+    ("account_history (1).pdf", "ACCOUNT HISTORY\nAccount number: 8841-2290-17\nDate | Description | Amount\n04/01 | Payment | 551.20\n05/01 | Payment | 551.20", [], False),
+    ("account_history (2).pdf", "ACCOUNT HISTORY\nAccount number: 8841-2290-17\nDate | Description | Amount\n06/01 | Payment | 551.20\n07/01 | Payment | 551.20", [], False),
+]
+
+
 def main() -> None:
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    blind = "--blind" in sys.argv  # every other document has no readable text, like a scan
-    target = Path(args[0] if args else "practice-projects/downloads")
+    ap = argparse.ArgumentParser(usage=__doc__)
+    ap.add_argument("target", nargs="?", default="practice-projects/downloads")
+    ap.add_argument("--blind", action="store_true",
+                    help="every other document has no readable text, like a scan")
+    ap.add_argument("--statements", action="store_true",
+                    help="add three account histories that share one account number")
+    ap.add_argument("--hold-out", metavar="PROJECT",
+                    help="leave this project off the project list; its files truly belong to no listed project")
+    opts = ap.parse_args()
+    blind, target = opts.blind, Path(opts.target)
+    held = opts.hold_out
+    if held and held not in FILES:
+        sys.exit(f"Unknown project {held!r}. Choose one of: {', '.join(FILES)}")
+    all_files = {project: list(files) for project, files in FILES.items()}
+    if opts.statements:
+        all_files["Car purchase"] += STATEMENTS
     if target.exists() and any(target.iterdir()):
         sys.exit(f"{target} already exists and is not empty. Delete it or pick another path.")
     target.mkdir(parents=True, exist_ok=True)
@@ -161,7 +192,7 @@ def main() -> None:
     can_tag_source = sys.platform == "darwin"
 
     truth = {}
-    for project, files in FILES.items():
+    for project, files in all_files.items():
         for index, (name, text, also, has_source) in enumerate(files):
             path = target / name
             if blind and index % 2 == 1:
@@ -174,7 +205,9 @@ def main() -> None:
             os.utime(path, (stamp, stamp))
             if has_source and can_tag_source:
                 set_download_source(path, f"https://{domains[project]}/files/{name}")
-            truth[name] = {"primary": project, "also": also}
+            # A held-out project is not on the list, so its files truly belong to none of them.
+            truth[name] = {"primary": "Unsorted" if project == held else project,
+                           "also": [a for a in also if a != held]}
     for name, text in UNSORTED:
         path = target / name
         path.write_text(text)
@@ -182,7 +215,7 @@ def main() -> None:
 
     root = target.resolve().parent
     (root / "projects.json").write_text(json.dumps(
-        [{"name": n, "description": d} for n, d, _dom, _day in PROJECTS], indent=2))
+        [{"name": n, "description": d} for n, d, _dom, _day in PROJECTS if n != held], indent=2))
     (root / "truth.json").write_text(json.dumps(truth, indent=2))
     note = "" if can_tag_source else " (not macOS: download sources were not recorded)"
     print(f"Created {len(truth)} files in {target}, plus projects.json and truth.json beside it{note}.")

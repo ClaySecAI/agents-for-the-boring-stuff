@@ -7,6 +7,8 @@ classification*.json
 claude-view*.txt
 assignments*.json
 protect-list*.txt
+link-report*.md
+review*.md
 truth*.json
 projects.json
 __pycache__/

@@ -6,7 +6,8 @@ per item:
 
     id | extension | bytes | modified | project | sensitivity | also | destination folder
 
-Projects appear as P1, P2 and so on. P0 means unsorted. "also" lists other projects the file
+Projects appear as P1, P2 and so on. P0 means unsorted. PE means an empty file held for a human to
+review for deletion; never flag PE items for having no project or no content. "also" lists other projects the file
 serves, as ids, or "-". "(dir)" lines are whole subfolders that were moved unopened; never flag
 them.
 

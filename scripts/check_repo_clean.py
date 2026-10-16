@@ -29,7 +29,8 @@ ALLOW = ["*.md", "*.py", "*.swift", "LICENSE", ".gitignore", ".claude/settings.j
          ".githooks/pre-commit"]
 # Even an allowed extension is refused if the NAME says it is generated data.
 DENY_NAMES = ["classification*", "claude-view*", "organize-plan*", ".*manifest*", ".*applied-plan*",
-              ".*undone-plan*", ".DS_Store", "assignments*", "protect-list*", "truth*", "projects.json"]
+              ".*undone-plan*", ".DS_Store", "assignments*", "protect-list*", "truth*", "projects.json",
+              "link-report*", "review*.md"]
 DENY_DIRS = ["practice"]  # any path segment that starts with this
 MAX_BYTES = 200 * 1024
 

@@ -87,12 +87,15 @@ python3 make_project_mess.py                    # creates practice-projects/ wit
 python3 ../verify.py snapshot practice-projects/downloads
 
 python3 assign_projects.py practice-projects/downloads practice-projects/projects.json
-python3 plan_projects.py practice-projects/assignments.json practice-projects/projects.json practice-projects/downloads
+python3 link_files.py practice-projects/downloads practice-projects/projects.json practice-projects/assignments.json
+python3 plan_projects.py practice-projects/assignments-linked.json practice-projects/projects.json practice-projects/downloads
 python3 ../apply_plan.py --check practice-projects/organize-plan.md practice-projects/downloads
 ```
 
-Read `organize-plan.md`, then `protect-list.txt` to see which projects hold the most sensitive
-material. Send Claude the metadata and, when you are satisfied, apply and verify:
+`link_files.py` is explained in section 1D.6. It writes `link-report.md`, which lists every group of
+files it joined together and what it decided. Read that, then `organize-plan.md`, then
+`protect-list.txt` to see which projects hold the most sensitive material. Send Claude the metadata
+and, when you are satisfied, apply and verify:
 
 *Listing 1D.3: The Claude gate, the move and the tags*
 
@@ -122,7 +125,7 @@ For each file the model gets four things:
 | File name | The file | Specific names such as `maplestone_quote_v2.pdf`; useless for `scan_0042.pdf` |
 | Contents | The first 2 KB of text, or PDF text and OCR through the Chapter 1B helper | The strongest clue when the file has readable text |
 | Download website | macOS records it when a browser or mail app saves a file | Places a bland "Thank you for your order" page with the shop that sent it |
-| Last-modified date | The file | A hint that files from one effort arrive close together; it did not help in our tests (see 1D.6) |
+| Last-modified date | The file | A hint that files from one effort arrive close together; it did not help in our tests (see 1D.7) |
 
 The prompt also warns the model that many documents mention the same person and address, which
 says nothing about the project. Without that line, a shared name pulls files toward whichever
@@ -131,7 +134,43 @@ project it saw first.
 You can hide the website or the date with `--no-source` and `--no-dates`. The experiments below
 use those flags to measure what each signal is worth.
 
-## 1D.6 Measuring it
+## 1D.6 Linking files and holding empty ones
+
+Running the pipeline on a real Downloads folder exposed two problems that the fixture had not.
+
+### Files that share an account number
+
+Three monthly statements from the same lender arrived. One carried a cue about the loan and landed
+in the right project. The other two said only "Account number" and a table of payments, and were left
+unsorted. The model judges each file alone, so nothing connected them. A shared account number is
+strong evidence that files belong together.
+
+`link_files.py` runs between assignment and planning. It:
+
+1. finds identifiers that follow a keyword, such as "account number", "loan no.", "claim #" or "case ID"
+2. links files that share one (an identifier found in more than 12 files is ignored, since a number
+   that appears everywhere links nothing)
+3. for each linked group whose members do not already agree, asks the local model once, showing it a
+   piece of every member, which single project the group belongs to
+4. gives every member that project
+
+Groups whose members already sit in two or more different projects are left alone and counted as
+conflicts. One bank account number can pay for a mortgage and a tax bill, and merging those would
+be wrong. The report lists each group's members and what was decided, with file names for you and
+nothing but counts on the terminal. Identifiers are never written anywhere.
+
+Only numbers that follow one of those keywords count. Phone numbers, dates and bare digit strings
+are ignored on purpose. Low precision here is costly, because a wrong link moves several files at
+once.
+
+### Empty files
+
+A zero-byte file, or a tiny file holding only whitespace, cannot say which project it belongs to,
+and filing it under `Unsorted` mixes "I could not tell" with "there is nothing here". These go to
+`Projects/_Empty (review for deletion)/` instead. They are candidates for deletion, which is your
+decision. Nothing in this chapter deletes a file. Claude's view marks them `PE`.
+
+## 1D.7 Measuring it
 
 The fixture comes with an answer key, so the pipeline can be scored. `score.py` counts how often a
 file lands in its true project. It also computes a baseline: the best that sorting by file
@@ -185,10 +224,55 @@ strange for a reason that had nothing to do with the model. Separately, one run 
 applied a plan to the folder while it was still being read. When a number surprises you, look for
 the experiment's fault before the model's.
 
-The fixture is generated, not stored. Run `make_project_mess.py` to build it, and add `--blind`
-for the harder version.
+### Files that belong to none of your projects
 
-## 1D.7 Finder tags
+A real folder always holds files your list does not cover. We tested that with `--hold-out`, which
+leaves one project off the list so its seven files truly belong nowhere. The right answer is
+`Unsorted`.
+
+*Table 1D.2: Where the seven files of a missing project went*
+
+| Project left off the list | Rule in the prompt | Files right (of 59) | Where the seven went | Filed under a wrong project |
+|---|---|---|---|---|
+| Marathon training (no similar project on the list) | original | 59 | all unsorted | 0 |
+| Marathon training | stricter | 59 | all unsorted | 0 |
+| Insurance claim (Kitchen remodel and Car purchase are close) | original | 54 | Kitchen 4, Unsorted 2, Car 1 | 5 |
+| Insurance claim | stricter | 56 | Kitchen 2, Unsorted 4, Car 1 | 3 |
+
+With no similar project on the list, the model leaves the files alone. With one nearby, it files
+them there. The original prompt only said to use `Unsorted` when no project clearly fits, and five
+of the seven roof-repair documents went to a kitchen remodel because both involve contractors. The
+stricter rule adds a sentence saying that a topic none of the descriptions mentions belongs in
+`Unsorted` even when a project is loosely related, with a recipe-and-fitness example. It cut the
+wrong filings from five to three and cost nothing on the two main fixtures, which scored the same
+as before (59 and 55 of 59).
+
+Three of seven is still too many, and this is the failure that matters most. A file left unsorted is
+visible. A file filed under the wrong project disappears into a folder you trust. The same thing
+happened on a real folder, where bicycle manuals went into a fitness project. The reliable
+protection is on your side: keep the project list close to complete, and include a catch-all such as
+"Manuals and reference" for the things you own but did not plan around.
+
+### Files linked by an account number
+
+`--statements` adds three account histories that share one account number. The first says what the
+account is for. The other two are tables of payments.
+
+| | Files right (of 62) | The two bare statements |
+|---|---|---|
+| Per-file pass only | 60 | unsorted |
+| After `link_files.py` | 62 | filed with the first statement |
+
+Linking found two groups. One already agreed and needed no decision. In the other, a single group-level
+question put all three statements in the same project. We built this fixture to match the problem we
+had seen, so it shows that the mechanism works. It does not show how often real folders contain
+groups like this.
+
+The fixture is generated, not stored. Run `make_project_mess.py` to build it. Add `--blind` for the
+harder version, `--hold-out PROJECT` to leave a project off the list, and `--statements` for the
+linked account histories.
+
+## 1D.8 Finder tags
 
 `tag_files.py` reads the plan's `Also` column and gives each listed file one Finder tag per extra
 project. It keeps any tags the file already has, and `--remove` takes off only the ones it added.
@@ -198,13 +282,19 @@ Tags are stored as an extended attribute on the file, and the tag name is visibl
 folder lives in iCloud Drive, the tag names may sync. A tag named after a sensitive project says
 that the project exists, so think before tagging files in a synced folder.
 
-## 1D.8 Limits
+## 1D.9 Limits
 
 - The model only knows the projects you list. A project you forgot ends up in `Unsorted`. A natural
   next step is discovery: embed each file's text, cluster the embeddings and let the model name the
   clusters, so it can suggest projects you did not list. This chapter does not do that.
 - Each file has one primary project. The tag covers the second, but the folder structure still
   forces a choice.
+- Linking trusts numbers that follow a keyword such as "account number". It misses identifiers
+  printed differently, and it can join files that merely share a number. The conflict check catches
+  one case: when members already point to two different projects. It cannot catch a wrong link
+  between files that were all unsorted.
+- Off-list files are the worst failure. A file that belongs to none of your projects can still be
+  filed under a similar one (Table 1D.2). Reading the plan is the check.
 - The fixture is easier than a real folder in some ways and harder in others. Its documents are
   short and clean, and its projects are clearly distinct. Real projects overlap, run for years and
   contain files with no readable text.
@@ -222,7 +312,11 @@ that the project exists, so think before tagging files in a synced folder.
 3. Make the descriptions in `projects.json` vaguer. How much does accuracy fall?
 4. Change the `also` instruction in `assign_projects.py` so the model proposes secondary projects
    more readily. Does recall rise, and what happens to precision?
-5. Add a ninth project to the fixture and leave it off the list. Where do its files go?
+5. Hold out each project in turn with `--hold-out`. Which ones have a neighbour on the list that
+   attracts their files, and which are left unsorted?
+6. Add a catch-all project such as "Everything else" to a hold-out run. Do the held-out files go
+   there, and do files that belong to real projects start going there too?
+7. Run the `--statements` fixture with `--max-share 2`. What changes, and why?
 
 ## Further reading
 

@@ -104,7 +104,9 @@ For each file you get its name, the website it was downloaded from (if known), t
 last modified, and the start of its contents. Answer with JSON.
 
 primary: the one project the file mainly belongs to. Use {UNSORTED} if no project clearly fits or
-you cannot tell.
+you cannot tell. A topic that none of the project descriptions mentions belongs in {UNSORTED}, even
+when one project is loosely related. Being nearby is not enough: a recipe does not belong in a
+fitness project just because both involve food.
 also: up to two OTHER projects the file clearly serves as well. Usually this is empty.
 {SENSITIVITY_HELP}
 

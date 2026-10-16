@@ -39,6 +39,16 @@ UNSORTED = "Unsorted"
 # Most protective first. An unlabelled file ("unknown") counts as the most sensitive.
 SEVERITY = ["unknown", "credentials", "government_id", "health", "financial", "legal", "personal", "none"]
 RESERVED = {"Projects", "Folders"}
+EMPTY = "(empty)"
+EMPTY_HOME = "Projects/_Empty (review for deletion)"
+
+
+def is_blank(path: Path) -> bool:
+    """Zero bytes, or a tiny file holding only whitespace. Nothing in it can say which project it
+    belongs to, and it is a candidate for deletion, which is a decision for you. Nothing here
+    deletes anything."""
+    size = path.stat().st_size
+    return size == 0 or (size <= 256 and not path.read_bytes().strip())
 
 
 def stricter(a: str, b: str) -> str:
@@ -58,7 +68,7 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
             sys.exit(f"File not found: {needed}")
     assigned = json.loads(assignments.read_text())
     names = [p["name"] for p in json.loads(projects_file.read_text())]
-    ids = {UNSORTED: "P0", **{name: f"P{i}" for i, name in enumerate(names, 1)}}
+    ids = {UNSORTED: "P0", EMPTY: "PE", **{name: f"P{i}" for i, name in enumerate(names, 1)}}
 
     if top_level:
         entries = sorted(p for p in folder.iterdir() if p.name not in IGNORED_NAMES)
@@ -71,11 +81,12 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
 
     labels = {rel: dict(assigned.get(rel, {"primary": UNSORTED, "also": [], "sensitivity": "unknown"}))
               for rel in files}
+    blank = {rel for rel in files if is_blank(folder / rel)}
     seen: dict[str, str] = {}
     duplicate_of: dict[str, str] = {}
     for rel in sorted(files, key=lambda r: (bool(re.search(r" \(\d+\)\.", r)), r)):  # clean names first
         digest = sha(folder / rel)
-        if digest in seen and (folder / rel).stat().st_size > 0:
+        if digest in seen and rel not in blank:
             duplicate_of[rel] = seen[digest]
         else:
             seen.setdefault(digest, rel)
@@ -88,8 +99,12 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
     rows = []  # (rel, dest, why, also, size, kind)
     for rel in files:
         label, size = labels[rel], (folder / rel).stat().st_size
-        primary = UNSORTED if size == 0 else label["primary"]
-        home = "Projects/_Unsorted" if primary == UNSORTED else f"Projects/{folder_name(primary)}"
+        if rel in blank:
+            primary, label = EMPTY, {**label, "sensitivity": "none", "also": []}
+        else:
+            primary = label["primary"]
+        home = (EMPTY_HOME if primary == EMPTY else "Projects/_Unsorted" if primary == UNSORTED
+                else f"Projects/{folder_name(primary)}")
         if rel in duplicate_of:
             home += "/_duplicates"
         base = dest = f"{home}/{Path(rel).name}"
@@ -99,7 +114,7 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
             dest = f"{stem} ({n}){dot}{ext}" if dot else f"{base} ({n})"
             n += 1
         taken.add(dest)
-        also = [] if primary == UNSORTED else label["also"]
+        also = [] if primary in (UNSORTED, EMPTY) else label["also"]
         rows.append((rel, dest, f"project={primary} sensitivity={label['sensitivity']}",
                      ";".join(also), size, "file", primary, label["sensitivity"]))
     for name in subfolders:
@@ -117,7 +132,7 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
     (where / "organize-plan.md").write_text("\n".join(plan) + "\n")
 
     item_id = {r[0]: f"f{i:03d}" for i, r in enumerate(rows, 1)}
-    view = [f"{len(rows)} items in {len(names)} projects (P0 is unsorted). "
+    view = [f"{len(rows)} items in {len(names)} projects (P0 is unsorted, PE is empty files held for review). "
             "Each line: id | extension | bytes | modified | project | sensitivity | also | destination folder", ""]
     for rel, dest, _why, also, size, kind, primary, sensitivity in rows:
         if kind != "file":
@@ -126,7 +141,8 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
             continue
         modified = datetime.datetime.fromtimestamp((folder / rel).stat().st_mtime).date().isoformat()
         also_ids = ",".join(ids[a] for a in also.split(";") if a in ids) or "-"
-        shown = "Projects/_Unsorted" if primary == UNSORTED else f"Projects/{ids[primary]}"
+        shown = ("Projects/_Unsorted" if primary == UNSORTED else "Projects/_Empty" if primary == EMPTY
+                 else f"Projects/{ids[primary]}")
         if rel in duplicate_of:
             shown += "/_duplicates"
         dup = f" duplicate_of={item_id[duplicate_of[rel]]}" if rel in duplicate_of else ""

@@ -97,10 +97,19 @@ class PlanTests(Base):
         self.assertIn("Projects/Car purchase/_duplicates/buyers_order (1).pdf", row)
         self.assertIn("sensitivity=financial", row)
 
-    def test_empty_file_goes_to_unsorted_whatever_the_model_said(self):
+    def test_empty_and_whitespace_files_wait_for_review_and_are_not_unsorted(self):
         (self.folder / "empty.pdf").write_bytes(b"")
-        self.assigned["empty.pdf"] = {"primary": "Tax prep", "also": [], "sensitivity": "financial"}
-        self.assertIn("| empty.pdf | Projects/_Unsorted/empty.pdf |", self.plan())
+        (self.folder / "blank.md").write_text("\n  \n")
+        (self.folder / "also_blank.md").write_text("\n  \n")  # identical bytes, still not a "duplicate"
+        names = ("empty.pdf", "blank.md", "also_blank.md")
+        for name in names:
+            self.assigned[name] = {"primary": "Tax prep", "also": ["Car purchase"], "sensitivity": "financial"}
+        text = self.plan()
+        for name in names:
+            self.assertIn(f"| {name} | Projects/_Empty (review for deletion)/{name} | "
+                          "project=(empty) sensitivity=none |  |", text)
+        self.assertIn("PE", (self.root / "claude-view.txt").read_text())
+        self.assertEqual(run(CH1 / "apply_plan.py", "--check", self.root / "organize-plan.md", self.folder).returncode, 0)
 
     def test_missing_answer_fails_closed(self):
         del self.assigned["w2_2025.pdf"]
@@ -195,6 +204,60 @@ class AssignTests(unittest.TestCase):
             run(HERE / "make_project_mess.py", Path(tmp) / "d")
             self.assertEqual(assign.download_domain(Path(tmp) / "d" / "order-88231.pdf"), "maplestone-reno.example")
             self.assertIsNone(assign.download_domain(Path(tmp) / "d" / "scan_0042.pdf"))
+
+
+class LinkTests(unittest.TestCase):
+    def setUp(self):
+        import link_files
+        self.link = link_files
+
+    def test_identifiers_must_follow_a_keyword_and_look_like_numbers(self):
+        got = self.link.extract_identifiers(
+            "Account number: 8841-2290-17\nClaim #HC-77120\nCall 555-867-5309\nDate: 2026-03-01\n"
+            "Account: savings\nRef 12")
+        self.assertEqual(got, {"8841229017", "HC77120"})
+
+    def test_files_sharing_an_identifier_form_one_group_and_widely_shared_ids_link_nothing(self):
+        ids = {"a": {"111111"}, "b": {"111111", "222222"}, "c": {"222222"}, "d": {"999999"}, "e": set()}
+        self.assertEqual(self.link.link_groups(ids), [["a", "b", "c"]])
+        crowd = {f"f{i}": {"777777"} for i in range(13)}
+        self.assertEqual(self.link.link_groups(crowd, max_share=12), [])
+
+    def assigned(self, *primaries):
+        # file "a" also lists "Car purchase" as a secondary project, to test that it gets removed
+        # when "Car purchase" becomes its primary
+        return {name: {"primary": p, "also": ["Tax prep"] + (["Car purchase"] if name == "a" else []),
+                       "sensitivity": "none"}
+                for name, p in zip("abc", primaries)}
+
+    def test_a_group_with_one_stray_answer_gets_one_project_from_a_group_level_decision(self):
+        asked = []
+        new, summary, _ = self.link.apply_links(
+            self.assigned("Taxes", "Unsorted", "Unsorted"), [["a", "b", "c"]],
+            lambda members: asked.append(members) or "Car purchase")
+        self.assertEqual(len(asked), 1)  # one decision for the group, not one per file
+        self.assertEqual({v["primary"] for v in new.values()}, {"Car purchase"})
+        self.assertEqual(summary["files_changed"], 3)
+        self.assertEqual(new["a"]["also"], ["Tax prep"])  # the new primary is removed from "also"
+
+    def test_members_in_two_different_projects_are_left_alone(self):
+        new, summary, details = self.link.apply_links(
+            self.assigned("Taxes", "Car purchase", "Unsorted"), [["a", "b", "c"]],
+            lambda members: self.fail("must not ask"))
+        self.assertEqual([v["primary"] for v in new.values()], ["Taxes", "Car purchase", "Unsorted"])
+        self.assertEqual(summary["conflicts"], 1)
+        self.assertEqual(details[0]["note"], "conflict, left alone")
+
+    def test_a_group_that_already_agrees_needs_no_decision(self):
+        _, summary, _ = self.link.apply_links(
+            self.assigned("Taxes", "Taxes", "Taxes"), [["a", "b", "c"]], lambda m: self.fail("must not ask"))
+        self.assertEqual(summary["already_agree"], 1)
+
+    def test_an_unplaced_group_stays_as_it_was(self):
+        before = self.assigned("Unsorted", "Unsorted", "Unsorted")
+        new, summary, _ = self.link.apply_links(before, [["a", "b", "c"]], lambda m: "Unsorted")
+        self.assertEqual(new, before)
+        self.assertEqual(summary["unplaced"], 1)
 
 
 class ScoreTests(Base):
