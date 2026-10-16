@@ -378,7 +378,19 @@ error before blaming the data.
 > validator sometimes flags them as implausibly small for their type. On real files that flag
 > is a useful catch. On the fixture it is noise.
 
-## 1.10 Limits
+## 1.10 Sorting by project instead of type
+
+Everything so far sorts by kind: documents, images, installers. That is rarely how people think
+about their files. A mortgage refinance is a loose collection of PDFs, spreadsheets and emails
+that belong together, and a folder named `Documents` scatters them. Real Downloads folders are
+made of projects.
+
+[Chapter 1D](1d-projects/) sorts by project instead. You supply the list of projects, a local
+model assigns each file to one of them, and a file that serves two projects gets a primary folder
+plus a Finder tag. It reuses this chapter's plan format, coverage check, undo and verifier
+unchanged.
+
+## 1.11 Limits
 
 The approach has gaps, and you should know where they are.
 

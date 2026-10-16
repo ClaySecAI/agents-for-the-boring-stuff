@@ -41,6 +41,7 @@ You read it. Only then does anything change, and a script checks the result.
 | 1 | [Files and folders](chapters/01-files-and-folders/) | Ready |
 | 1B | [Keeping contents local: LM Studio or Ollama](chapters/01-files-and-folders/1b-local-model/) | Ready |
 | 1C | [Keeping contents local: Apple's on-device model](chapters/01-files-and-folders/1c-apple-foundation-models/) | Ready |
+| 1D | [Files by project, not by type](chapters/01-files-and-folders/1d-projects/) | Ready |
 | 2 | Messy text and documents | Planned |
 | 3 | Spreadsheets, PDFs and Word files | Planned |
 | 4 | Email triage (drafts only, never auto-send) | Planned |

@@ -33,6 +33,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("view", type=Path)
     ap.add_argument("--model", default="haiku")
+    ap.add_argument("--prompt", type=Path, default=PROMPT,
+                    help="instructions for the validator (default: validator-prompt.md; "
+                         "the project pipeline uses 1d-projects/validator-prompt-projects.md)")
     args = ap.parse_args()
 
     view = args.view.read_text()
@@ -41,7 +44,7 @@ def main() -> None:
             ["claude", "-p", "--tools", "", "--model", args.model,
              "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
              "--no-chrome", "--no-session-persistence",
-             "--system-prompt-file", str(PROMPT.resolve()),
+             "--system-prompt-file", str(args.prompt.resolve()),
              "--disable-slash-commands"],
             input=view, capture_output=True, text=True, cwd=empty_dir, timeout=180)
     if result.returncode != 0:

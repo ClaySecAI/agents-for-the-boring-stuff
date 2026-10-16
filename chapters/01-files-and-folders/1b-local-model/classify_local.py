@@ -12,6 +12,8 @@ enums, enforced by the server's constrained decoding). So there is no
 free-text field for file contents to leak through. Output: classification.json
 beside <folder>, ready for make_plan.py.
 """
+from __future__ import annotations
+
 import argparse
 import json
 import re
@@ -69,7 +71,10 @@ def read_head(path: Path, limit: int = 2000) -> str:
     return data.decode("utf-8", errors="replace")
 
 
-def classify(base_url: str, model: str, name: str, head: str) -> dict:
+def classify(base_url: str, model: str, name: str, head: str,
+             system: str | None = None, schema: dict | None = None, user: str | None = None) -> dict:
+    """Ask the local model for JSON that matches `schema`. The defaults are this chapter's own
+    classification; Chapter 2 passes its own system prompt, schema and user message."""
     body = {
         "model": model,
         "temperature": 0,
@@ -78,12 +83,12 @@ def classify(base_url: str, model: str, name: str, head: str) -> dict:
         # "thinking" and return an empty answer. This is a simple lookup, so turn it off.
         "reasoning_effort": "none",
         "messages": [
-            {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": f"File name: {name}\n\nContent start:\n{head}"},
+            {"role": "system", "content": system or SYSTEM},
+            {"role": "user", "content": user or f"File name: {name}\n\nContent start:\n{head}"},
         ],
         "response_format": {
             "type": "json_schema",
-            "json_schema": {"name": "classification", "strict": True, "schema": SCHEMA},
+            "json_schema": {"name": "classification", "strict": True, "schema": schema or SCHEMA},
         },
     }
     req = urllib.request.Request(

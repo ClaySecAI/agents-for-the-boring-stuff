@@ -5,6 +5,10 @@ practice*/
 organize-plan*.md
 classification*.json
 claude-view*.txt
+assignments*.json
+protect-list*.txt
+truth*.json
+projects.json
 __pycache__/
 .DS_Store
 classify_apple
