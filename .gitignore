@@ -1,0 +1,11 @@
+practice*/
+.*.manifest.json
+.*.applied-plan.md
+.*.undone-plan.md
+organize-plan*.md
+classification*.json
+claude-view*.txt
+__pycache__/
+.DS_Store
+classify_apple
+extract_text

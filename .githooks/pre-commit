@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs before every commit. Refuses the commit if personal data is about to go in.
+# Turn it on once per clone:  git config core.hooksPath .githooks
+exec python3 "$(git rev-parse --show-toplevel)/scripts/check_repo_clean.py" --staged
