@@ -1,11 +1,11 @@
 """Sort the new loose files in a folder into the project folders you already have. Built to run weekly.
 
     python3 sweep.py init   [--config FILE] <folder>      write a starting config and project list
-    python3 sweep.py run    [--config FILE] [--dry-run]   one sweep: propose, check, apply, verify
+    python3 sweep.py run    [--config FILE] [--dry-run] [--if-due DAYS]   one sweep: propose, check, apply, verify
     python3 sweep.py undo   [--config FILE] [RUN]         put back the files of one sweep (default: the latest)
     python3 sweep.py status [--config FILE]               the last sweeps, as counts
     python3 sweep.py folders [--config FILE]              folders that are not projects and have no rule
-    python3 sweep.py agent  [--config FILE]               print a launchd job that runs the sweep weekly
+    python3 sweep.py agent  [--config FILE]               print a launchd job that sweeps once a week
 
 The one-time sort in the rest of this chapter looks at everything and asks you to approve a plan. A
 sweep does the same work on a schedule, so the approval is replaced by gates written in code. A sweep
@@ -241,6 +241,11 @@ def cmd_run(args) -> int:
     config = load_config(args.config)
     folder = Path(config["folder"]).expanduser()
     state = Path(config["state_dir"]).expanduser()
+    if args.if_due is not None:
+        age = days_since_last_sweep(runs(config))
+        if age is not None and age < args.if_due:
+            print(f"Not due: the last sweep was {age:.1f} days ago (every {args.if_due:g} days).")
+            return 0
     projects_file = Path(config["projects_file"])
     projects_file = projects_file if projects_file.is_absolute() else config["_dir"] / projects_file
     run_id = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S-%f")[:-3]
@@ -342,6 +347,25 @@ def finish(report: dict, run_dir: Path, summary: str, failed: bool = False) -> i
     return 2 if failed else (1 if report.get("stopped") else 0)
 
 
+def days_since_last_sweep(run_dirs: list[Path], now: datetime.datetime | None = None) -> float | None:
+    """Days since the last sweep that really ran (not a dry run, not a stopped one). None if there is none."""
+    now = now or datetime.datetime.now()
+    latest = None
+    for run_dir in run_dirs:
+        report = run_dir / "report.json"
+        if not report.exists():
+            continue
+        data = json.loads(report.read_text())
+        if data.get("dry_run") or data.get("stopped"):
+            continue
+        try:
+            stamp = datetime.datetime.strptime(run_dir.name[:17], "%Y-%m-%d-%H%M%S")
+        except ValueError:
+            continue
+        latest = max(latest, stamp) if latest else stamp
+    return None if latest is None else (now - latest).total_seconds() / 86400
+
+
 def runs(config: dict) -> list[Path]:
     root = Path(config["state_dir"]).expanduser() / "runs"
     return sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []
@@ -383,8 +407,12 @@ def cmd_agent(args) -> None:
     state = Path(config["state_dir"]).expanduser()
     plist = {
         "Label": LABEL,
-        "ProgramArguments": [sys.executable, str(HERE / "sweep.py"), "run", "--config", str(config["_dir"] / "config.json")],
-        "StartCalendarInterval": {"Weekday": 0, "Hour": 3, "Minute": 0},  # Sundays at 03:00; a missed run happens on wake
+        "ProgramArguments": [sys.executable, str(HERE / "sweep.py"), "run", "--if-due", "7",
+                             "--config", str(config["_dir"] / "config.json")],
+        # Checked every day at 03:00 (run on wake if the Mac was asleep) and at every login (a Mac that was
+        # powered off at 03:00 never gets the missed run). --if-due keeps it to one real sweep a week.
+        "StartCalendarInterval": {"Hour": 3, "Minute": 0},
+        "RunAtLoad": True,
         "StandardOutPath": str(state / "sweep.log"),
         "StandardErrorPath": str(state / "sweep.log"),
         "EnvironmentVariables": {"PATH": f"{Path.home()}/.lmstudio/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin"},
@@ -402,6 +430,8 @@ def main() -> None:
             p.add_argument("folder")
         if name == "run":
             p.add_argument("--dry-run", action="store_true")
+            p.add_argument("--if-due", type=float, metavar="DAYS",
+                           help="do nothing unless this many days have passed since the last real sweep")
         if name == "undo":
             p.add_argument("run", nargs="?")
     args = ap.parse_args()

@@ -739,8 +739,13 @@ server, and a second sweep with nothing new. We also ran a sweep with a real mod
 practice folder with the same layout as an organized Downloads: 56 of 59 files ended where the
 fixture's answer key puts them, and undo restored all 59.
 
-**Scheduling it.** The `agent` command prints a launchd job that runs the sweep on Sundays at 03:00 (a Mac
-that is asleep runs the job when it wakes):
+**Scheduling it.** A laptop is not always on at 03:00, and launchd treats the cases differently. A job
+missed while the Mac was asleep runs when it wakes. A job missed while the Mac was powered off does not
+run at the next start. So the job that `agent` prints does not ask for "Sundays at 03:00". It asks launchd to
+run at 03:00 every day and at every login, and passes `--if-due 7`, which makes the sweep do nothing unless
+seven days have passed since the last real one. Dry runs and stopped sweeps do not count, so a week
+that failed for a missing permission or a model that would not load tries again the next day. A Mac that
+is usually shut at night sweeps on the first login after a week has gone by.
 
 ```bash
 python3 sweep.py agent > ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist

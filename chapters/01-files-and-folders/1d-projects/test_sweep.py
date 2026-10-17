@@ -216,12 +216,36 @@ class RunTests(Base):
         self.assertIn("Misc stuff", listed.stdout)
         self.assertNotIn("Taxes", listed.stdout.split("rule:")[1])
 
-    def test_the_agent_plist_runs_weekly_and_names_the_config(self):
+    def test_the_agent_plist_checks_daily_and_at_login_but_sweeps_weekly(self):
         import plistlib
         plist = plistlib.loads(self.sweep("agent").stdout.encode())
-        self.assertEqual(plist["StartCalendarInterval"]["Weekday"], 0)
-        self.assertIn(str((self.state / "config.json").resolve()), plist["ProgramArguments"])
-        self.assertEqual(plist["ProgramArguments"][2], "run")
+        self.assertEqual(plist["StartCalendarInterval"], {"Hour": 3, "Minute": 0})
+        self.assertTrue(plist["RunAtLoad"])
+        args = plist["ProgramArguments"]
+        self.assertEqual(args[2:5], ["run", "--if-due", "7"])
+        self.assertIn(str((self.state / "config.json").resolve()), args)
+
+    def test_if_due_skips_a_recent_sweep_and_runs_after_a_week(self):
+        self.add("tax-form.pdf")
+        self.assertEqual(self.sweep("run").returncode, 0)
+        self.add("morning-run.txt")
+        skipped = self.sweep("run", "--if-due", "7")
+        self.assertIn("Not due", skipped.stdout)
+        self.assertIn("morning-run.txt", self.listing())           # still loose: nothing ran
+        report = next((self.state / "runs").glob("*/report.json"))
+        old = report.parent.with_name("2020-01-01-030000-000")
+        report.parent.rename(old)                                   # pretend the last sweep was years ago
+        ran = self.sweep("run", "--if-due", "7")
+        self.assertNotIn("Not due", ran.stdout)
+        self.assertIn("Workouts/morning-run.txt", self.listing())
+
+    def test_a_dry_run_or_a_stopped_sweep_does_not_count_as_the_last_sweep(self):
+        for name, data in (("2026-10-01-030000-000", {"dry_run": True}), ("2026-10-02-030000-000", {"stopped": "x"})):
+            d = self.state / "runs" / name
+            d.mkdir(parents=True)
+            (d / "report.json").write_text(json.dumps(data))
+        runs = sorted((self.state / "runs").iterdir())
+        self.assertIsNone(sweep.days_since_last_sweep(runs))
 
 
 if __name__ == "__main__":
