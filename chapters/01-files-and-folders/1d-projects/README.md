@@ -505,6 +505,8 @@ file names are replaced with scan numbers (`--blind`), and one with a project hi
 | gemma-4-12b | 59 | 55 | 56 | 3 | 1.8 |
 | qwen3.8-27b | did not load | | | | |
 | nomic-embed-text v1.5 (embeddings only) | 42 | 31 | 43 | 10 | 0.02 |
+| EmbeddingGemma 300M (embeddings only) | 51 | 46 | 51 | 11 | 0.03 |
+| Qwen3-Embedding 0.6B (embeddings only) | 53 | 46 | 47 | 14 | 0.05 |
 
 Three things stand out. The smallest model is nearly as accurate as the others at a third of the
 time, and it almost never files something under the wrong project; it declines instead. That is the
@@ -513,18 +515,23 @@ search. The hold-out fixture is where models differ: two of the three, given a f
 your projects, picked one anyway (6 and 3 files). The 27B model needed more memory than this 24 GB
 machine could spare, so it has no row.
 
-The embedding row is the answer to "can a small specialist replace the language model?" Not alone.
-Embeddings place a file by similarity to the project's description, are about forty times faster, and
-get roughly two thirds right, but with a margin of 0.03 they leave a third unsorted and misplace
-more on the blind fixture. Statements from different accounts at one bank look alike to them.
-Giving them example files made things worse, since the shared boilerplate drowned the signal. Their
-use is as a cheap first pass whose confident answers you keep and whose doubts go to the language
-model; `embed_assign.py` is there to try that.
+The embedding rows answer "can a small specialist replace the language model?" Not alone, but the
+newer ones come close enough to matter. Embeddings place a file by similarity to each project's
+description, run roughly forty times faster, and need no prompt. The embedding rows use a margin of
+0.03: the best project must beat the second by that much, or the file stays unsorted. Nomic left a
+third of the files unsorted and misfiled ten more. EmbeddingGemma (333 MB) and Qwen3-Embedding
+(639 MB) placed 46 to 53 of 59 correctly in every fixture, with 11 and 14 misfiled across the three,
+against 1 to 7 for the language models. With no margin at all they place every file and get
+6 to 14 wrong per fixture, so the margin is doing real work. The remaining gap is the same one as
+before: statements from different accounts at one bank look alike. Giving embeddings example files
+made things worse, since the shared boilerplate drowned the signal. Their natural use is a cheap
+first pass whose confident answers you keep and whose doubts go to a language model;
+`embed_assign.py` is there to try that, and it takes `--preset embeddinggemma` or `--preset qwen3`.
 
 Small models built for documents exist, such as Donut, LayoutLM and the Florence family, but they
 identify layout and fields (this is an invoice, here is the total), not which of your projects a file
 serves, and most expect a page image rather than text. For this task the embedding models
-(EmbeddingGemma, Qwen3-Embedding) are the nearest fit, and neither was downloaded for this chapter.
+(EmbeddingGemma, Qwen3-Embedding) are the nearest fit, and they are the two extra rows above.
 Treat the numbers as one machine, one afternoon and a synthetic folder, not a ranking.
 
 ## 1D.13 Limits
