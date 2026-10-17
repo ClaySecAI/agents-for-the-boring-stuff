@@ -697,6 +697,24 @@ file still being written is not ready. It starts the model server and loads the 
 running, assigns each remaining file to one of your projects, and then applies the gates. It unloads the
 model and stops the server it started when it finishes. A macOS notification reports counts, never names.
 
+**Folders that are not projects.** A sweep never opens a subfolder, so each folder that is not a project
+needs a decision, and there are three. Move it whole into a project (a folder of event photos from one
+photographer belongs in a cycling photos project as a unit). Sort its files one at a time (an
+`attachments` folder holds income papers, police reports and lease emails that belong in four different
+projects). Or leave it. A sweep supports the first directly, through `folder_rules` in `config.json`:
+
+```json
+"folder_rules": {"EventPhotos Download (123456789)": {"unit": "Cycling event photos"}}
+```
+
+The folder moves, unopened, into the project's folder, and the sweep's undo restores it like any other
+move. A folder with no rule is left alone and counted in the report as untracked. `python3 sweep.py
+folders` lists them, so nothing sits in the folder forgotten. The second case is a separate, approved run
+like the rest of this chapter: assign the files in that folder with `assign_projects.py`, write a plan
+whose destinations climb out of the folder (`../Taxes/2021 W2.pdf`), check it with `apply_plan.py
+--check`, and apply it. A sweep does not do this one for you, because a folder that mixes projects is
+exactly the case where a person should read the plan.
+
 **The gates.** Files the model cannot place stay put. Files it labels `credentials`, or cannot label at all,
 stay put and are counted, because a key file filed in the wrong folder is hard to find again; change
 `hold_sensitivities` in `config.json` to hold more kinds, such as `government_id`. A sweep that would move more

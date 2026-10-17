@@ -192,6 +192,30 @@ class RunTests(Base):
         self.assertEqual(again.returncode, 0, again.stdout + again.stderr)
         self.assertIn("nothing new", again.stdout)
 
+    def test_a_folder_rule_moves_the_whole_folder_into_a_project_and_undo_restores_it(self):
+        photos = self.folder / "Event Photos 123"
+        photos.mkdir()
+        (photos / "img1.jpg").write_text("p1")
+        old = time.time() - 86400
+        os.utime(photos, (old, old))
+        (self.folder / "Misc stuff").mkdir()
+        self.config(folder_rules={"Event Photos 123": {"unit": "Workouts"}})
+        before = self.listing()
+        done = self.sweep("run")
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("Workouts/Event Photos 123/img1.jpg", self.listing())
+        self.assertNotIn("Event Photos 123", self.listing())
+        report = json.loads(next((self.state / "runs").glob("*/report.json")).read_text())
+        self.assertEqual((report["folders_by_rule"], report["untracked_folders"]), (1, 1))
+        self.assertEqual(self.sweep("undo").returncode, 0)
+        self.assertEqual(self.listing(), before)
+
+    def test_untracked_folders_are_listed_not_touched(self):
+        (self.folder / "Misc stuff").mkdir()
+        listed = self.sweep("folders")
+        self.assertIn("Misc stuff", listed.stdout)
+        self.assertNotIn("Taxes", listed.stdout.split("rule:")[1])
+
     def test_the_agent_plist_runs_weekly_and_names_the_config(self):
         import plistlib
         plist = plistlib.loads(self.sweep("agent").stdout.encode())
