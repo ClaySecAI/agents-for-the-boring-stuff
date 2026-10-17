@@ -563,6 +563,22 @@ class AppleHelperTests(Base):
         first = assign.load_projects(self.projects)[0]["name"]
         self.assertTrue(all(v["primary"] == first and v["also"] == [] for v in got.values()))   # unknown names are dropped
 
+    def test_assign_prints_project_ids_not_names_unless_asked(self):
+        fake = self.root / "id_helper.py"
+        fake.write_text("#!/usr/bin/env python3\nimport sys, json\n"
+                        "for line in sys.stdin:\n"
+                        "    req = json.loads(line)\n"
+                        "    print(json.dumps({'primary': req['projects'][1], 'also': [], 'sensitivity': 'none'}), flush=True)\n")
+        fake.chmod(0o755)
+        names = [p["name"] for p in assign.load_projects(self.projects)]
+        quiet = run(HERE / "assign_projects.py", self.folder, self.projects, "--apple", fake, "--out", self.root / "q.json")
+        self.assertIn(": P2", quiet.stdout)
+        self.assertNotIn(names[1], quiet.stdout)                 # no project name in the output
+        for rel in self.truth:
+            self.assertNotIn(rel, quiet.stdout)                  # and no file name
+        loud = run(HERE / "assign_projects.py", self.folder, self.projects, "--apple", fake, "--out", self.root / "l.json", "--verbose")
+        self.assertIn(names[1], loud.stdout)
+
     def test_a_helper_that_reports_an_error_fails_closed(self):
         fake = self.root / "bad_helper.py"
         fake.write_text("#!/usr/bin/env python3\nimport sys, json\n"

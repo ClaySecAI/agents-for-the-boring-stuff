@@ -17,7 +17,7 @@ tell the user to start one. Do not fall back to a cloud model: the point is that
 ## 2. Assign (the local model reads the files)
 
 `python3 $P/assign_projects.py <folder> <projects.json> [--top-level]` writes `assignments.json`.
-Report how many files were placed, left unsorted or failed. Do not print file names or contents.
+Report how many files were placed, left unsorted or failed. Do not print file names or contents. The script's own output shows project ids (P1, P2...), not names. Never pass `--verbose`.
 
 ## 3. Optional improvements, each only if the user wants it
 

@@ -197,6 +197,7 @@ def main() -> None:
     if args.only:
         wanted = set(json.loads(args.only.read_text()))
         files = [p for p in files if str(p.relative_to(args.folder)) in wanted]
+    project_id = {name: f"P{n}" for n, name in enumerate(names, 1)}  # P0 is Unsorted
     results, failed = {}, 0
     for i, path in enumerate(files, 1):
         rel = str(path.relative_to(args.folder))
@@ -212,8 +213,11 @@ def main() -> None:
             failed += 1
             print(f"  ! item {i}: {type(err).__name__}")
             continue
-        shown = rel if args.verbose else f"item {i}"
-        print(f"[{i}/{len(files)}] {shown}: {results[rel]['primary']}")
+        # Names are printed only on request: this output may be read by a hosted agent, and a file name or a
+        # project name can be sensitive on its own. Project numbers match the P1, P2... in claude-view.txt.
+        primary = results[rel]["primary"]
+        shown = f"{rel}: {primary}" if args.verbose else f"item {i}: {project_id.get(primary, 'P0')}"
+        print(f"[{i}/{len(files)}] {shown}")
     out.write_text(json.dumps(results, indent=2))
     print(f"Wrote {out.name}: {len(results)} of {len(files)} files assigned, {failed} failed.")
 
