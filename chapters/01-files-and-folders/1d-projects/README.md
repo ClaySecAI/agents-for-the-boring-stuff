@@ -739,21 +739,17 @@ server, and a second sweep with nothing new. We also ran a sweep with a real mod
 practice folder with the same layout as an organized Downloads: 56 of 59 files ended where the
 fixture's answer key puts them, and undo restored all 59.
 
-**Scheduling it.** A laptop is not always on at 03:00, and launchd treats the cases differently. A job
-missed while the Mac was asleep runs when it wakes. A job missed while the Mac was powered off does not
-run at the next start. So the job that `agent` prints does not ask for "Sundays at 03:00". It asks launchd to
-run at 03:00 every day and at every login, and passes `--if-due 7`, which makes the sweep do nothing unless
-seven days have passed since the last real one. Dry runs and stopped sweeps do not count, so a week
-that failed for a missing permission or a model that would not load tries again the next day. A Mac that
-is usually shut at night sweeps on the first login after a week has gone by.
+**Scheduling it.** This section is the short version: enough to install the weekly job for this one chore.
+Chapter 7 covers scheduling in general (any chore, not only this one), including the parts that are only
+sketched here: catching up after sleep or shutdown, power, permissions, and starting model servers
+without a window. What the job below does, in brief: it runs at 03:00 every day and at every login, and
+`--if-due 7` limits it to one real sweep a week, which covers a laptop that was off at 03:00.
 
-**Battery.** The sweep loads a model, which takes several gigabytes of memory and a minute of processor
-time, and nobody wants that on a nearly empty laptop. Plugged in, a sweep always runs. On battery it runs
-only at or above `min_battery_percent` (50 by default; 0 turns the check off). A skipped sweep leaves no
-record and does not count as the weekly one, so the next daily or login check tries again. The decision is
-a pure function of the text `pmset -g batt` prints, and the tests cover it with sample output; the
-test that exercises a real low battery skips itself when the machine is plugged in, so on a plugged-in
-laptop that path is untested.
+On battery, the sweep runs only at or above `min_battery_percent` in `config.json` (default 50; plugged in
+always runs; 0 turns the check off). A skipped run leaves no record, so the next daily or login check tries
+again. If the model server is not running, the sweep starts it with `lms server start`. If the LM Studio
+app is not open, it falls back to LM Studio's headless daemon (`lms daemon up`) and shuts down what it
+started when it finishes.
 
 ```bash
 python3 sweep.py agent > ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist

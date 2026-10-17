@@ -281,7 +281,7 @@ def cmd_run(args) -> int:
             return 1
         lock.touch()
     report: dict = {"run": run_id, "folder_items": 0}
-    started_server = loaded = False
+    started_server = started_daemon = loaded = False
     lms = find_lms() if config.get("manage_model", True) else None
     try:
         try:
@@ -308,6 +308,18 @@ def cmd_run(args) -> int:
                 if server_up(config["base_url"]):
                     break
                 time.sleep(1)
+            if not server_up(config["base_url"]):
+                # The LM Studio app may not be running. Its headless daemon (llmster) can serve without it.
+                subprocess.run([lms, "daemon", "up"], capture_output=True)
+                started_daemon = True
+                subprocess.run([lms, "server", "start"], capture_output=True)
+                for _ in range(40):
+                    if server_up(config["base_url"]):
+                        break
+                    time.sleep(1)
+            if not server_up(config["base_url"]):
+                report["stopped"] = "LM Studio's server would not start"
+                return finish(report, run_dir, "stopped: LM Studio's server would not start")
         if files and lms:
             subprocess.run([lms, "unload", "--all"], capture_output=True)
             loaded = subprocess.run([lms, "load", config["model"], "-y", "--identifier", "sweep",
@@ -357,6 +369,8 @@ def cmd_run(args) -> int:
             subprocess.run([lms, "unload", "--all"], capture_output=True)
         if started_server and lms:
             subprocess.run([lms, "server", "stop"], capture_output=True)
+        if started_daemon and lms:
+            subprocess.run([lms, "daemon", "down"], capture_output=True)  # leave things as we found them
         lock.unlink(missing_ok=True)
 
 

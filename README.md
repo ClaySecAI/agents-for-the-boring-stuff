@@ -60,7 +60,7 @@ When something goes wrong, it usually means one of the three parties was asked t
 | 4 | Email triage (drafts only, never auto-send) | Planned |
 | 5 | Checking websites with a browser agent | Planned |
 | 6 | GUI automation with computer use | Planned |
-| 7 | Scheduling it all | Planned |
+| 7 | Scheduling it all: launchd, catching up after sleep or shutdown, power, permissions, starting model servers headless (builds on the weekly sweep in 1D.14) | Planned |
 
 ## Getting started
 
