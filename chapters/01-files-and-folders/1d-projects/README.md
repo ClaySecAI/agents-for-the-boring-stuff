@@ -491,6 +491,42 @@ and extension, as before. Nothing fails. On Debian or Ubuntu that is
 Finder tags are macOS only. On other systems the Also column still records the extra projects, and
 `link_files.py` still works, but `tag_files.py` does nothing useful.
 
+## 1D.12 Choosing a model
+
+`bakeoff.py` runs the same assignment task, prompts and scoring against several models, one after
+another, and prints a table. Three synthetic fixtures, 59 files each: the readable one, one where
+file names are replaced with scan numbers (`--blind`), and one with a project hidden from the list
+(`--hold-out`). Numbers are files placed in their true project.
+
+| Model | Readable | Blind | Hold-out | Wrong-project (total) | Seconds per file |
+|---|---|---|---|---|---|
+| gemma-4-e4b | 56 | 53 | 57 | 1 | 0.7 |
+| qwen3.5-9b | 57 | 54 | 53 | 7 | 1.2 to 2.0 |
+| gemma-4-12b | 59 | 55 | 56 | 3 | 1.8 |
+| qwen3.8-27b | did not load | | | | |
+| nomic-embed-text v1.5 (embeddings only) | 42 | 31 | 43 | 10 | 0.02 |
+
+Three things stand out. The smallest model is nearly as accurate as the others at a third of the
+time, and it almost never files something under the wrong project; it declines instead. That is the
+right way to be wrong, because an unsorted file costs you a glance and a misfiled one costs you a
+search. The hold-out fixture is where models differ: two of the three, given a file that fits none of
+your projects, picked one anyway (6 and 3 files). The 27B model needed more memory than this 24 GB
+machine could spare, so it has no row.
+
+The embedding row is the answer to "can a small specialist replace the language model?" Not alone.
+Embeddings place a file by similarity to the project's description, are about forty times faster, and
+get roughly two thirds right, but with a margin of 0.03 they leave a third unsorted and misplace
+more on the blind fixture. Statements from different accounts at one bank look alike to them.
+Giving them example files made things worse, since the shared boilerplate drowned the signal. Their
+use is as a cheap first pass whose confident answers you keep and whose doubts go to the language
+model; `embed_assign.py` is there to try that.
+
+Small models built for documents exist, such as Donut, LayoutLM and the Florence family, but they
+identify layout and fields (this is an invoice, here is the total), not which of your projects a file
+serves, and most expect a page image rather than text. For this task the embedding models
+(EmbeddingGemma, Qwen3-Embedding) are the nearest fit, and neither was downloaded for this chapter.
+Treat the numbers as one machine, one afternoon and a synthetic folder, not a ranking.
+
 ## 1D.13 Limits
 
 - The model only knows the projects you list. A project you forgot ends up in `Unsorted`, or worse,
