@@ -34,6 +34,17 @@ Every chapter folder has the same parts.
 Each chapter follows one pattern: propose, approve, apply, verify. The agent writes a plan.
 You read it. Only then does anything change, and a script checks the result.
 
+Behind that pattern is a division of labor that returns in every chapter:
+
+- You supply intent and vocabulary: what counts as done, which projects exist, what to call them,
+  and what is off limits. The files do not contain this. Chapter 1D shows what happens when the
+  list of projects is missing or incomplete.
+- The agent supplies judgment at a scale you would not spend by hand: reading hundreds of files and
+  deciding what each one is.
+- Plain code supplies guarantees: exact moves, coverage checks, verification and undo.
+
+When something goes wrong, it usually means one of the three parties was asked to do another's job.
+
 ## Chapters
 
 | # | Topic | Status |

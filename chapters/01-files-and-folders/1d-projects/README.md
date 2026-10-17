@@ -73,13 +73,110 @@ A few rules:
 Treat the file as private. Project names describe your life. `projects.json` and every output of
 this chapter are listed in `.gitignore`, and the repository's commit guard refuses them by name.
 
+### Why the list comes from you
+
+The model can read a file and say what it is about. It cannot know which efforts in your life
+matter, where one ends and the next begins, or what you want to call them. The list carries three
+kinds of knowledge that no file contains:
+
+- Which efforts exist. A Downloads folder holds the leftovers of dozens of small things. Only you
+  know that six of them deserve a folder and the rest are noise.
+- Where the boundaries are. A tax form can belong to a mortgage refinance or to your tax return.
+  The right answer depends on how you will look for it later.
+- What to call them. The names become folder names, tags and the words you search for.
+
+The list also does a job for the machinery. It becomes the set of answers the model may give, which
+is what stops it from inventing folders or leaking contents into its output. It has to choose from
+your words.
+
+### What the model can find on its own
+
+If you do not know where to start, the model can propose a list. `suggest_projects.py` asks for a
+short phrase describing the situation each file belongs to, then asks once for a handful of projects
+that cover those phrases.
+
+*Listing 1D.2: Asking the model for a first draft*
+
+```bash
+python3 suggest_projects.py practice-projects/downloads --show
+```
+
+We tested how good the draft is by letting the model write a list with no help from us, assigning
+every file to its own list, and scoring the result against the answer key. The score ignores project
+names, so a list the model invented can be compared fairly. It is cluster purity: for each group the
+model made, credit the true project with the most files in it.
+
+*Table 1D.1: Who wrote the list*
+
+| Who wrote the list | Groups | Cluster purity | True projects recovered |
+|---|---|---|---|
+| You (the eight projects) | 8 | 100% | 8 of 8 |
+| The model, told to think in projects | 10 | 88% | 7 of 8 |
+| The model, with no steer | 10 | 92% | 7 of 8 |
+| Sorting by file extension, best case | | 44% | |
+
+Four things follow.
+
+The model finds most of what is there. Seven of the eight real projects came back as groups, and
+the purity is double what sorting by type can reach. A model-written list is a good first draft,
+and it saves you from starting on a blank page.
+
+It does not draw your lines. Its "Home Improvement" project absorbed two documents from the roof
+repair claim, because both involve contractors. Whether a roof claim belongs with the house or with
+insurance is exactly the kind of call only you can make, and the model made it silently. It also
+invented projects that overlap ("Property Management", "Business Administration") and scattered the
+conference trip across three groups.
+
+Telling it to think in projects did not help the score. The instruction changed the names and
+made the groups finer, but 88% against 92% is a difference of two or three files in single runs, so
+read it as no difference. A cleverer prompt does not replace your own list.
+
+The names are its own. They describe the files it saw, in its words. They are not the words you
+will search for in six months.
+
+Use the suggestions as a draft. Read them, delete the ones you do not need, merge the ones that
+overlap, rename them, add the project it missed, and save your edited version as the list for
+`assign_projects.py`. The tool does not print the proposed names unless you pass `--show`, because
+the names describe your files. The one-line summaries it collects along the way are written to
+`topics.json` beside the folder, and nothing leaves your machine.
+
+### Writing a list that works
+
+- Name efforts, not kinds of file. "Mortgage refi" is a project. "Loan documents" and "Invoices" are
+  kinds of file, and they cut across every project you have.
+- Describe each project in one sentence that names the documents it holds. The model leans on the
+  description, and a project with no description gets files only when its name is obvious.
+- Add a project for utility files, such as installers and updates, so that they do not get pulled
+  into whichever project they resemble.
+- Add a catch-all for things you own but did not plan around, such as product manuals. In our
+  experiments the most damaging error was a file that matched no project being filed under a
+  similar one (Table 1D.3). A catch-all gives those files a harmless home.
+- Decide overlaps on purpose. When two projects share documents, say in the descriptions which one
+  holds them ("pay stubs belong to Mortgage refi"), or accept that the file gets a tag for the other.
+- Start with the five to ten projects you can name. You can add more after the first run.
+
+### Treat the first run as a question
+
+Run the assignment, then read two things: the `Unsorted` pile, and the files in each project that
+do not belong. Each pattern you find points to a fix in the list.
+
+- Several unsorted files about one subject mean a project is missing.
+- A project that attracts files it should not mean its description is too broad, or a neighbouring
+  project's description is too thin.
+- Two projects that keep trading the same files mean the boundary needs a sentence in both
+  descriptions.
+
+On our real test folder, the first run exposed a missing project for product manuals and a stricter
+rule was needed for files that match nothing. The list is a living document, and the second run was
+better because the first one asked the right questions.
+
 ## 1D.4 Running it
 
 The chapter ships a fixture: 59 invented files that belong to eight invented projects, plus an
 answer key. Every document is addressed to the same fake person at the same fake address, so names
 and addresses do not separate the projects. A few files have generic names and almost no content.
 
-*Listing 1D.2: From a messy folder to an organized one*
+*Listing 1D.3: From a messy folder to an organized one*
 
 ```bash
 cd chapters/01-files-and-folders/1d-projects
@@ -97,7 +194,7 @@ files it joined together and what it decided. Read that, then `organize-plan.md`
 `protect-list.txt` to see which projects hold the most sensitive material. Send Claude the metadata
 and, when you are satisfied, apply and verify:
 
-*Listing 1D.3: The Claude gate, the move and the tags*
+*Listing 1D.4: The Claude gate, the move and the tags*
 
 ```bash
 python3 ../validate_plan.py --prompt validator-prompt-projects.md practice-projects/claude-view.txt
@@ -181,7 +278,7 @@ We ran Gemma 4 12B in LM Studio on two versions of the fixture. The second, buil
 replaces the text of every other file with a note that no text layer exists, the way a scanned PDF
 looks when nothing can read it. Each cell is one run, scored out of 59 files.
 
-*Table 1D.1: Files placed in the correct project*
+*Table 1D.2: Files placed in the correct project*
 
 | Signals the model saw | Readable text | Half unreadable |
 |---|---|---|
@@ -227,10 +324,10 @@ the experiment's fault before the model's.
 ### Files that belong to none of your projects
 
 A real folder always holds files your list does not cover. We tested that with `--hold-out`, which
-leaves one project off the list so its seven files truly belong nowhere. The right answer is
+leaves one project off the list, so its seven files belong to none of the listed projects. The right answer is
 `Unsorted`.
 
-*Table 1D.2: Where the seven files of a missing project went*
+*Table 1D.3: Where the seven files of a missing project went*
 
 | Project left off the list | Rule in the prompt | Files right (of 59) | Where the seven went | Filed under a wrong project |
 |---|---|---|---|---|
@@ -284,9 +381,11 @@ that the project exists, so think before tagging files in a synced folder.
 
 ## 1D.9 Limits
 
-- The model only knows the projects you list. A project you forgot ends up in `Unsorted`. A natural
-  next step is discovery: embed each file's text, cluster the embeddings and let the model name the
-  clusters, so it can suggest projects you did not list. This chapter does not do that.
+- The model only knows the projects you list. A project you forgot ends up in `Unsorted`, or worse,
+  inside a similar project. `suggest_projects.py` can propose a draft, but it works from phrases
+  the model wrote about each file, and in our test it merged one project into another and missed a
+  third. A sturdier approach to discovery would embed each file's text and cluster the embeddings.
+  This chapter does not do that.
 - Each file has one primary project. The tag covers the second, but the folder structure still
   forces a choice.
 - Linking trusts numbers that follow a keyword such as "account number". It misses identifiers
@@ -294,7 +393,7 @@ that the project exists, so think before tagging files in a synced folder.
   one case: when members already point to two different projects. It cannot catch a wrong link
   between files that were all unsorted.
 - Off-list files are the worst failure. A file that belongs to none of your projects can still be
-  filed under a similar one (Table 1D.2). Reading the plan is the check.
+  filed under a similar one (Table 1D.3). Reading the plan is the check.
 - The fixture is easier than a real folder in some ways and harder in others. Its documents are
   short and clean, and its projects are clearly distinct. Real projects overlap, run for years and
   contain files with no readable text.
@@ -310,13 +409,18 @@ that the project exists, so think before tagging files in a synced folder.
 2. Run the assigner on the fixture with `--no-source` and again with `--no-dates`. Which signal
    matters more, and does the answer change on the `--blind` fixture?
 3. Make the descriptions in `projects.json` vaguer. How much does accuracy fall?
-4. Change the `also` instruction in `assign_projects.py` so the model proposes secondary projects
+4. Run `suggest_projects.py` with `--framing none` and with `--framing projects`, three times each.
+   How much do the proposed lists vary from run to run? What does that say about trusting a
+   single suggestion?
+5. Take one model-written list and edit it by hand into the list you would actually want. What did
+   you change, and what does that tell you about what the model could not know?
+6. Change the `also` instruction in `assign_projects.py` so the model proposes secondary projects
    more readily. Does recall rise, and what happens to precision?
-5. Hold out each project in turn with `--hold-out`. Which ones have a neighbour on the list that
+7. Hold out each project in turn with `--hold-out`. Which ones have a neighbour on the list that
    attracts their files, and which are left unsorted?
-6. Add a catch-all project such as "Everything else" to a hold-out run. Do the held-out files go
+8. Add a catch-all project such as "Everything else" to a hold-out run. Do the held-out files go
    there, and do files that belong to real projects start going there too?
-7. Run the `--statements` fixture with `--max-share 2`. What changes, and why?
+9. Run the `--statements` fixture with `--max-share 2`. What changes, and why?
 
 ## Further reading
 

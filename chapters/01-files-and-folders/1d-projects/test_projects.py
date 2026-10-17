@@ -260,6 +260,36 @@ class LinkTests(unittest.TestCase):
         self.assertEqual(summary["unplaced"], 1)
 
 
+class SuggestTests(unittest.TestCase):
+    def setUp(self):
+        import suggest_projects
+        self.suggest = suggest_projects
+
+    def test_suggested_names_are_cleaned_so_the_assigner_will_accept_them(self):
+        raw = [{"name": "Kitchen / Remodel", "description": "x"}, {"name": "kitchen remodel", "description": "dup"},
+               {"name": "Unsorted", "description": "reserved"}, {"name": "", "description": "empty"},
+               {"name": "Trip; 2026", "description": "y"}, {"name": "Taxes", "description": "z"}]
+        got = self.suggest.sanitize(raw, 10)
+        self.assertEqual([p["name"] for p in got], ["Kitchen Remodel", "Trip 2026", "Taxes"])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "p.json"
+            path.write_text(json.dumps(got))
+            self.assertEqual(len(assign.load_projects(path)), 3)  # no SystemExit
+
+    def test_suggestions_are_capped(self):
+        raw = [{"name": f"P{i}", "description": ""} for i in range(20)]
+        self.assertEqual(len(self.suggest.sanitize(raw, 5)), 5)
+
+    def test_framing_changes_the_instructions_not_just_the_label(self):
+        framed, plain = self.suggest.PROJECT_SYSTEM["projects"], self.suggest.PROJECT_SYSTEM["none"]
+        self.assertIn("kind of document", framed)
+        self.assertNotIn("kind of document", plain)
+        self.assertIn("not name the kind of document", self.suggest.TOPIC_SYSTEM["projects"])
+
+    def test_schema_limits_how_many_projects_the_model_can_return(self):
+        self.assertEqual(self.suggest.projects_schema(7)["properties"]["projects"]["maxItems"], 7)
+
+
 class ScoreTests(Base):
     def test_perfect_answers_score_perfectly_and_beat_sorting_by_type(self):
         result = scoring.score(self.truth, self.assigned)
@@ -267,6 +297,15 @@ class ScoreTests(Base):
         self.assertEqual(result["also_recall"], 1.0)
         self.assertEqual(result["also_precision"], 1.0)
         self.assertLess(result["type_purity"], 0.5)
+
+    def test_cluster_purity_ignores_names_so_invented_lists_can_be_scored(self):
+        renamed = {f: {**v, "primary": "Group " + v["primary"][:3]} for f, v in self.assigned.items()}
+        result = scoring.score(self.truth, renamed)
+        self.assertAlmostEqual(result["cluster_purity"], 1.0)
+        self.assertEqual(result["recovered"], (8, 8))
+        merged = {f: {**v, "primary": "Everything"} for f, v in self.assigned.items()}  # one big group
+        self.assertLess(scoring.score(self.truth, merged)["cluster_purity"], 0.2)
+        self.assertEqual(scoring.score(self.truth, merged)["recovered"][0], 8)  # each project sits wholly inside it
 
     def test_giving_up_scores_only_the_unsorted_files(self):
         nothing = {f: {"primary": "Unsorted", "also": []} for f in self.truth}

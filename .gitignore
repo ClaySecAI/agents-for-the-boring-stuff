@@ -8,6 +8,8 @@ claude-view*.txt
 assignments*.json
 protect-list*.txt
 link-report*.md
+topics*.json
+projects-suggested*.json
 review*.md
 truth*.json
 projects.json

@@ -72,13 +72,14 @@ def read_head(path: Path, limit: int = 2000) -> str:
 
 
 def classify(base_url: str, model: str, name: str, head: str,
-             system: str | None = None, schema: dict | None = None, user: str | None = None) -> dict:
+             system: str | None = None, schema: dict | None = None, user: str | None = None,
+             max_tokens: int = 200) -> dict:
     """Ask the local model for JSON that matches `schema`. The defaults are this chapter's own
     classification; Chapter 2 passes its own system prompt, schema and user message."""
     body = {
         "model": model,
         "temperature": 0,
-        "max_tokens": 200,
+        "max_tokens": max_tokens,
         # Reasoning models (Gemma 4, Qwen3...) otherwise spend the whole token budget
         # "thinking" and return an empty answer. This is a simple lookup, so turn it off.
         "reasoning_effort": "none",
