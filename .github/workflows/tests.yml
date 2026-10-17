@@ -1,0 +1,45 @@
+# The macOS test run. macOS runners cost about ten times what Ubuntu ones do, so this runs only when code or
+# tests change (a change to a chapter's prose does not need it) and cancels itself when a newer push arrives.
+# The personal-data guard, which is cheap, runs on every push in checks.yml.
+name: tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "chapters/**/*.py"
+      - "scripts/**"
+      - ".github/workflows/tests.yml"
+  pull_request:
+    paths:
+      - "chapters/**/*.py"
+      - "scripts/**"
+      - ".github/workflows/tests.yml"
+  workflow_dispatch:  # a manual run from the Actions tab, for when you want one anyway
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: macos-latest  # the scripts target macOS; Finder tags and pmset tests skip elsewhere
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]  # the scripts promise 3.9, the oldest Python on a stock Mac
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Chapter 1 round trip
+        run: python3 chapters/01-files-and-folders/test_roundtrip.py
+      - name: Chapter 1D projects
+        run: python3 chapters/01-files-and-folders/1d-projects/test_projects.py
+      - name: Chapter 1D sweep
+        run: python3 chapters/01-files-and-folders/1d-projects/test_sweep.py

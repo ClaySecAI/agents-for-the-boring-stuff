@@ -29,7 +29,8 @@ The blocklist lives inside `.git/`, so it is never committed. Put your name, use
 your computer, your employer and any real file names you tested with in it.
 
 The same guard runs on GitHub for every pull request, together with a secret scan of the history
-(see [.github/workflows/checks.yml](.github/workflows/checks.yml)). That copy cannot see your private
+(see [.github/workflows/checks.yml](.github/workflows/checks.yml)). The macOS test run is a separate workflow ([tests.yml](.github/workflows/tests.yml)) that starts only when
+code or tests change, so a prose-only pull request skips it. It can also be started by hand from the Actions tab. That copy cannot see your private
 blocklist, so the hook on your machine is still the layer that knows your names.
 
 ## If the guard blocks you
