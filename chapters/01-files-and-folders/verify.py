@@ -14,6 +14,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from plan_common import state_dir
+
 
 def hash_file(path: Path) -> str:
     # Read in chunks so a multi-GB file never has to fit in memory.
@@ -35,7 +37,7 @@ def hash_folder(folder: Path) -> Counter:
 
 def manifest_path(folder: Path) -> Path:
     # Stored beside the folder, not inside it, so it is never part of the mess.
-    return folder.resolve().parent / f".{folder.name}.manifest.json"
+    return state_dir(folder) / f".{folder.name}.manifest.json"
 
 
 def snapshot(folder: Path) -> None:

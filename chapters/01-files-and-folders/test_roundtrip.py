@@ -208,5 +208,33 @@ class TopLevelRoundTrip(Base):
         self.assertEqual(listing(self.folder), before)
 
 
+class StateDirTests(unittest.TestCase):
+    def test_records_go_to_plan_state_dir_when_set_and_undo_finds_them(self):
+        import os
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folder, state = root / "synced" / "Downloads", root / "state"
+            folder.mkdir(parents=True)
+            state.mkdir()
+            (folder / "a.txt").write_text("one")
+            (folder / "b.txt").write_text("two")
+            plan = root / "plan.md"
+            plan.write_text("Mode: top-level\n\n| From | To | Why |\n|---|---|---|\n"
+                            "| a.txt | Group/a.txt | x |\n| b.txt | Group/b.txt | x |\n")
+            env = {**os.environ, "PLAN_STATE_DIR": str(state)}
+
+            def go(script, *args):
+                return subprocess.run([sys.executable, "-B", str(HERE / script), *map(str, args)],
+                                      capture_output=True, text=True, env=env)
+            self.assertEqual(go("verify.py", "snapshot", folder).returncode, 0)
+            self.assertEqual(go("apply_plan.py", plan, folder).returncode, 0)
+            self.assertEqual(go("verify.py", "check", folder).returncode, 0)
+            beside = sorted(p.name for p in folder.parent.iterdir())
+            self.assertEqual(beside, ["Downloads"])                      # nothing hidden next to the synced folder
+            self.assertTrue(list(state.glob(".*applied-plan.md")) and list(state.glob(".*manifest.json")))
+            self.assertEqual(go("undo_plan.py", folder).returncode, 0)
+            self.assertEqual(sorted(p.name for p in folder.iterdir()), ["a.txt", "b.txt"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

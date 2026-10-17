@@ -13,6 +13,7 @@ A plan is a markdown file with a `| From | To | Why |` table. Two things live be
 """
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -48,9 +49,16 @@ def items_in(folder: Path, mode: str) -> set[str]:
             if p.is_file() and p.name not in IGNORED_NAMES}
 
 
+def state_dir(folder: Path) -> Path:
+    """Where the hidden record files live: beside the folder, or in $PLAN_STATE_DIR when it is set.
+    Set it for a folder that syncs (iCloud Drive, Dropbox): the records hold file names and would sync too."""
+    override = os.environ.get("PLAN_STATE_DIR")
+    return Path(override).expanduser().resolve() if override else folder.resolve().parent
+
+
 def applied_record(folder: Path) -> Path:
     """Where apply_plan.py keeps a copy of the plan it executed, so undo can find it."""
-    return folder.resolve().parent / f".{folder.name}.applied-plan.md"
+    return state_dir(folder) / f".{folder.name}.applied-plan.md"
 
 
 def ancestors(rel: str) -> list[str]:

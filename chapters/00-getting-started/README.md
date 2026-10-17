@@ -113,7 +113,7 @@ exist, what a good result looks like).
 
 ## 0.5 Cloud models and local models
 
-A cloud model, such as Claude, runs on the provider's servers. Whatever you send it leaves your
+A cloud model, also called a hosted model, such as Claude, runs on the provider's servers. Whatever you send it leaves your
 machine. For a recipe that is fine. For a folder of tax returns, medical bills, and identity documents it
 may not be.
 
@@ -164,8 +164,10 @@ them.
 | Skill | A written procedure the agent follows for one kind of job |
 | Schema | A description of the exact shape an answer must have |
 | Local model | A model that runs on your computer |
+| Hosted model | A model that runs on the provider's servers and is reached over the internet; also called a cloud model |
 | Prompt injection | Text in the material being read that tries to give the model orders |
 | Hallucination | A confident answer that is made up |
+| Confabulation | A kind of hallucination: the model fills a gap in what it knows with a plausible invention, such as a file name or a reason, and presents it as fact |
 
 ## Exercises
 
