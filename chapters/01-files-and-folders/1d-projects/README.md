@@ -504,6 +504,9 @@ file names are replaced with scan numbers (`--blind`), and one with a project hi
 | qwen3.5-9b | 57 | 54 | 53 | 7 | 1.2 to 2.0 |
 | gemma-4-12b | 59 | 55 | 56 | 3 | 1.8 |
 | phi4 14B (Ollama) | 58 | 55 | 54 | 4 | 1.4 to 1.5 |
+| granite4.1 8B (Ollama) | 57 | 52 | 56 | 3 | 0.8 to 0.9 |
+| ministral-3 8B (Ollama) | 56 | 52 | 52 | 5 | 0.9 to 1.0 |
+| llama3.2 3B (Ollama) | 52 | 48 | 47 | 24 | 0.4 to 0.5 |
 | qwen3.8-27b | did not load | | | | |
 | nomic-embed-text v1.5 (embeddings only) | 42 | 31 | 43 | 10 | 0.02 |
 | EmbeddingGemma 300M (embeddings only) | 51 | 46 | 51 | 11 | 0.03 |
@@ -511,6 +514,11 @@ file names are replaced with scan numbers (`--blind`), and one with a project hi
 
 Ollama's phi4 (14B, already installed, run with `ollama:phi4`) landed beside gemma-4-12b: the
 same speed, one more file right on the readable fixture, and four misfiled on the hold-out one.
+
+Three more Ollama models followed. granite4.1 8B and ministral-3 8B sit just behind the best LM Studio
+models and run in under a second per file. llama3.2 3B is the cautionary row: it is the fastest and
+misfiled 24 files, more than any other model, so small is not the same as safe. The count of
+misfiled files, not the count of right ones, is what separates these models.
 
 Three things stand out. The smallest model is nearly as accurate as the others at a third of the
 time, and it almost never files something under the wrong project; it declines instead. That is the
