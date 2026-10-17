@@ -548,6 +548,31 @@ class RenameTests(Base):
         self.assertTrue(all(len(set(m for m in moved)) == len(moved) for _ in [0]))   # collisions got numbered
 
 
+class AppleHelperTests(Base):
+    def test_the_apple_backend_speaks_json_lines_and_the_answer_is_cleaned(self):
+        fake = self.root / "fake_helper.py"
+        fake.write_text("#!/usr/bin/env python3\nimport sys, json\n"
+                        "for line in sys.stdin:\n"
+                        "    req = json.loads(line)\n"
+                        "    print(json.dumps({'primary': req['projects'][0], 'also': ['Not a project'], 'sensitivity': 'financial'}), flush=True)\n")
+        fake.chmod(0o755)
+        done = run(HERE / "assign_projects.py", self.folder, self.projects, "--apple", fake, "--out", self.root / "apple.json")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        got = json.loads((self.root / "apple.json").read_text())
+        self.assertEqual(len(got), len(self.truth))
+        first = assign.load_projects(self.projects)[0]["name"]
+        self.assertTrue(all(v["primary"] == first and v["also"] == [] for v in got.values()))   # unknown names are dropped
+
+    def test_a_helper_that_reports_an_error_fails_closed(self):
+        fake = self.root / "bad_helper.py"
+        fake.write_text("#!/usr/bin/env python3\nimport sys, json\n"
+                        "for line in sys.stdin:\n    print(json.dumps({'error': 'guardrail'}), flush=True)\n")
+        fake.chmod(0o755)
+        done = run(HERE / "assign_projects.py", self.folder, self.projects, "--apple", fake, "--out", self.root / "apple.json")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(json.loads((self.root / "apple.json").read_text()), {})   # nothing was invented
+
+
 class ScoreTests(Base):
     def test_perfect_answers_score_perfectly_and_beat_sorting_by_type(self):
         result = scoring.score(self.truth, self.assigned)

@@ -24,7 +24,9 @@ you will learn to:
 - run the propose, approve, apply, verify loop, and undo a move afterwards
 - handle real folders, which are larger and messier than any practice fixture
 
-You need Claude Code and Python 3.9 or later. The Python scripts use only the standard
+If you have not set up your computer yet, start with [Chapter 0](../00-getting-started/README.md), which
+explains what agents and language models are, and [Chapter 0B](../00-getting-started/setup.md), which installs
+everything step by step. You need Claude Code and Python 3.9 or later. The Python scripts use only the standard
 library. Sections 1.8 and 1.9 describe a variant that keeps file contents on your machine; it
 has extra requirements, listed on its own pages.
 

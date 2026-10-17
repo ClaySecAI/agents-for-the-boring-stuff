@@ -2,7 +2,8 @@
 
     python3 bakeoff.py --models google/gemma-4-12b qwen/qwen3.5-9b --fixtures practice-projects practice-blind
 
-Models are LM Studio model keys (see `lms ls`), or `ollama:<name>` for a model served by Ollama.
+Models are LM Studio model keys (see `lms ls`), `ollama:<name>` for a model served by Ollama, or
+`apple:<path to the compiled assign_apple helper>` for Apple's on-device model.
 For each model and fixture it loads the model, runs assign_projects.py, scores the answers against the
 fixture's answer key, times the run, and unloads the model. Models run one after another, because they
 compete for the same memory.
@@ -81,8 +82,9 @@ def main() -> None:
         results = json.loads(args.out.read_text())  # resume: keep what already ran
 
     for model in args.models:
-        ollama = model.startswith("ollama:")
-        name = model.split(":", 1)[1] if ollama else "bakeoff"
+        apple = model.startswith("apple:")
+        ollama = model.startswith("ollama:") or apple  # neither needs LM Studio loading
+        name = model.split(":", 1)[1] if ollama and not apple else "bakeoff"
         base_url = OLLAMA_URL if ollama else LMS_URL
         entry = results.setdefault(model, {})
         if not ollama:
@@ -98,8 +100,8 @@ def main() -> None:
             if fx in entry and "error" not in entry[fx]:
                 continue
             print(f"{model} on {fx} ...", flush=True)
-            entry[fx] = run_fixture(Path(fx), name, base_url, model.replace("/", "_").replace(":", "_"),
-                                    ["--max-tokens", str(args.max_tokens)])
+            entry[fx] = run_fixture(Path(fx), name, base_url, ("apple" if apple else model.replace("/", "_").replace(":", "_")),
+                                    (["--apple", model.split(":", 1)[1]] if apple else ["--max-tokens", str(args.max_tokens)]))
             print(f"  {entry[fx]}", flush=True)
             args.out.write_text(json.dumps(results, indent=2))
         if not ollama:

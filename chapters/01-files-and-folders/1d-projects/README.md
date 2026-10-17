@@ -36,8 +36,10 @@ project names, because a project called "identity theft case" is itself sensitiv
 
 ## 1D.2 What you need
 
-Everything from Chapter 1B: a local model server (LM Studio or Ollama) with a model loaded, Python
-3.9 or later, and the standalone `claude` command for the validation step. On macOS you also get
+Everything from Chapter 1B: a local model server (LM Studio or Ollama, installed as in
+[Chapter 0B](../../00-getting-started/setup.md)) with a model loaded, Python 3.9 or later, and the
+standalone `claude` command for the validation step. `python3 chapters/00-getting-started/check_setup.py`
+reports what is missing. On macOS you also get
 two extras, both optional:
 
 - the website each file was downloaded from, which the model can use as a clue
@@ -503,16 +505,16 @@ file names are replaced with scan numbers (`--blind`), and one with a project hi
 | gemma-4-e4b | 56 | 53 | 57 | 1 | 0.7 |
 | qwen3.5-9b | 57 | 54 | 53 | 7 | 1.2 to 2.0 |
 | gemma-4-12b | 59 | 55 | 56 | 3 | 1.8 |
+| Apple on-device model | 51 | 47 | 54 | 8 | 1.0 |
 | phi4 14B (Ollama) | 58 | 55 | 54 | 4 | 1.4 to 1.5 |
 | granite4.1 8B (Ollama) | 57 | 52 | 56 | 3 | 0.8 to 0.9 |
 | ministral-3 8B (Ollama) | 56 | 52 | 52 | 5 | 0.9 to 1.0 |
 | llama3.2 3B (Ollama) | 52 | 48 | 47 | 24 | 0.4 to 0.5 |
-| qwen3.8-27b | did not load | | | | |
 | nomic-embed-text v1.5 (embeddings only) | 42 | 31 | 43 | 10 | 0.02 |
 | EmbeddingGemma 300M (embeddings only) | 51 | 46 | 51 | 11 | 0.03 |
 | Qwen3-Embedding 0.6B (embeddings only) | 53 | 46 | 47 | 14 | 0.05 |
 
-Ollama's phi4 (14B, already installed, run with `ollama:phi4`) landed beside gemma-4-12b: the
+Ollama's phi4 (14B, `ollama pull phi4`, run in the bake-off as `ollama:phi4`) landed beside gemma-4-12b: the
 same speed, one more file right on the readable fixture, and four misfiled on the hold-out one.
 
 Three more Ollama models followed. granite4.1 8B and ministral-3 8B sit just behind the best LM Studio
@@ -520,12 +522,16 @@ models and run in under a second per file. llama3.2 3B is the cautionary row: it
 misfiled 24 files, more than any other model, so small is not the same as safe. The count of
 misfiled files, not the count of right ones, is what separates these models.
 
+Apple's on-device model, run through the `assign_apple` helper, placed fewer files correctly than
+the 8B to 14B models and misfiled eight. It needs nothing installed or downloaded and runs at about a
+second per file, so it suits a Mac where you will not set up a server. Its context window is small, which
+is why long project lists suit it less well than a large model.
+
 Three things stand out. The smallest model is nearly as accurate as the others at a third of the
 time, and it almost never files something under the wrong project; it declines instead. That is the
 right way to be wrong, because an unsorted file costs you a glance and a misfiled one costs you a
 search. The hold-out fixture is where models differ: two of the three, given a file that fits none of
-your projects, picked one anyway (6 and 3 files). The 27B model needed more memory than this 24 GB
-machine could spare, so it has no row.
+your projects, picked one anyway (6 and 3 files).
 
 The embedding rows answer "can a small specialist replace the language model?" Not alone, but the
 newer ones come close enough to matter. Embeddings place a file by similarity to each project's
@@ -545,6 +551,35 @@ identify layout and fields (this is an invoice, here is the total), not which of
 serves, and most expect a page image rather than text. For this task the embedding models
 (EmbeddingGemma, Qwen3-Embedding) are the nearest fit, and they are the two extra rows above.
 Treat the numbers as one machine, one afternoon and a synthetic folder, not a ranking.
+
+### Running the comparison yourself
+
+The comparison script needs the models you want to test, installed as in
+[Chapter 0B](../../00-getting-started/setup.md), and the three practice folders from section 1D.7
+(`make_project_mess.py` builds them). From this folder:
+
+```bash
+python3 make_project_mess.py practice-projects/downloads
+python3 make_project_mess.py practice-blind/downloads --blind
+python3 make_project_mess.py practice-holdout2/downloads --hold-out "Insurance claim"
+```
+
+Download each model first, then name it in `--models`:
+
+```bash
+lms get google/gemma-4-e4b                 # an LM Studio model
+ollama pull granite4.1:8b                  # an Ollama model (the server must be running: ollama serve)
+swiftc -O assign_apple.swift -o assign_apple   # the Apple helper (macOS 26+, Apple Intelligence on)
+
+python3 bakeoff.py --models google/gemma-4-e4b ollama:granite4.1:8b apple:./assign_apple \
+    --fixtures practice-projects practice-blind practice-holdout2
+```
+
+LM Studio models are named by the keys `lms ls` prints, Ollama models by `ollama:` plus the name
+`ollama list` prints, and Apple's by `apple:` plus the path to the helper. The script loads each LM Studio
+model itself, runs the three fixtures, and prints a table. Results are saved to `bakeoff-results.json`,
+and rerunning skips what is already done. Each model takes between a minute and a few minutes per
+fixture. Add `--embed text-embedding-nomic-embed-text-v1.5` to include an embedding model.
 
 ## 1D.13 Limits
 

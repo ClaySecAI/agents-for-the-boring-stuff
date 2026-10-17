@@ -138,6 +138,28 @@ def clean(answer: dict, names: list[str]) -> dict:
     return {"primary": primary, "also": also[:2], "sensitivity": sensitivity}
 
 
+class AppleHelper:
+    """Apple's on-device model, reached through the assign_apple helper (see assign_apple.swift)."""
+
+    def __init__(self, helper: Path, names: list[str], system: str):
+        self.names, self.system = names, system
+        self.process = subprocess.Popen([str(helper)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                        stderr=subprocess.DEVNULL, text=True)
+
+    def classify(self, user: str) -> dict:
+        request = {"system": self.system, "user": user, "projects": self.names,
+                   "sensitivities": local.SENSITIVITIES}
+        self.process.stdin.write(json.dumps(request) + "\n")
+        self.process.stdin.flush()
+        line = self.process.stdout.readline()
+        if not line:
+            raise RuntimeError("the Apple helper stopped (is Apple Intelligence on?)")
+        answer = json.loads(line)
+        if "error" in answer:
+            raise RuntimeError(answer["error"][:80])
+        return answer
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(usage=__doc__)
     ap.add_argument("folder", type=Path)
@@ -149,6 +171,9 @@ def main() -> None:
     ap.add_argument("--no-source", action="store_true")
     ap.add_argument("--no-dates", action="store_true")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--apple", type=Path, metavar="HELPER",
+                    help="use Apple's on-device model through the compiled assign_apple helper "
+                         "instead of a local server (macOS 26+, Apple Intelligence on)")
     ap.add_argument("--max-tokens", type=int, default=200,
                     help="longest answer to allow; models that think first may need more (default 200)")
     args = ap.parse_args()
@@ -166,6 +191,7 @@ def main() -> None:
     files = sorted(p for p in candidates if p.is_file() and p.name != ".DS_Store"
                    and not (args.top_level and p.name.startswith(".")))
 
+    apple = AppleHelper(args.apple, names, system) if args.apple else None
     results, failed = {}, 0
     for i, path in enumerate(files, 1):
         rel = str(path.relative_to(args.folder))
@@ -173,8 +199,9 @@ def main() -> None:
         user = build_user(path.name, download_domain(path), modified, local.read_head(path),
                           not args.no_source, not args.no_dates)
         try:
-            answer = local.classify(args.base_url, args.model, path.name, "", system=system,
-                                    schema=schema, user=user, max_tokens=args.max_tokens)
+            answer = apple.classify(user) if apple else local.classify(
+                args.base_url, args.model, path.name, "", system=system,
+                schema=schema, user=user, max_tokens=args.max_tokens)
             results[rel] = clean(answer, names)
         except Exception as err:  # fail closed: plan_projects files a missing answer under Unsorted
             failed += 1

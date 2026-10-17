@@ -49,6 +49,8 @@ When something goes wrong, it usually means one of the three parties was asked t
 
 | # | Topic | Status |
 |---|---|---|
+| 0 | [What agents and language models are](chapters/00-getting-started/) | Ready |
+| 0B | [Setting up your computer](chapters/00-getting-started/setup.md) | Ready |
 | 1 | [Files and folders](chapters/01-files-and-folders/) | Ready |
 | 1B | [Keeping contents local: LM Studio or Ollama](chapters/01-files-and-folders/1b-local-model/) | Ready |
 | 1C | [Keeping contents local: Apple's on-device model](chapters/01-files-and-folders/1c-apple-foundation-models/) | Ready |

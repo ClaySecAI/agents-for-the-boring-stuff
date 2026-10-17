@@ -6,7 +6,7 @@ Two local-model steps:
 
   1. For each file, the model writes a short phrase for the real-life situation it belongs to
      ("buying a car", "filing a tax return"). These phrases are free text and stay on your machine,
-     in topics.json beside the folder.
+     in topics.json beside the suggestions file (beside the folder by default).
   2. One call reads all the phrases and proposes a handful of projects, each with a name and a
      one-sentence description, in the same shape as projects.json.
 
@@ -117,7 +117,7 @@ def main() -> None:
             topics[str(path.relative_to(args.folder))] = str(answer.get("topic", "")).strip()
         except Exception as err:
             print(f"  ! item {i}: {type(err).__name__}")
-    parent = args.folder.resolve().parent
+    parent = args.out.resolve().parent if args.out else args.folder.resolve().parent  # --out keeps both files together, e.g. out of iCloud
     (parent / "topics.json").write_text(json.dumps(topics, indent=2))
     print(f"topics written for {len(topics)} of {len(files)} files")
 

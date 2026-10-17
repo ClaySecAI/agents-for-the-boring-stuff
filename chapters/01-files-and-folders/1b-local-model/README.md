@@ -16,13 +16,17 @@ your files --> LOCAL model --> classification.json --> make_plan.py --> plan + c
 
 ## 1B.1 Requirements
 
-- [LM Studio](https://lmstudio.ai) or [Ollama](https://ollama.com), with one model downloaded
+- A local model server with one model downloaded: [LM Studio](https://lmstudio.ai) or [Ollama](https://ollama.com).
+  [Chapter 0B](../../00-getting-started/setup.md) installs either one step by step; this chapter assumes you have finished
+  section 0B.6 or 0B.7
 - Python 3.9 or later; the scripts use only the standard library
 - For the Claude validation step, the standalone `claude` command, signed in
 
+Run `python3 chapters/00-getting-started/check_setup.py` to see which of these your computer has.
+
 ## 1B.2 Starting the model server
 
-With LM Studio, start the server and load a model:
+If you installed LM Studio in Chapter 0B, start its server and load a model:
 
 *Listing 1B.1: Loading a model in LM Studio*
 
@@ -36,7 +40,7 @@ Two details matter on a 24 GB Mac. First, cap the context length. The default as
 thousand tokens of context, not 128,000. Second, the identifier `classifier` is the name
 `classify_local.py` asks for by default.
 
-Ollama serves the same API on a different port. Point the script at it:
+Ollama serves the same API on a different port, under the model's own name instead of an identifier. If you installed Ollama instead, start it (`ollama serve`) and point the script at it:
 
 ```bash
 python3 1b-local-model/classify_local.py <folder> --base-url http://localhost:11434/v1 --model <your-model>
@@ -143,10 +147,10 @@ prompt.
 ## 1B.7 Choosing a model
 
 A good local model fits in memory beside everything else you run, follows a JSON schema
-reliably and reads documents well. We used `google/gemma-4-12b` (7.5 GB), which was already
-installed and is a reasonable middle size for 24 GB. A larger model, such as a 27B at 4-bit
-(about 16 GB), may read ambiguous files better but leaves little room for the rest of the
-system. Try two and compare their plans, using the method from
+reliably and reads documents well. We used `google/gemma-4-12b` (7.5 GB), a reasonable middle size
+for a 24 GB laptop. A model of 20 billion parameters or more needs about 16 GB for itself and did not
+load beside everything else on that machine, so we did not use one. Try two and compare their plans,
+using the method from
 [section 1.5](../README.md#15-choosing-a-model-for-the-job). Model names change quickly, so
 check what is current.
 

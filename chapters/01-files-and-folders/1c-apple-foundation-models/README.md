@@ -6,8 +6,11 @@ download and no server to start.
 
 ## 1C.1 Requirements
 
-- A Mac with Apple Intelligence turned on, running macOS 26 or later
-- Xcode or the Command Line Tools, for `swiftc`
+- A Mac with Apple Intelligence turned on, running macOS 26 or later (turn it on in System Settings, then
+  Apple Intelligence & Siri; [section 0B.8](../../00-getting-started/setup.md#0b8-a-local-model-option-3-apples-on-device-model)
+  walks through it)
+- Xcode or the Command Line Tools, for `swiftc`. If `swiftc --version` prints an error, run
+  `xcode-select --install` and wait for it to finish
 - For the Claude validation step, the standalone `claude` command, signed in
 
 ## 1C.2 Reading PDFs and images
