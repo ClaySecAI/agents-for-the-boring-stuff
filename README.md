@@ -90,7 +90,10 @@ It inspects what is about to be committed and refuses the commit when:
   security number, or a key
 - a file contains a term from your private blocklist
 
-The guard never prints what it matched, only where.
+The guard never prints what it matched, only where. GitHub runs it again on every push and pull
+request, along with a secret scan of the whole history. That copy cannot see your private
+blocklist. See [CONTRIBUTING.md](CONTRIBUTING.md) and, for reporting a problem,
+[SECURITY.md](SECURITY.md).
 
 Enable it once per clone. Keep your blocklist inside `.git/`, where it is never committed:
 
