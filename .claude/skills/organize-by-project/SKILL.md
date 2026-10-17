@@ -38,7 +38,8 @@ Ask the user before choosing `--flat` or the nested `Projects/` layout. They own
 2. Coverage and conflicts: `python3 $C/apply_plan.py --check organize-plan.md <folder>`. It rejects a plan that
    skips items or collides on a destination.
 3. Optional second opinion that sees no names or contents: `python3 $C/validate_plan.py claude-view.txt --prompt $P/validator-prompt-projects.md`.
-4. Show the user the counts per project, `protect-list.txt`, and what is unsorted or empty.
+4. Tell the user the counts per project id (P1, P2...), how many are unsorted or empty, and the plan's totals,
+   from script output. Do not open `protect-list.txt`: tell the user it ranks the projects and to read it themselves.
 5. STOP. Apply only after an explicit yes.
 
 ## 6. Apply, verify, tag
@@ -47,4 +48,4 @@ Ask the user before choosing `--flat` or the nested `Projects/` layout. They own
 `python3 $P/tag_files.py organize-plan.md <folder>` for Finder tags (macOS). Undo is
 `python3 $C/undo_plan.py <folder>`; tell the user it exists, and that `tag_files.py --remove` clears tags.
 
-Report: files moved per project, unsorted count, the protect list order, and how to undo.
+Report: files moved per project id, unsorted count, and how to undo. Name no project and no file.

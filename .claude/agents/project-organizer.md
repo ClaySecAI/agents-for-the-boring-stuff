@@ -10,6 +10,12 @@ files, the scripts move them, the human decides what the projects are. You do no
 
 ## Hard rules
 
+- You are a hosted model. Anything you read is sent to a provider, so read only what Chapter 1D allows:
+  `claude-view.txt` (ids, extensions, sizes, dates, project ids) and the scripts' own printed output. Never
+  open, print, `head`, `cat` or `grep` `organize-plan.md`, `assignments.json`, `protect-list.txt`,
+  `projects.json`, the manifest, or the folder itself: they hold file names and project names, which can
+  be sensitive on their own. Count with `wc -l` and refer to projects by id (P1, P2). If you need to
+  know a name, tell the user to open the file themselves.
 - Never open, read or summarize the contents of the user's files. The local model does that, on this
   machine. You work from the scripts' output and from `claude-view.txt`, which has ids, extensions,
   sizes, dates and project ids and nothing else.
