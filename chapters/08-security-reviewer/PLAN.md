@@ -6,13 +6,15 @@ it should look for, what it prints, when it runs, how it fails and how to measur
 
 ## 8.1 The idea
 
-The repository already has three layers that stop personal data before it reaches GitHub:
+Three layers already stop personal data before it reaches GitHub. The first two ship with this
+repository; the third is a setup on the author's machine, described here because the reviewer would
+slot into it:
 
 1. `.gitignore`, which asks git to skip practice folders and generated files.
 2. The repository's own pre-commit hook, `scripts/check_repo_clean.py`: an allowlist of file types,
    fixed patterns (home paths, email addresses, numbers shaped like social security numbers, keys)
    and a private blocklist kept in `.git/private-terms.txt`.
-3. A global hook in `~/.config/git/hooks` that runs gitleaks, then a second personal-data check (a
+3. A global hook (git's `core.hooksPath`, set for every repository on the machine) that runs gitleaks, then a second personal-data check (a
    whole-word blocklist, the home path and noreply addresses), then the repository's own hook.
    Repositories that are meant to hold personal data opt out with
    `git config hooks.allowPersonalData true` and may push only to private repositories.
@@ -266,8 +268,8 @@ Two options:
 **Recommendation: a chapter here first.** The design depends on things the book has already taught,
 and the chore is one every reader has: keeping their own data out of what they publish. A separate
 project makes sense later, if the hook turns out to be useful outside the book. The chapter's
-scripts would then be its first version. Adding the chapter would also need a row in the README's
-chapter table, which this note leaves for when the chapter is written.
+scripts would then be its first version. The README's chapter table lists this note as a design
+note until the chapter is written.
 
 ## 8.9 Open questions
 

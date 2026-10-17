@@ -56,6 +56,7 @@ request and change the guard and its tests in the same commit. Do not get past i
 - Anything that moves files needs a plan you can read, a manifest and a working undo, with a test that
   shows all three.
 
-## Security problems
+## Security problems and conduct
 
-Report them privately. See [SECURITY.md](SECURITY.md).
+Report security problems privately. See [SECURITY.md](SECURITY.md). Everyone taking part follows
+the [code of conduct](CODE_OF_CONDUCT.md).

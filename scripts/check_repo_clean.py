@@ -26,7 +26,8 @@ import sys
 from pathlib import Path
 
 ALLOW = ["*.md", "*.py", "*.swift", "LICENSE", ".gitignore", ".claude/settings.json",
-         ".githooks/pre-commit", ".github/workflows/*.yml"]
+         ".githooks/pre-commit", ".github/workflows/*.yml",
+         ".github/ISSUE_TEMPLATE/config.yml"]
 # Even an allowed extension is refused if the NAME says it is generated data.
 DENY_NAMES = ["classification*", "claude-view*", "organize-plan*", ".*manifest*", ".*applied-plan*",
               ".*undone-plan*", ".DS_Store", "assignments*", "protect-list*", "truth*", "projects.json",
