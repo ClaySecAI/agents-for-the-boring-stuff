@@ -171,6 +171,8 @@ def main() -> None:
     ap.add_argument("--no-source", action="store_true")
     ap.add_argument("--no-dates", action="store_true")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--only", type=Path, metavar="FILE",
+                    help="a JSON list of relative paths; assign only those files (used by sweep.py)")
     ap.add_argument("--apple", type=Path, metavar="HELPER",
                     help="use Apple's on-device model through the compiled assign_apple helper "
                          "instead of a local server (macOS 26+, Apple Intelligence on)")
@@ -192,6 +194,9 @@ def main() -> None:
                    and not (args.top_level and p.name.startswith(".")))
 
     apple = AppleHelper(args.apple, names, system) if args.apple else None
+    if args.only:
+        wanted = set(json.loads(args.only.read_text()))
+        files = [p for p in files if str(p.relative_to(args.folder)) in wanted]
     results, failed = {}, 0
     for i, path in enumerate(files, 1):
         rel = str(path.relative_to(args.folder))
