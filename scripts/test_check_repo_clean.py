@@ -20,7 +20,7 @@ class GuardTests(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self._tmp.name) / "repo"
         # A copy of this very repo, so "the real repo passes" is tested on real files.
-        shutil.copytree(REPO, self.dir, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        shutil.copytree(REPO, self.dir, ignore=shutil.ignore_patterns(".git", "__pycache__", "worktrees"))
         self.git("init", "-q")
 
     def tearDown(self):
@@ -86,6 +86,20 @@ class GuardTests(unittest.TestCase):
         result = self.stage_and_check("docs.md", "written by jane q example")
         self.assertBlocked(result, "private blocklist")
         self.assertNotIn("jane", result.stdout.lower())
+
+    def test_private_blocklist_applies_in_a_linked_worktree(self):
+        # The blocklist sits in the main .git; a worktree's own git dir is .git/worktrees/<name>.
+        (self.dir / ".git" / "private-terms.txt").write_text("Jane Q Example\n")
+        self.git("add", "-A")
+        self.git("-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "core.hooksPath=/dev/null",
+                 "commit", "-q", "-m", "base")
+        tree = Path(self._tmp.name) / "tree"
+        self.assertEqual(self.git("worktree", "add", "-q", str(tree)).returncode, 0)
+        (tree / "docs.md").write_text("written by jane q example")
+        subprocess.run(["git", "add", "docs.md"], cwd=tree, capture_output=True)
+        result = subprocess.run([sys.executable, "-B", str(tree / "scripts" / "check_repo_clean.py"), "--staged"],
+                                cwd=tree, capture_output=True, text=True)
+        self.assertBlocked(result, "private blocklist")
 
     def test_oversized_file_is_blocked(self):
         self.assertBlocked(self.stage_and_check("big.md", "x" * (300 * 1024)), "KB (limit")

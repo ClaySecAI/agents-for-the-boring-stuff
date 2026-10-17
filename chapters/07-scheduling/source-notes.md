@@ -45,9 +45,9 @@ hour matters: a file you are still downloading should not be filed halfway.
 ## 1E.3 Before you start
 
 You need a sorted folder, because a sweep files into project folders that already exist. Work through
-[Chapter 1D](../1d-projects/README.md) first. You also need a local model server
-([Chapter 0B](../../00-getting-started/setup.md)), a backup of the folder, and, for iCloud Drive or any
-protected folder, section [1D.13](../1d-projects/README.md#1d13-protected-and-synced-folders). Check the
+[Chapter 1D](../01-files-and-folders/1d-projects/README.md) first. You also need a local model server
+([Chapter 0B](../00-getting-started/setup.md)), a backup of the folder, and, for iCloud Drive or any
+protected folder, section [1D.13](../01-files-and-folders/1d-projects/README.md#1d13-protected-and-synced-folders). Check the
 backup. A sweep is undoable, but undo is not a backup.
 
 All commands in this chapter run from `chapters/01-files-and-folders/1d-projects`, where `sweep.py` lives.

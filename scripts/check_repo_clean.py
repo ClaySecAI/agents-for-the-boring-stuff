@@ -49,7 +49,9 @@ def git(*args: str) -> str:
 
 
 def private_terms() -> list[str]:
-    path = Path(git("rev-parse", "--git-dir").strip()) / "private-terms.txt"
+    # --git-common-dir, not --git-dir: in a linked worktree --git-dir is .git/worktrees/<name>,
+    # where the blocklist is not, and the check would silently run without it.
+    path = Path(git("rev-parse", "--git-common-dir").strip()) / "private-terms.txt"
     if not path.is_file():
         return []
     return [t.strip().lower() for t in path.read_text().splitlines() if t.strip() and not t.startswith("#")]

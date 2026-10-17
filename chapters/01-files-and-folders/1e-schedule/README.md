@@ -5,7 +5,7 @@ sorted: new files arrive every day. This chapter sets up a weekly sweep that fil
 arrivals into the project folders you already have, without you.
 
 It is the first place in the book where an agent acts while nobody is watching, so most of the work is
-in the limits placed on it and in how you undo it. [Chapter 7](../../README.md#chapters) generalizes
+in the limits placed on it and in how you undo it. [Chapter 7](../../../README.md#chapters) generalizes
 scheduling to every chore in the book, and covers the harder cases this chapter only mentions.
 
 ## 1E.1 Why schedule it
