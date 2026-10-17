@@ -503,10 +503,14 @@ file names are replaced with scan numbers (`--blind`), and one with a project hi
 | gemma-4-e4b | 56 | 53 | 57 | 1 | 0.7 |
 | qwen3.5-9b | 57 | 54 | 53 | 7 | 1.2 to 2.0 |
 | gemma-4-12b | 59 | 55 | 56 | 3 | 1.8 |
+| phi4 14B (Ollama) | 58 | 55 | 54 | 4 | 1.4 to 1.5 |
 | qwen3.8-27b | did not load | | | | |
 | nomic-embed-text v1.5 (embeddings only) | 42 | 31 | 43 | 10 | 0.02 |
 | EmbeddingGemma 300M (embeddings only) | 51 | 46 | 51 | 11 | 0.03 |
 | Qwen3-Embedding 0.6B (embeddings only) | 53 | 46 | 47 | 14 | 0.05 |
+
+Ollama's phi4 (14B, already installed, run with `ollama:phi4`) landed beside gemma-4-12b: the
+same speed, one more file right on the readable fixture, and four misfiled on the hold-out one.
 
 Three things stand out. The smallest model is nearly as accurate as the others at a third of the
 time, and it almost never files something under the wrong project; it declines instead. That is the
