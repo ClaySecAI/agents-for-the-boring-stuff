@@ -747,6 +747,14 @@ seven days have passed since the last real one. Dry runs and stopped sweeps do n
 that failed for a missing permission or a model that would not load tries again the next day. A Mac that
 is usually shut at night sweeps on the first login after a week has gone by.
 
+**Battery.** The sweep loads a model, which takes several gigabytes of memory and a minute of processor
+time, and nobody wants that on a nearly empty laptop. Plugged in, a sweep always runs. On battery it runs
+only at or above `min_battery_percent` (50 by default; 0 turns the check off). A skipped sweep leaves no
+record and does not count as the weekly one, so the next daily or login check tries again. The decision is
+a pure function of the text `pmset -g batt` prints, and the tests cover it with sample output; the
+test that exercises a real low battery skips itself when the machine is plugged in, so on a plugged-in
+laptop that path is untested.
+
 ```bash
 python3 sweep.py agent > ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist
 launchctl load ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist

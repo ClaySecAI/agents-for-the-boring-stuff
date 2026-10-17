@@ -81,7 +81,7 @@ class Base(unittest.TestCase):
 
     def config(self, **extra):
         cfg = {"folder": str(self.folder), "state_dir": str(self.state), "base_url": self.url,
-               "manage_model": False, "min_age_minutes": 60, **extra}
+               "manage_model": False, "min_age_minutes": 60, "min_battery_percent": 0, **extra}
         (self.state / "config.json").write_text(json.dumps(cfg))
 
     def add(self, name, text="content", age_hours=5):
@@ -126,6 +126,28 @@ class PureTests(Base):
         dests = sweep.destinations(self.folder, {"run.txt": "Workouts", "other.txt": "Workouts"})
         self.assertEqual(dests["run.txt"], "Workouts/run (2).txt")
         self.assertEqual(dests["other.txt"], "Workouts/other.txt")
+
+    def test_power_rules(self):
+        ac = "Now drawing from 'AC Power'\n -InternalBattery-0 (id=1)\t23%; charging; 1:00 remaining present: true"
+        low = "Now drawing from 'Battery Power'\n -InternalBattery-0 (id=1)\t42%; discharging; 3:00 remaining present: true"
+        high = low.replace("42%", "81%")
+        self.assertTrue(sweep.power_ok(ac, 50)[0])                 # plugged in: always
+        self.assertFalse(sweep.power_ok(low, 50)[0])
+        self.assertTrue(sweep.power_ok(high, 50)[0])
+        self.assertTrue(sweep.power_ok("", 50)[0])                 # a desktop has no battery
+        self.assertTrue(sweep.power_ok(low, 0)[0])
+
+    def test_a_low_battery_skips_without_leaving_a_report(self):
+        if sys.platform != "darwin":
+            self.skipTest("pmset is macOS only")
+        pm = subprocess.run(["pmset", "-g", "batt"], capture_output=True, text=True).stdout
+        if "Battery Power" not in pm:
+            self.skipTest("this Mac is on AC power or has no battery")
+        self.config(min_battery_percent=101)                         # impossible to satisfy on battery
+        self.add("tax-form.pdf")
+        done = self.sweep("run")
+        self.assertIn("Skipped", done.stdout)
+        self.assertEqual(list((self.state / "runs").glob("*/report.json")) if (self.state / "runs").exists() else [], [])
 
 
 class RunTests(Base):

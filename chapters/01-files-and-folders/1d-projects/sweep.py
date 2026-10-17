@@ -19,6 +19,8 @@ ago, so a file still being written is left alone.
 The gates, all in config.json:
 
   max_moves             a sweep that would move more files than this moves none and tells you
+  min_battery_percent   on battery below this percent the sweep skips itself, without counting as a sweep
+                        (default 50; plugged in always runs; 0 turns the check off)
   manage_model          true: start LM Studio's server and load the model for the sweep, then unload and
                         stop what it started. false: use a server that is already running
   hold_sensitivities    files the model labelled with one of these stay where they are (default:
@@ -74,6 +76,7 @@ DEFAULTS = {
     "min_age_minutes": 60,
     "max_moves": 100,
     "hold_sensitivities": ["credentials", "unknown"],
+    "min_battery_percent": 50,
     "folder_rules": {},
     "manage_model": True,
     "state_dir": str(Path.home() / "Library" / "Application Support" / "downloads-sweep"),
@@ -196,6 +199,18 @@ def sha(path: Path) -> str:
     return digest.hexdigest()
 
 
+def power_ok(pmset_output: str, minimum: float) -> tuple[bool, str]:
+    """(ok, why). Plugged in is always fine; on battery, only at or above `minimum` percent. Unknown is fine."""
+    if "AC Power" in pmset_output:
+        return True, "on AC power"
+    import re
+    found = re.search(r"(\d+)%", pmset_output)
+    if "Battery Power" in pmset_output and found:
+        percent = int(found.group(1))
+        return percent >= minimum, f"on battery at {percent}%"
+    return True, "no battery information"
+
+
 def notify(text: str) -> None:
     """A macOS notification with counts only. Silent elsewhere."""
     if sys.platform == "darwin" and not os.environ.get("SWEEP_NO_NOTIFY"):
@@ -245,6 +260,12 @@ def cmd_run(args) -> int:
         age = days_since_last_sweep(runs(config))
         if age is not None and age < args.if_due:
             print(f"Not due: the last sweep was {age:.1f} days ago (every {args.if_due:g} days).")
+            return 0
+    if sys.platform == "darwin" and config.get("min_battery_percent", 0) > 0:
+        pm = subprocess.run(["pmset", "-g", "batt"], capture_output=True, text=True).stdout
+        ok, why = power_ok(pm, config["min_battery_percent"])
+        if not ok:
+            print(f"Skipped: {why}, below {config['min_battery_percent']}%. Not counted; it will try again.")
             return 0
     projects_file = Path(config["projects_file"])
     projects_file = projects_file if projects_file.is_absolute() else config["_dir"] / projects_file
