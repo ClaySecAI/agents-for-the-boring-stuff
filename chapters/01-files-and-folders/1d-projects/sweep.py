@@ -32,7 +32,7 @@ The gates, all in config.json:
 Folders that are not projects need a rule, because a sweep never opens a subfolder. In config.json,
 folder_rules maps a folder name to what to do with it:
 
-  "EventPhotos Download (123456789)": {"unit": "Cycling event photos"}
+  "EventPhotos Download (123456789)": {"unit": "Cycling photos"}
 
 moves that folder, whole and unopened, into the named project's folder. A folder with no rule is left
 alone and counted as untracked in the report; `sweep.py folders` lists them. A folder whose files
