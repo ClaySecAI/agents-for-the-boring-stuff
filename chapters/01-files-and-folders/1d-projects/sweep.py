@@ -299,6 +299,11 @@ def cmd_run(args) -> int:
             return finish(report, run_dir, "nothing new to sort")
 
         if files and not server_up(config["base_url"]):
+            # Remember whether LM Studio was already running. `lms server start` launches it in the background
+            # when it is not, and whatever the sweep launched, the sweep shuts down again.
+            was_running = "is running" in subprocess.run([lms, "daemon", "status"], capture_output=True, text=True).stdout if lms else True
+            started_daemon = not was_running
+            report["lm_studio_was_running"] = was_running
             if not lms:
                 report["stopped"] = "no model server and no lms command"
                 return finish(report, run_dir, "stopped: no model server")
@@ -311,7 +316,7 @@ def cmd_run(args) -> int:
             if not server_up(config["base_url"]):
                 # The LM Studio app may not be running. Its headless daemon (llmster) can serve without it.
                 subprocess.run([lms, "daemon", "up"], capture_output=True)
-                started_daemon = True
+                started_daemon = not was_running
                 subprocess.run([lms, "server", "start"], capture_output=True)
                 for _ in range(40):
                     if server_up(config["base_url"]):
@@ -370,7 +375,15 @@ def cmd_run(args) -> int:
         if started_server and lms:
             subprocess.run([lms, "server", "stop"], capture_output=True)
         if started_daemon and lms:
-            subprocess.run([lms, "daemon", "down"], capture_output=True)  # leave things as we found them
+            # Leave things as we found them. `lms daemon down` refuses when LM Studio itself was launched in the
+            # background (`lms` does that), so end that process too. The pattern matches only the background
+            # mode, never an LM Studio window you opened yourself.
+            subprocess.run([lms, "daemon", "down"], capture_output=True)
+            for _ in range(24):  # it can take half a minute to exit, and ignores a signal sent while it is busy
+                if subprocess.run(["pgrep", "-f", "LM Studio --run-as-service"], capture_output=True).returncode != 0:
+                    break
+                subprocess.run(["pkill", "-TERM", "-f", "LM Studio --run-as-service"], capture_output=True)
+                time.sleep(5)
         lock.unlink(missing_ok=True)
 
 

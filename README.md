@@ -55,12 +55,13 @@ When something goes wrong, it usually means one of the three parties was asked t
 | 1B | [Keeping contents local: LM Studio or Ollama](chapters/01-files-and-folders/1b-local-model/) | Ready |
 | 1C | [Keeping contents local: Apple's on-device model](chapters/01-files-and-folders/1c-apple-foundation-models/) | Ready |
 | 1D | [Files by project, not by type](chapters/01-files-and-folders/1d-projects/) | Ready |
+| 1E | [Running it on a schedule](chapters/01-files-and-folders/1e-schedule/) | Ready |
 | 2 | Messy text and documents | Planned |
 | 3 | Spreadsheets, PDFs and Word files | Planned |
 | 4 | Email triage (drafts only, never auto-send) | Planned |
 | 5 | Checking websites with a browser agent | Planned |
 | 6 | GUI automation with computer use | Planned |
-| 7 | Scheduling it all: launchd, catching up after sleep or shutdown, power, permissions, starting model servers headless (builds on the weekly sweep in 1D.14) | Planned |
+| 7 | Scheduling it all | Planned |
 
 ## Getting started
 

@@ -668,104 +668,13 @@ For Claude Code itself, headless runs use `claude -p`, and `.claude/settings.jso
 scripts the job needs and nothing else, the same way this repository denies `rm`. A job that is allowed to
 run `assign_projects.py` and `plan_projects.py` but not `apply_plan.py` cannot apply by accident.
 
-Section 1D.14 builds that unattended version.
+[Chapter 1E](../1e-schedule/README.md) builds that unattended version.
 
-## 1D.14 A weekly sweep
+## 1D.14 Keeping it sorted
 
-`sweep.py` is the unattended version for a folder you have already sorted once. The first sort looked at
-everything and a person approved a plan. A sweep handles only what arrived since: the loose files sitting
-directly in the folder. It files each into the matching project folder that already exists, leaves
-everything else where it is, and replaces the approval with gates written in code.
-
-```bash
-python3 sweep.py init ~/Downloads        # writes a config and a project list from your existing folders
-```
-
-`init` creates `~/Library/Application Support/downloads-sweep/config.json` and `projects.json`, with one
-entry per folder it found. The descriptions say `EDIT ME`. Open `projects.json`, delete the folders that are
-not projects, and write a real sentence for each of the rest. The model files by those sentences, so this
-is where the quality comes from. Then try it without moving anything:
-
-```bash
-python3 sweep.py run --dry-run
-python3 sweep.py status
-```
-
-**What a sweep does.** It skips hidden files, subfolders, empty files, partial downloads
-(`.crdownload`, `.download`, `.part`), iCloud placeholders, and anything changed in the last hour, since a
-file still being written is not ready. It starts the model server and loads the model if they are not
-running, assigns each remaining file to one of your projects, and then applies the gates. It unloads the
-model and stops the server it started when it finishes. A macOS notification reports counts, never names.
-
-**Folders that are not projects.** A sweep never opens a subfolder, so each folder that is not a project
-needs a decision, and there are three. Move it whole into a project (a folder of event photos from one
-photographer belongs in a cycling photos project as a unit). Sort its files one at a time (an
-`attachments` folder holds income papers, police reports and lease emails that belong in four different
-projects). Or leave it. A sweep supports the first directly, through `folder_rules` in `config.json`:
-
-```json
-"folder_rules": {"EventPhotos Download (123456789)": {"unit": "Cycling event photos"}}
-```
-
-The folder moves, unopened, into the project's folder, and the sweep's undo restores it like any other
-move. A folder with no rule is left alone and counted in the report as untracked. `python3 sweep.py
-folders` lists them, so nothing sits in the folder forgotten. The second case is a separate, approved run
-like the rest of this chapter: assign the files in that folder with `assign_projects.py`, write a plan
-whose destinations climb out of the folder (`../Taxes/2021 W2.pdf`), check it with `apply_plan.py
---check`, and apply it. A sweep does not do this one for you, because a folder that mixes projects is
-exactly the case where a person should read the plan.
-
-Note that `verify.py` cannot confirm this kind of run: it looks only inside the folder it was given, so files moved out show up as lost. Hash the files at their new locations and compare them with the snapshot instead; in our run all 33 files matched.
-
-
-**The gates.** Files the model cannot place stay put. Files it labels `credentials`, or cannot label at all,
-stay put and are counted, because a key file filed in the wrong folder is hard to find again; change
-`hold_sensitivities` in `config.json` to hold more kinds, such as `government_id`. A sweep that would move more
-than `max_moves` files (100 by default) moves none and says so, since a sudden flood usually means
-something changed. A file is never overwritten: a name already taken gets `(2)`. The plan must pass
-`apply_plan.py --check`, the undo record is written before the first move, and afterward every moved
-file is hashed again. One mismatch undoes the whole sweep.
-
-**Undo.** Each sweep keeps its own folder of records under the state directory:
-
-```bash
-python3 sweep.py undo            # the latest sweep
-python3 sweep.py undo 2026-10-17-093819-255   # a named one
-```
-
-**Tests.** `test_sweep.py` runs the whole thing against a small fake model server, so it needs no model:
-files filed into existing folders and nothing else touched, undo, the dry run, the move limit, a missing
-server, and a second sweep with nothing new. We also ran a sweep with a real model, gemma-4-e4b, on a
-practice folder with the same layout as an organized Downloads: 56 of 59 files ended where the
-fixture's answer key puts them, and undo restored all 59.
-
-**Scheduling it.** This section is the short version: enough to install the weekly job for this one chore.
-Chapter 7 covers scheduling in general (any chore, not only this one), including the parts that are only
-sketched here: catching up after sleep or shutdown, power, permissions, and starting model servers
-without a window. What the job below does, in brief: it runs at 03:00 every day and at every login, and
-`--if-due 7` limits it to one real sweep a week, which covers a laptop that was off at 03:00.
-
-On battery, the sweep runs only at or above `min_battery_percent` in `config.json` (default 50; plugged in
-always runs; 0 turns the check off). A skipped run leaves no record, so the next daily or login check tries
-again. If the model server is not running, the sweep starts it with `lms server start`. If the LM Studio
-app is not open, it falls back to LM Studio's headless daemon (`lms daemon up`) and shuts down what it
-started when it finishes.
-
-```bash
-python3 sweep.py agent > ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist
-launchctl load ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist
-```
-
-Before you do, resolve the permission from section 1D.13. The job launches your Python, and macOS asks the
-launching program for access to Downloads when it first runs. Run `python3 sweep.py run` once from the terminal
-you will grant access to and look for a "would like to access files in your Downloads folder" prompt. A job
-that fails for lack of permission stops cleanly with nothing moved and a notification saying so. To turn
-the schedule off, `launchctl unload` the same file and delete it.
-
-**What a sweep cannot catch.** The gates stop floods, overwrites, lost files and sensitive labels. They do
-not stop a wrong filing: a sweep with a vague project description will cheerfully file a lease into
-Taxes. Check the `status` output now and then, open a project folder, and tighten a description when
-something lands wrong. Because every sweep is separately undoable, a bad week costs one command.
+A Downloads folder does not stay sorted. `sweep.py` files new arrivals into the project folders you already
+have, on a schedule, with gates in place of your approval. [Chapter 1E](../1e-schedule/README.md) walks through
+setting it up, installing the weekly job, what a laptop does to a schedule, and undoing a sweep.
 
 ## 1D.15 Limits
 
