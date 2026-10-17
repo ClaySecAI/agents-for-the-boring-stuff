@@ -581,7 +581,98 @@ model itself, runs the three fixtures, and prints a table. Results are saved to 
 and rerunning skips what is already done. Each model takes between a minute and a few minutes per
 fixture. Add `--embed text-embedding-nomic-embed-text-v1.5` to include an embedding model.
 
-## 1D.13 Limits
+## 1D.13 Protected and synced folders
+
+Everything so far ran against a folder an ordinary program can read. Three common folders are not like
+that: your iCloud Drive, and any folder under Desktop, Documents or Downloads on a Mac, and any folder
+that syncs to another service. We sorted an iCloud Downloads folder of 411 files, and four things
+went wrong that the book's earlier chapters would not have warned you about.
+
+### macOS blocks programs from protected folders
+
+macOS asks you before it lets a program read Desktop, Documents, Downloads, iCloud Drive or removable
+drives. The permission belongs to the application that started the program, not to the program. In
+our run, Python started from the terminal panel inside the Claude app failed with `PermissionError:
+Operation not permitted` on the iCloud folder, while the same command in Terminal.app worked. The check
+that ran inside the agent's own shell could read the folder, which shows how confusing this gets:
+three terminals on one Mac, three different answers.
+
+To find out which one you have, run any read command (`ls "<folder>"`) in the terminal you plan to use.
+If it fails with "Operation not permitted", give that application access in System Settings, under
+Privacy & Security, then Files & Folders (for one folder) or Full Disk Access (for everything). Quit and
+reopen the application afterward. Grant the narrowest permission that works, and only to an application
+you trust, since Full Disk Access lets everything it launches read every file you own.
+
+### Files that are not on disk
+
+iCloud keeps some files in the cloud and leaves a placeholder on your Mac. A script reading a placeholder
+forces a download, and the local model cannot judge a file it cannot read. Count them first:
+
+```bash
+find "<folder>" -type f -flags +dataless | wc -l
+```
+
+If the number is not zero, select the folder in Finder, choose Download Now from the context menu, and
+count again. In our folder, 222 of 412 files were cloud-only. Sorted by name alone, half the folder
+would have gone to Unsorted.
+
+### The scripts write hidden files, and they sync
+
+`apply_plan.py` saves a copy of the plan so undo can find it, and `verify.py` saves a snapshot of file
+hashes. Both are written beside the folder you give them, and both contain file names. Beside an iCloud
+Downloads folder is the root of iCloud Drive, so they would sync to every device you own. Set
+`PLAN_STATE_DIR` to a local folder and every script that reads or writes these records uses it:
+
+```bash
+export PLAN_STATE_DIR="$HOME/Documents/icloud-downloads-state"
+```
+
+Set it again, with the same value, whenever you run `verify.py` or `undo_plan.py` on that folder.
+The project list, assignments and plan should live outside the synced folder too. We kept them in a
+scratch folder.
+
+### Moves and tags sync as well
+
+iCloud pushes every move to your other devices, so a bad plan lands everywhere. Back up first to a plain
+local folder, and check that the copy is exact, with matching file counts and hashes. Finder tags sync
+too, so a tag named after a sensitive project shows that the project exists. Decide before tagging.
+
+### Running it without a person in the loop
+
+The question these folders raise is whether the whole job could run on a schedule, with nobody at the
+keyboard. Parts of it can, and the line between them is the book's own rule.
+
+*Gathering and proposing can run unattended.* Assigning files to projects, building the plan, running the
+coverage check and asking Claude to review the anonymous table change nothing. Scheduled with launchd
+(`~/Library/LaunchAgents`, a property list that names the command and the time), they produce a plan and
+a report for you to read later. Two requirements follow from the sections above. The program the job
+launches needs the macOS permission, so grant it to the interpreter or to a small launcher script you
+trust, not to Terminal as a whole. And the model server must be running when the job starts, because
+nothing will load it for you.
+
+*Applying should wait for a person, or for gates you wrote in advance.* The agent that built this chapter
+was stopped by the permission system when it tried to move files in the real folder, even though the
+request came from the user. That is the system working as designed: a move you cannot easily reverse is
+the step a person should own. If you decide a task is routine enough to apply without asking, make the
+decision explicit in code rather than in the agent's judgment, and refuse to apply unless every gate
+passes:
+
+- the coverage check passes and nothing is skipped
+- the number of moves is within a limit you set, such as 300
+- no file moves out of a folder you listed as protected, and no sensitive file moves at all
+- the backup copy exists and its hashes match
+- the undo record is written to a local folder before the first move
+- `verify.py` runs afterward, and a failure sends you a notification and runs the undo
+
+For Claude Code itself, headless runs use `claude -p`, and `.claude/settings.json` can allow exactly the
+scripts the job needs and nothing else, the same way this repository denies `rm`. A job that is allowed to
+run `assign_projects.py` and `plan_projects.py` but not `apply_plan.py` cannot apply by accident.
+
+We did not build or test the scheduled version for this chapter. The description above follows from how
+the pieces behave, and the sorting itself we ran by hand with a person approving each step. Treat the
+unattended setup as a design to try on a practice folder first.
+
+## 1D.14 Limits
 
 - The model only knows the projects you list. A project you forgot ends up in `Unsorted`, or worse,
   inside a similar project. `suggest_projects.py` can propose a draft, but it works from phrases

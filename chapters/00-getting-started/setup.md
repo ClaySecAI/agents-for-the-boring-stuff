@@ -229,4 +229,5 @@ and Claude Code show `ok`, and one local server shows a model, you are ready for
 | `curl` says "connection refused" | The server is not running. Run `lms server start` or `ollama serve`. |
 | A script says "failed" for every file | The model name is wrong. Compare it with `lms ps` or `ollama list`. |
 | Answers come back empty | The model spent its answer budget thinking. The scripts turn thinking off where the server allows it. See section 1B.6. |
+| `Operation not permitted` on Desktop, Documents, Downloads or iCloud Drive | macOS is protecting the folder. Give the application that runs your terminal access in System Settings, Privacy & Security. See section 1D.13. |
 | Everything is slow | Another model is still loaded. `lms ps`, then `lms unload --all`. |
