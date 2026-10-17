@@ -314,7 +314,7 @@ def cmd_run(args) -> int:
             return finish(report, run_dir, "stopped: the plan failed its checks")
         if args.dry_run:
             report["dry_run"] = True
-            return finish(report, run_dir, f"dry run: {len(moves)} files would move")
+            return finish(report, run_dir, f"dry run: {len(moves)} items would move")
         before = {rel: sha(folder / rel) for rel in dests if rel not in units}
         applied = run_script(str(CH1 / "apply_plan.py"), plan, folder, env=env)
         bad = [rel for rel, dest in dests.items()
@@ -325,7 +325,7 @@ def cmd_run(args) -> int:
             report["stopped"] = "verification failed; the sweep was undone"
             return finish(report, run_dir, "verification failed; sweep undone", failed=True)
         report["moved"] = len(dests)
-        return finish(report, run_dir, f"sorted {len(dests)} files, held {sum(held.values())}")
+        return finish(report, run_dir, f"sorted {len(dests)} items, held {sum(held.values())}")
     finally:
         if lms and (started_server or loaded):
             subprocess.run([lms, "unload", "--all"], capture_output=True)

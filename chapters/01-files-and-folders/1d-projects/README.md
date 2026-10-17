@@ -715,6 +715,9 @@ whose destinations climb out of the folder (`../Taxes/2021 W2.pdf`), check it wi
 --check`, and apply it. A sweep does not do this one for you, because a folder that mixes projects is
 exactly the case where a person should read the plan.
 
+Note that `verify.py` cannot confirm this kind of run: it looks only inside the folder it was given, so files moved out show up as lost. Hash the files at their new locations and compare them with the snapshot instead; in our run all 33 files matched.
+
+
 **The gates.** Files the model cannot place stay put. Files it labels `credentials`, or cannot label at all,
 stay put and are counted, because a key file filed in the wrong folder is hard to find again; change
 `hold_sensitivities` in `config.json` to hold more kinds, such as `government_id`. A sweep that would move more
