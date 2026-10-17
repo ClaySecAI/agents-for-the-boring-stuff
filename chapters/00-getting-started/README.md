@@ -2,7 +2,7 @@
 
 Every chapter after this one asks a language model to do something with your files. This chapter
 explains what that means, so the rest of the book does not rely on knowledge it never gave you. If you
-already know what a language model, a tool call and a context window are, skim section 0.7 and go to
+already know what a language model, a tool call, and a context window are, skim section 0.7 and go to
 [Chapter 0B](setup.md), which walks through installing everything the book uses.
 
 ## 0.1 What a language model does
@@ -11,24 +11,24 @@ A language model is a program that takes text in and produces text out. It was t
 amount of text, and it produces its answer one small piece at a time, called a token (a token is
 roughly three quarters of a word). At each step it picks a likely next piece given everything before
 it. That is the whole mechanism. What makes it useful is that "likely next text" turns out to include
-good summaries, working code, correct answers to many questions and sensible guesses about what a
+good summaries, working code, correct answers to many questions, and sensible guesses about what a
 document is for.
 
 Four properties matter for everything in this book.
 
-**It has no memory between calls.** Each request starts from nothing. The model knows only what you put
-in that request: instructions, your question and any file contents you paste in. A chat window appears
+It has no memory between calls. Each request starts from nothing. The model knows only what you put
+in that request: instructions, your question, and any file contents you paste in. A chat window appears
 to remember because the application sends the whole conversation back every time.
 
-**It reads a limited amount at once.** The context window is the most text the model can consider in one
-request, counted in tokens. Small local models might allow 4,000 to 8,000 tokens in practice, a few
+It reads a limited amount at once. The context window is the most text the model can consider in one
+request, counted in tokens. Small local models might allow between 4,000 and 8,000 tokens in practice, a few
 pages. Large cloud models allow hundreds of thousands. Whatever does not fit is not seen.
 
-**It can be wrong with complete confidence.** A model that does not know an answer still produces
-fluent text. It will invent a file name, a number or a reason. Chapter 1 treats this as a design
+It can be wrong with complete confidence. A model that does not know an answer still produces
+fluent text. It will invent a file name, a number, or a reason. Chapter 1 treats this as a design
 constraint and builds the checks around it.
 
-**It does not follow instructions perfectly.** The same prompt can give different answers on different
+It does not follow instructions perfectly. The same prompt can give different answers on different
 runs, and a small change in wording can change the result. You measure behavior instead of assuming it.
 Section 1D.12 compares a dozen models on the same task and shows what that measurement looks like.
 
@@ -66,24 +66,24 @@ that is wrong costs you a minute. A wrong command run by an agent can move your 
 
 You will meet five pieces. Each is a plain file you can read and edit.
 
-**Agent file.** A markdown file in `.claude/agents/` that defines one specialized assistant: its name, what
+*Agent file.* A markdown file in `.claude/agents/` that defines one specialized assistant: its name, what
 it is for, which tools it may use, which model it runs on, and standing instructions. The file for the
 file organizer is `.claude/agents/file-organizer.md`. Claude Code reads it and can hand work to that
 agent.
 
-**Skill.** A markdown file in `.claude/skills/<name>/SKILL.md` holding a procedure: the steps to follow
+*Skill.* A markdown file in `.claude/skills/<name>/SKILL.md` holding a procedure: the steps to follow
 for one kind of job. An agent file says who is working and under what limits. A skill says how to do the
 job. Keeping them apart lets several agents share one procedure.
 
-**Permissions.** `.claude/settings.json` lists what the agent may do without asking and what it may never
-do. In this repository it denies `rm`, `rmdir` and `sudo`. Instructions in an agent file are requests
+*Permissions.* `.claude/settings.json` lists what the agent may do without asking and what it may never
+do. In this repository it denies `rm`, `rmdir`, and `sudo`. Instructions in an agent file are requests
 the model might not honor. A permission rule is enforced by the program, whatever the model decides.
 
-**Scripts.** Ordinary Python that does the parts that must be exactly right: moving files, checking that
+*Scripts.* Ordinary Python that does the parts that must be exactly right: moving files, checking that
 nothing was lost, undoing. A script does the same thing every time, and the model never improvises
 these steps.
 
-**Hooks.** Small programs that run automatically at fixed points. The repository has a pre-commit hook,
+*Hooks.* Small programs that run automatically at fixed points. The repository has a pre-commit hook,
 `.githooks/pre-commit`, that refuses to save a commit containing anything that looks like personal data.
 
 ## 0.4 Why an agent should not just run
@@ -102,10 +102,10 @@ in the chat, give instructions.
 
 So the book uses one loop everywhere:
 
-1. **Propose.** The model writes a plan and moves nothing.
-2. **Approve.** You read the plan and say yes or no.
-3. **Apply.** A script does exactly what the approved plan says.
-4. **Verify.** A second script checks that every file still exists, unchanged.
+1. **Propose:** the model writes a plan and moves nothing.
+2. **Approve:** you read the plan and say yes or no.
+3. **Apply:** a script does exactly what the approved plan says.
+4. **Verify:** a second script checks that every file still exists, unchanged.
 
 And it divides the work the same way each time. The model makes judgments (what is this document?). Code
 provides guarantees (nothing is lost, everything can be undone). You decide what matters (which projects
@@ -114,12 +114,12 @@ exist, what a good result looks like).
 ## 0.5 Cloud models and local models
 
 A cloud model, such as Claude, runs on the provider's servers. Whatever you send it leaves your
-machine. For a recipe that is fine. For a folder of tax returns, medical bills and identity documents it
+machine. For a recipe that is fine. For a folder of tax returns, medical bills, and identity documents it
 may not be.
 
 A local model runs on your own computer. File contents never leave it. The price is capability and speed:
 a model small enough for a laptop is weaker than the largest cloud models, and it needs enough memory.
-On a laptop with 24 GB of RAM, models of about 4 to 14 billion parameters are practical. "Parameters"
+On a laptop with 24 GB of RAM, models of roughly four to fourteen billion parameters are practical. "Parameters"
 are the learned numbers inside the model, and file size on disk is roughly proportional to them.
 
 The chapters use both, deliberately. A local model reads your files. The cloud model sees only a

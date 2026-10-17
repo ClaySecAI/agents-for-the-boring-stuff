@@ -94,7 +94,7 @@ permissions in `.claude/`.
 
 ## 0B.6 A local model, option 1: LM Studio
 
-LM Studio is an app with a built-in model browser and a local server. It runs on Mac, Windows and Linux.
+LM Studio is an app with a built-in model browser and a local server. It runs on Mac, Windows, and Linux.
 
 1. Download it from [lmstudio.ai](https://lmstudio.ai), install it like any app and open it once.
 2. Install its command-line tool. In the terminal:
@@ -217,7 +217,7 @@ use them if they are installed and skip them if not:
 python3 chapters/00-getting-started/check_setup.py
 ```
 
-It prints one line per item: `ok`, `MISSING` (needed) or `optional`. It changes nothing. When Python
+It prints one line per item: `ok`, `MISSING` (needed), or `optional`. It changes nothing. When Python
 and Claude Code show `ok`, and one local server shows a model, you are ready for [Chapter 1](../01-files-and-folders/README.md).
 
 ## 0B.11 If something fails
