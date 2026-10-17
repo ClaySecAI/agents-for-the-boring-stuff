@@ -87,6 +87,20 @@ class RecursiveRoundTrip(Base):
         self.assertIn("PASS", self.verify().stdout)
         self.assertEqual(listing(self.folder), self.before)  # same files, same folders, nothing extra
 
+    def test_finder_bookkeeping_inside_a_created_folder_does_not_stop_it_being_removed(self):
+        self.apply()
+        for created in ("Images", "Documents"):
+            (self.folder / created / ".DS_Store").write_bytes(b"finder looked at this folder")
+        undone = self.undo()
+        self.assertEqual(undone.returncode, 0, undone.stdout + undone.stderr)
+        self.assertEqual(listing(self.folder), self.before)  # no leftover folders, no stray .DS_Store
+
+    def test_a_real_file_inside_a_created_folder_is_never_deleted(self):
+        self.apply()
+        (self.folder / "Images" / "ADDED_LATER.txt").write_text("someone put this here after the move")
+        self.undo()
+        self.assertTrue((self.folder / "Images" / "ADDED_LATER.txt").is_file())  # the folder is kept
+
     def test_undo_twice_is_refused_and_changes_nothing(self):
         self.apply()
         self.undo()

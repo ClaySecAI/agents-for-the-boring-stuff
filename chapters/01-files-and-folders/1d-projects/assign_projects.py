@@ -160,7 +160,9 @@ def main() -> None:
     system, schema = build_system(projects), build_schema(names)
     out = args.out or args.folder.resolve().parent / "assignments.json"
     candidates = args.folder.iterdir() if args.top_level else args.folder.rglob("*")
-    files = sorted(p for p in candidates if p.is_file() and p.name != ".DS_Store")
+    # In top-level mode, hidden files are left alone: they belong to the system or to applications.
+    files = sorted(p for p in candidates if p.is_file() and p.name != ".DS_Store"
+                   and not (args.top_level and p.name.startswith(".")))
 
     results, failed = {}, 0
     for i, path in enumerate(files, 1):

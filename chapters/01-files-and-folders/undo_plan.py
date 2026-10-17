@@ -6,7 +6,8 @@
 For each plan row it moves To back to From. It then removes the folders the plan
 created, but ONLY folders that are empty, that sit above a moved item, and that were not
 there before (a folder that holds a From path, like a pre-existing `old_stuff/`, is kept).
-It never deletes a file.
+It never deletes a file of yours. The one exception is a Finder `.DS_Store` file inside a folder it
+removes, because Finder writes those whenever you look at a folder.
 
 Safe to re-run. Before moving anything it checks that:
 
@@ -23,7 +24,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from plan_common import ancestors, applied_record, parse_plan
+from plan_common import IGNORED_NAMES, ancestors, applied_record, parse_plan
 
 
 def classify(rows: list[tuple[str, str]], folder: Path):
@@ -83,10 +84,17 @@ def main(plan: Path, folder: Path, check_only: bool, using_record: bool) -> None
     removed = left = 0
     for rel in sorted(candidates, key=lambda r: r.count("/"), reverse=True):
         path = folder / rel
-        if path.is_dir() and not any(path.iterdir()):
+        if not path.is_dir():
+            continue
+        contents = list(path.iterdir())
+        # A folder holding only Finder's .DS_Store bookkeeping counts as empty: every script in this
+        # chapter ignores that file, and it appears whenever you look at a folder in Finder.
+        if all(item.name in IGNORED_NAMES and item.is_file() for item in contents):
+            for item in contents:
+                item.unlink()
             os.rmdir(path)
             removed += 1
-        elif path.is_dir():
+        else:
             left += 1
     if using_record:
         record = applied_record(folder)

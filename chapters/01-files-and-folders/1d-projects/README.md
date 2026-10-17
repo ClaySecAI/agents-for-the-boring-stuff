@@ -213,6 +213,42 @@ python3 ../undo_plan.py practice-projects/downloads
 The scripts print counts and item numbers, not file names. Add `--verbose` to
 `assign_projects.py` if you want names on screen.
 
+### Folders and hidden items
+
+A real Downloads folder holds subfolders as well as loose files, and each folder can be treated in
+one of three ways.
+
+| Option | How | What happens |
+|---|---|---|
+| Leave it where it is | `plan_projects.py --top-level --keep-folders` | The folder is untouched. Only loose files move. |
+| Move it whole into a generic bucket | `plan_projects.py --top-level` | The folder moves unopened to `Folders/<name>`, intact. |
+| Move it whole into its project | not built | The tool would sample the folder and place it in a project. |
+
+Sorting the files inside a folder one at a time is the option to avoid. It breaks projects and
+extracted installers, and it produces a plan with a hundred thousand rows that nobody can read.
+
+Start by leaving folders alone. A folder can hold mixed material, such as an old backup or a shared
+set of documents, so a single project label is a coarse choice. Developer folders and application
+folders may be referred to by path from elsewhere on the machine, so moving them can break
+something quietly. And one wrong placement hides far more files than a wrong file does. The loose
+files are where a Downloads folder is untidy, and they are the safer place to begin.
+
+Hidden items, meaning names that begin with a dot, are always left in place in top-level mode. They
+belong to the system or to applications, and the plan still lists them with the same source and
+destination so that the coverage check passes.
+
+### Where the project folders go
+
+By default the planner puts every project folder inside a folder named `Projects/`. Everything the
+tool created then sits in one place, so you can see what it did at a glance, undo can remove exactly
+that and nothing else, and a project can never merge with a folder you already had. We chose this
+without asking, and on a real Downloads folder it turned out to be a choice worth asking about. Some
+people would rather have `Taxes/` and `Mortgage refi/` directly in Downloads.
+
+`--flat` does that. It leaves out `Projects/` and puts the project folders next to your own items. It
+refuses to run when a project name matches an existing item, because the files would pour into your
+folder. In that case, rename the project in the list or go back to the default.
+
 ## 1D.5 What the model sees
 
 For each file the model gets four things:

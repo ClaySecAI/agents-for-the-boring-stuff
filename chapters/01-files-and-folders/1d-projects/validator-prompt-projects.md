@@ -8,8 +8,8 @@ per item:
 
 Projects appear as P1, P2 and so on. P0 means unsorted. PE means an empty file held for a human to
 review for deletion; never flag PE items for having no project or no content. "also" lists other projects the file
-serves, as ids, or "-". "(dir)" lines are whole subfolders that were moved unopened; never flag
-them.
+serves, as ids, or "-". "(dir)" lines are whole subfolders that were moved unopened, and "(item)"
+lines are subfolders or hidden items deliberately left where they were; never flag either.
 
 Your job is to spot assignments that look wrong from metadata alone. Be useful, not noisy. Flag
 only what you can justify from the table.

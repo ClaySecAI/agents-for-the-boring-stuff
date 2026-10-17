@@ -1,8 +1,12 @@
 """Turn project assignments into a project-first plan.
 
-    python3 plan_projects.py [--top-level] [--out-dir DIR] <assignments.json> <projects.json> <folder>
+    python3 plan_projects.py [--top-level [--keep-folders]] [--flat] [--out-dir DIR] <assignments.json> <projects.json> <folder>
 
-Each file moves to Projects/<its project>/. Sensitivity no longer decides the folder. A mortgage
+Each file moves to Projects/<its project>/, or, with --flat, to <its project>/ directly inside the
+folder. Nested is the default because everything the tool made then sits in one place that can be
+seen, and removed by undo, at a glance, and cannot merge with folders you already have. Flat is
+tidier, and it refuses to run when a project name matches an existing item. Sensitivity no longer
+decides the folder. A mortgage
 refinance needs its pay stubs, tax forms and contract in one place, and splitting them by kind of
 sensitive data would undo that. Instead each project inherits the highest sensitivity among its
 files, and protect-list.txt ranks the projects so you know which to protect first.
@@ -18,8 +22,15 @@ Writes three files beside <folder> (or into --out-dir):
   protect-list.txt   project names ranked by sensitivity. Local only; it names your projects.
 
 Identical copies stay together in Projects/<project>/_duplicates/ and share the stricter
-sensitivity label. Empty files and anything unassigned go to Projects/_Unsorted/. With --top-level,
-subfolders move as single units to Folders/<name>, as in Chapter 1.
+sensitivity label. Empty files go to Projects/_Empty (review for deletion)/ and anything unassigned
+goes to Projects/_Unsorted/.
+
+With --top-level, subfolders move as single units to Folders/<name>, as in Chapter 1. Add
+--keep-folders to leave every subfolder exactly where it is instead; only the loose files move.
+That is the safest way to start on a real folder. In top-level mode, hidden items (names that begin
+with a dot) are always left in place: they are not yours to sort, and moving some of them confuses
+the applications that own them. Left-in-place items still appear in the plan, with the same From
+and To, so the coverage check stays satisfied.
 """
 from __future__ import annotations
 
@@ -40,7 +51,8 @@ UNSORTED = "Unsorted"
 SEVERITY = ["unknown", "credentials", "government_id", "health", "financial", "legal", "personal", "none"]
 RESERVED = {"Projects", "Folders"}
 EMPTY = "(empty)"
-EMPTY_HOME = "Projects/_Empty (review for deletion)"
+EMPTY_NAME = "_Empty (review for deletion)"
+UNSORTED_NAME = "_Unsorted"
 
 
 def is_blank(path: Path) -> bool:
@@ -60,21 +72,34 @@ def folder_name(project: str) -> str:
     return re.sub(r"[\\/|:;]+", "-", project).strip(". ") or "Project"
 
 
-def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, out_dir: Path | None) -> None:
+def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, out_dir: Path | None,
+         keep_folders: bool = False, flat: bool = False) -> None:
     if not folder.is_dir():
         sys.exit(f"Not a folder: {folder}")
     for needed in (assignments, projects_file):
         if not needed.is_file():
             sys.exit(f"File not found: {needed}")
+    root = "" if flat else "Projects/"  # where the project folders go: inside Projects/, or directly in the folder
     assigned = json.loads(assignments.read_text())
     names = [p["name"] for p in json.loads(projects_file.read_text())]
+    if flat:
+        # Project folders will sit next to your own items. A name that matches one of them would pour
+        # the files into your folder, which is the opposite of leaving it alone. Refuse instead.
+        mine = {p.name.lower() for p in folder.iterdir()}
+        clashes = sorted({folder_name(n) for n in names + [UNSORTED_NAME, EMPTY_NAME]
+                          if folder_name(n).lower() in mine})
+        if clashes:
+            sys.exit("Flat layout would merge files into existing items named: " + ", ".join(clashes)
+                     + ". Rename those projects in the list (or drop --flat).")
     ids = {UNSORTED: "P0", EMPTY: "PE", **{name: f"P{i}" for i, name in enumerate(names, 1)}}
 
     if top_level:
         entries = sorted(p for p in folder.iterdir() if p.name not in IGNORED_NAMES)
-        files = [p.name for p in entries if p.is_file()]
-        subfolders = [p.name for p in entries if p.is_dir()]
+        hidden = [p.name for p in entries if p.name.startswith(".")]
+        files = [p.name for p in entries if p.is_file() and not p.name.startswith(".")]
+        subfolders = [p.name for p in entries if p.is_dir() and not p.name.startswith(".")]
     else:
+        hidden = []
         files = sorted(str(p.relative_to(folder)) for p in folder.rglob("*")
                        if p.is_file() and p.name not in IGNORED_NAMES)
         subfolders = []
@@ -103,8 +128,8 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
             primary, label = EMPTY, {**label, "sensitivity": "none", "also": []}
         else:
             primary = label["primary"]
-        home = (EMPTY_HOME if primary == EMPTY else "Projects/_Unsorted" if primary == UNSORTED
-                else f"Projects/{folder_name(primary)}")
+        home = (f"{root}{EMPTY_NAME}" if primary == EMPTY else f"{root}{UNSORTED_NAME}" if primary == UNSORTED
+                else f"{root}{folder_name(primary)}")
         if rel in duplicate_of:
             home += "/_duplicates"
         base = dest = f"{home}/{Path(rel).name}"
@@ -117,8 +142,10 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
         also = [] if primary in (UNSORTED, EMPTY) else label["also"]
         rows.append((rel, dest, f"project={primary} sensitivity={label['sensitivity']}",
                      ";".join(also), size, "file", primary, label["sensitivity"]))
+    for name in hidden:
+        rows.append((name, name, "hidden item, left in place", "", 0, "stay", "", "none"))
     for name in subfolders:
-        if name in RESERVED:
+        if name in RESERVED or keep_folders:
             rows.append((name, name, "folder, left in place", "", 0, "stay", "", "none"))
         else:
             rows.append((name, f"Folders/{name}", "folder, moved as a unit, not inspected", "", 0, "folder", "", "none"))
@@ -136,13 +163,14 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
             "Each line: id | extension | bytes | modified | project | sensitivity | also | destination folder", ""]
     for rel, dest, _why, also, size, kind, primary, sensitivity in rows:
         if kind != "file":
-            place = "Folders" if kind == "folder" else "(left in place)"
-            view.append(f"{item_id[rel]} | (dir) | - | - | - | - | - | {place}")
+            # No name, no size, no count of what is inside. "(dir)" moved whole; "(item)" left alone.
+            label, place = ("(dir)", "Folders") if kind == "folder" else ("(item)", "(left in place)")
+            view.append(f"{item_id[rel]} | {label} | - | - | - | - | - | {place}")
             continue
         modified = datetime.datetime.fromtimestamp((folder / rel).stat().st_mtime).date().isoformat()
         also_ids = ",".join(ids[a] for a in also.split(";") if a in ids) or "-"
-        shown = ("Projects/_Unsorted" if primary == UNSORTED else "Projects/_Empty" if primary == EMPTY
-                 else f"Projects/{ids[primary]}")
+        shown = (f"{root}_Unsorted" if primary == UNSORTED else f"{root}_Empty" if primary == EMPTY
+                 else f"{root}{ids[primary]}")
         if rel in duplicate_of:
             shown += "/_duplicates"
         dup = f" duplicate_of={item_id[duplicate_of[rel]]}" if rel in duplicate_of else ""
@@ -165,7 +193,10 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
     (where / "protect-list.txt").write_text("\n".join(lines) + "\n")
 
     tagged = sum(1 for r in rows if r[3])
-    extra = f", {len(subfolders)} folders moved as units" if subfolders else ""
+    moved_whole = sum(1 for r in rows if r[5] == "folder")
+    left = sum(1 for r in rows if r[5] == "stay")
+    extra = (f", {moved_whole} folders moved as units" if moved_whole else "") + \
+            (f", {left} items left in place" if left else "")
     print(f"Wrote organize-plan.md, claude-view.txt and protect-list.txt "
           f"({len(rows)} items in {len(summary)} groups, {tagged} with tags, {len(duplicate_of)} duplicates{extra}).")
 
@@ -176,6 +207,13 @@ if __name__ == "__main__":
     ap.add_argument("projects", type=Path)
     ap.add_argument("folder", type=Path)
     ap.add_argument("--top-level", action="store_true")
+    ap.add_argument("--keep-folders", action="store_true",
+                    help="with --top-level: leave every subfolder where it is; only loose files move")
+    ap.add_argument("--flat", action="store_true",
+                    help="put the project folders directly in the folder instead of inside Projects/; "
+                         "refuses if a project name matches an existing item")
     ap.add_argument("--out-dir", type=Path)
     a = ap.parse_args()
-    main(a.assignments, a.projects, a.folder, a.top_level, a.out_dir)
+    if a.keep_folders and not a.top_level:
+        ap.error("--keep-folders only applies with --top-level (recursive mode has no folder items)")
+    main(a.assignments, a.projects, a.folder, a.top_level, a.out_dir, a.keep_folders, a.flat)

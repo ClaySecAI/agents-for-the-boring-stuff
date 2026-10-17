@@ -139,6 +139,109 @@ class PlanTests(Base):
         self.assertEqual(run(CH1 / "apply_plan.py", "--check", self.root / "organize-plan.md", self.folder).returncode, 0)
 
 
+class LeaveInPlaceTests(Base):
+    """The safest way to start on a real folder: only loose files move."""
+
+    def make_folder_and_hidden_items(self):
+        (self.folder / "old_project" / "src").mkdir(parents=True)
+        (self.folder / "old_project" / "src" / "a.py").write_text("print(1)")
+        (self.folder / ".localized").write_text("")
+        (self.folder / ".hidden_dir").mkdir()
+        (self.folder / ".hidden_dir" / "x.txt").write_text("keep me")
+        return listing(self.folder)
+
+    def test_keep_folders_and_hidden_items_stay_put_through_apply_and_undo(self):
+        before = self.make_folder_and_hidden_items()
+        run(CH1 / "verify.py", "snapshot", self.folder)
+        text = self.plan("--top-level", "--keep-folders")
+        self.assertIn("| old_project | old_project | folder, left in place |", text)
+        self.assertIn("| .localized | .localized | hidden item, left in place |", text)
+        self.assertIn("| .hidden_dir | .hidden_dir | hidden item, left in place |", text)
+        plan = self.root / "organize-plan.md"
+        self.assertEqual(run(CH1 / "apply_plan.py", "--check", plan, self.folder).returncode, 0)
+        self.assertEqual(run(CH1 / "apply_plan.py", plan, self.folder).returncode, 0)
+        self.assertTrue((self.folder / "old_project" / "src" / "a.py").is_file())
+        self.assertTrue((self.folder / ".hidden_dir" / "x.txt").is_file())
+        self.assertTrue((self.folder / ".localized").is_file())
+        self.assertFalse((self.folder / "Folders").exists())
+        self.assertTrue((self.folder / "Projects").is_dir())
+        self.assertIn("PASS", run(CH1 / "verify.py", "check", self.folder).stdout)
+        self.assertEqual(run(CH1 / "undo_plan.py", self.folder).returncode, 0)
+        self.assertEqual(listing(self.folder), before)
+
+    def test_without_the_flag_folders_still_move_whole_but_hidden_items_stay(self):
+        self.make_folder_and_hidden_items()
+        text = self.plan("--top-level")
+        self.assertIn("| old_project | Folders/old_project |", text)
+        self.assertIn("| .hidden_dir | .hidden_dir | hidden item, left in place |", text)
+
+    def test_what_claude_sees_marks_left_alone_items_without_naming_them(self):
+        self.make_folder_and_hidden_items()
+        self.plan("--top-level", "--keep-folders")
+        view = (self.root / "claude-view.txt").read_text()
+        self.assertIn("(item)", view)
+        for name in ("old_project", ".localized", ".hidden_dir"):
+            self.assertNotIn(name, view)
+
+    def test_keep_folders_requires_top_level_mode(self):
+        (self.root / "assignments.json").write_text(json.dumps(self.assigned))
+        done = run(HERE / "plan_projects.py", "--keep-folders", self.root / "assignments.json",
+                   self.projects, self.folder)
+        self.assertEqual(done.returncode, 2)
+        self.assertIn("--top-level", done.stderr)
+
+
+class FlatLayoutTests(Base):
+    """--flat puts project folders directly in the folder, with no Projects/ in between."""
+
+    def test_flat_layout_round_trips_and_has_no_projects_folder(self):
+        run(CH1 / "verify.py", "snapshot", self.folder)
+        text = self.plan("--top-level", "--flat")
+        self.assertNotIn("Projects/", text)
+        self.assertIn("| maplestone_quote_v2.pdf | Kitchen remodel/maplestone_quote_v2.pdf |", text)
+        self.assertIn("| untitled.txt | _Unsorted/untitled.txt |", text)
+        plan = self.root / "organize-plan.md"
+        self.assertEqual(run(CH1 / "apply_plan.py", "--check", plan, self.folder).returncode, 0)
+        self.assertEqual(run(CH1 / "apply_plan.py", plan, self.folder).returncode, 0)
+        self.assertTrue((self.folder / "Tax prep" / "w2_2025.pdf").is_file())
+        self.assertFalse((self.folder / "Projects").exists())
+        self.assertIn("PASS", run(CH1 / "verify.py", "check", self.folder).stdout)
+        self.assertEqual(run(CH1 / "undo_plan.py", self.folder).returncode, 0)
+        self.assertEqual(listing(self.folder), self.before)  # the project folders are gone again
+
+    def test_claude_sees_ids_without_the_projects_prefix(self):
+        self.plan("--top-level", "--flat")
+        view = (self.root / "claude-view.txt").read_text()
+        self.assertNotIn("Projects/", view)
+        self.assertIn("P1", view)
+
+    def test_flat_layout_refuses_when_a_project_name_matches_an_existing_item(self):
+        (self.folder / "Tax prep").mkdir()
+        (self.folder / "Tax prep" / "mine.txt").write_text("my own folder")
+        (self.root / "assignments.json").write_text(json.dumps(self.assigned))
+        done = run(HERE / "plan_projects.py", "--top-level", "--flat", self.root / "assignments.json",
+                   self.projects, self.folder)
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("Tax prep", done.stderr)
+        self.assertFalse((self.root / "organize-plan.md").exists())  # nothing was written
+        # the nested default has no such problem: Projects/Tax prep cannot merge with the user's folder
+        self.assertIn("Projects/Tax prep/w2_2025.pdf", self.plan("--top-level", "--keep-folders"))
+
+    def test_flat_works_together_with_keep_folders_and_hidden_items(self):
+        (self.folder / "old_project").mkdir()
+        (self.folder / "old_project" / "a.py").write_text("print(1)")
+        (self.folder / ".localized").write_text("")
+        before = listing(self.folder)
+        text = self.plan("--top-level", "--keep-folders", "--flat")
+        self.assertIn("| old_project | old_project | folder, left in place |", text)
+        self.assertIn("| .localized | .localized | hidden item, left in place |", text)
+        plan = self.root / "organize-plan.md"
+        self.assertEqual(run(CH1 / "apply_plan.py", plan, self.folder).returncode, 0)
+        self.assertTrue((self.folder / "old_project" / "a.py").is_file())
+        self.assertEqual(run(CH1 / "undo_plan.py", self.folder).returncode, 0)
+        self.assertEqual(listing(self.folder), before)
+
+
 class FixtureTests(unittest.TestCase):
     def test_blind_mode_blanks_text_without_creating_duplicates(self):
         import hashlib

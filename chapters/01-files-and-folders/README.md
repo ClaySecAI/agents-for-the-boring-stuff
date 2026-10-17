@@ -43,7 +43,7 @@ Claude Code looks for them.
 | [`apply_plan.py`](apply_plan.py) | Checks a plan against the folder, then carries it out |
 | [`undo_plan.py`](undo_plan.py) | Reverses an applied plan |
 | [`verify.py`](verify.py) | Proves that no file was lost or changed |
-| [`test_roundtrip.py`](test_roundtrip.py) | 13 tests covering plan, apply, verify and undo, including the refusals |
+| [`test_roundtrip.py`](test_roundtrip.py) | 15 tests covering plan, apply, verify and undo, including the refusals |
 
 The scripts exist because of a division of labor. The agent makes judgments, such as what a
 file is and where it belongs. Plain code does everything that must be exact: hashing,
@@ -226,8 +226,10 @@ python3 undo_plan.py practice/downloads           # put every item back
 
 Undo follows the same rule as apply: check everything, then act, or do nothing. It refuses
 when a moved item has disappeared, and when something new now occupies an original location.
-It never overwrites and never deletes a file. It removes only folders that are empty and that
-the plan created, so a folder that existed before, such as `old_stuff/`, stays.
+It never overwrites and never deletes a file of yours. It removes only folders that are empty and
+that the plan created, so a folder that existed before, such as `old_stuff/`, stays. A created
+folder that holds nothing but Finder's `.DS_Store` bookkeeping file counts as empty, and that one
+file goes with it. A folder with anything else in it is kept.
 
 Running it twice is safe: the second run reports that there is nothing to undo. If an apply
 was interrupted partway, undo returns the items that moved and skips the rest. To undo a plan

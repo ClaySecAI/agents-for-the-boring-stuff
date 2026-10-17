@@ -105,7 +105,8 @@ def main() -> None:
         sys.exit(f"Not a folder: {args.folder}")
 
     candidates = args.folder.iterdir() if args.top_level else args.folder.rglob("*")
-    files = sorted(p for p in candidates if p.is_file() and p.name != ".DS_Store")
+    files = sorted(p for p in candidates if p.is_file() and p.name != ".DS_Store"
+                   and not (args.top_level and p.name.startswith(".")))
     topics = {}
     for i, path in enumerate(files, 1):
         modified = datetime.datetime.fromtimestamp(path.stat().st_mtime).date().isoformat()
