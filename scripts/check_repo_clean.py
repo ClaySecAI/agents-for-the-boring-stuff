@@ -30,7 +30,7 @@ ALLOW = ["*.md", "*.py", "*.swift", "LICENSE", ".gitignore", ".claude/settings.j
 # Even an allowed extension is refused if the NAME says it is generated data.
 DENY_NAMES = ["classification*", "claude-view*", "organize-plan*", ".*manifest*", ".*applied-plan*",
               ".*undone-plan*", ".DS_Store", "assignments*", "protect-list*", "truth*", "projects.json",
-              "link-report*", "review*.md", "topics*", "projects-suggested*"]
+              "link-report*", "review*.md", "topics*", "projects-suggested*", "rules*.json", "corrections*.json", "names*.json", "bakeoff-results*"]
 DENY_DIRS = ["practice"]  # any path segment that starts with this
 MAX_BYTES = 200 * 1024
 

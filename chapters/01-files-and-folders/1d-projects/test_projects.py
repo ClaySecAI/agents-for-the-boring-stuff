@@ -393,6 +393,161 @@ class SuggestTests(unittest.TestCase):
         self.assertEqual(self.suggest.projects_schema(7)["properties"]["projects"]["maxItems"], 7)
 
 
+class RulesTests(Base):
+    def setUp(self):
+        super().setUp()
+        import rules
+        import teach
+        self.rules, self.teach = rules, teach
+
+    def test_name_keys_drop_digits_and_ignore_names_too_short_to_mean_anything(self):
+        nk = self.rules.name_key
+        self.assertEqual(nk("account_history (1).pdf"), "account history")
+        self.assertEqual(nk("order-88231.pdf"), "order")
+        self.assertEqual(nk("IMG_5521.jpg"), "")      # a camera name says nothing
+        self.assertEqual(nk("scan_0042.pdf"), "")     # "scan" is too short to be a pattern
+
+    def sig(self, domain=None, ident=None, key=None, path="x.pdf"):
+        return {"domain": [domain] if domain else [], "identifier": [ident] if ident else [],
+                "name_key": [key] if key else [], "path": [path]}
+
+    def test_a_signal_needs_enough_agreeing_examples_to_become_a_rule(self):
+        labelled = [(self.sig(domain="a.example", path="1"), "Taxes"),
+                    (self.sig(domain="a.example", path="2"), "Taxes"),
+                    (self.sig(domain="b.example", path="3"), "Taxes"),            # one example: not enough for a domain
+                    (self.sig(ident="HC77120", path="4"), "Insurance claim")]     # one example is enough for a number
+        rules, dropped = self.rules.learn(labelled)
+        kinds = {(r["kind"], r["value"]): r["project"] for r in rules}
+        self.assertEqual(kinds[("domain", "a.example")], "Taxes")
+        self.assertNotIn(("domain", "b.example"), kinds)
+        self.assertEqual(kinds[("identifier", "HC77120")], "Insurance claim")
+        self.assertEqual(dropped, 0)
+
+    def test_a_signal_used_for_two_projects_makes_no_rule(self):
+        labelled = [(self.sig(domain="bank.example", path="1"), "Taxes"),
+                    (self.sig(domain="bank.example", path="2"), "Taxes"),
+                    (self.sig(domain="bank.example", path="3"), "Mortgage refi")]
+        rules, dropped = self.rules.learn(labelled)
+        self.assertFalse([r for r in rules if r["kind"] == "domain"])
+        self.assertEqual(dropped, 1)
+
+    def test_unsorted_is_never_turned_into_a_rule(self):
+        rules, _ = self.rules.learn([(self.sig(ident="X12345", path="1"), "Unsorted")])
+        self.assertFalse([r for r in rules if r["kind"] == "identifier"])
+
+    def test_rules_that_disagree_leave_the_models_answer_alone(self):
+        rules = [{"kind": "domain", "value": "a.example", "project": "Taxes", "support": 2},
+                 {"kind": "identifier", "value": "N1", "project": "Car purchase", "support": 1}]
+        self.assertEqual(self.rules.decide(rules, self.sig(domain="a.example")), ("Taxes", "match"))
+        self.assertEqual(self.rules.decide(rules, self.sig(domain="a.example", ident="N1")), (None, "disagree"))
+        self.assertEqual(self.rules.decide(rules, self.sig(domain="other.example")), (None, "none"))
+
+    def test_applying_rules_fixes_primary_and_never_touches_unmatched_files(self):
+        assigned = {"a.pdf": {"primary": "Unsorted", "also": ["Taxes"], "sensitivity": "none"},
+                    "b.pdf": {"primary": "Car purchase", "also": [], "sensitivity": "none"}}
+        sigs = {"a.pdf": self.sig(domain="t.example", path="a.pdf"), "b.pdf": self.sig(domain="z.example", path="b.pdf")}
+        rules = [{"kind": "domain", "value": "t.example", "project": "Taxes", "support": 2}]
+        new, counts = self.rules.apply_rules(assigned, sigs, rules)
+        self.assertEqual(new["a.pdf"]["primary"], "Taxes")
+        self.assertEqual(new["a.pdf"]["also"], [])          # the new primary is not also a secondary
+        self.assertEqual(new["a.pdf"]["source"], "rule")
+        self.assertEqual(new["b.pdf"], assigned["b.pdf"])
+        self.assertEqual((counts["matched"], counts["changed"], counts["untouched"]), (1, 1, 1))
+
+    def test_teach_records_choices_and_stops_when_asked(self):
+        names = ["Taxes", "Resume"]
+        items = [{"path": f"f{i}"} for i in range(6)]
+        answers = iter(["2", "", "u", "banana", "1", "q"])
+        done, stopped = self.teach.teach(items, names, lambda item: next(answers))
+        self.assertEqual(done, [{"path": "f0", "project": "Resume"}, {"path": "f2", "project": "Unsorted"},
+                                {"path": "f4", "project": "Taxes"}])
+        self.assertTrue(stopped is False or stopped is True)
+        self.assertTrue(stopped)
+
+    def test_learning_from_a_few_labelled_files_fixes_their_siblings_without_a_model(self):
+        # Pretend the model gave up on everything, then label two files per project by hand.
+        (self.root / "assignments.json").write_text(json.dumps(
+            {f: {"primary": "Unsorted", "also": [], "sensitivity": "none"} for f in self.truth}))
+        labelled, per = [], collections_default()
+        for f in sorted(self.truth):
+            project = self.truth[f]["primary"]
+            if project != "Unsorted" and per[project] < 2 and assign.download_domain(self.folder / f):
+                per[project] += 1
+                labelled.append({"path": f, "project": project})
+        (self.root / "corrections.json").write_text(json.dumps(labelled))
+        learned = run(HERE / "rules.py", "learn", self.folder, self.projects, self.root / "corrections.json",
+                      "--assignments", self.root / "assignments.json")
+        self.assertEqual(learned.returncode, 0, learned.stderr)
+        self.assertIn("rules", learned.stdout)
+        applied = run(HERE / "rules.py", "apply", self.folder, self.root / "assignments.json", self.root / "rules.json",
+                      "--out", self.root / "ruled.json")
+        self.assertEqual(applied.returncode, 0, applied.stderr)
+        ruled = json.loads((self.root / "ruled.json").read_text())
+        decided = {f: v["primary"] for f, v in ruled.items() if v.get("source") == "rule"}
+        self.assertGreater(len(decided), 20)                      # a few labels resolved many files
+        wrong = [f for f, p in decided.items() if p != self.truth[f]["primary"]]
+        self.assertEqual(wrong, [])                               # and every decision was right
+
+
+def collections_default():
+    import collections
+    return collections.defaultdict(int)
+
+
+class ExtractFallbackTests(Base):
+    def test_without_the_mac_helper_pdftotext_is_used_and_absence_degrades_quietly(self):
+        import os
+        import classify_local as cl
+        old_helper, old_path = cl.HELPER, os.environ["PATH"]
+        try:
+            cl.HELPER = Path("/nonexistent")
+            bin_dir = self.root / "bin"
+            bin_dir.mkdir()
+            tool = bin_dir / "pdftotext"
+            tool.write_text("#!/bin/sh\necho 'Invoice HC77120'\n")
+            tool.chmod(0o755)
+            pdf = self.root / "a.pdf"
+            pdf.write_bytes(b"%PDF-1.4 junk")
+            os.environ["PATH"] = f"{bin_dir}:/usr/bin:/bin"
+            self.assertIn("HC77120", cl.read_head(pdf))
+            os.environ["PATH"] = "/usr/bin:/bin"
+            self.assertTrue(cl.read_head(pdf).startswith("%PDF"))   # no extractor: judged by bytes/name
+        finally:
+            cl.HELPER, os.environ["PATH"] = old_helper, old_path
+
+
+class RenameTests(Base):
+    def test_only_meaningless_names_count_as_generic(self):
+        import suggest_names as sn
+        for name in ("IMG_4412.jpg", "scan0042.pdf", "Document (3).pdf", "Untitled.docx", "a3f9c2d41b7e8800aa.pdf",
+                     "Screenshot 2024-05-01 at 10.22.pdf", "12345678.pdf"):
+            self.assertTrue(sn.is_generic(name), name)
+        for name in ("Resume - Clay.pdf", "lease renewal.pdf", "tax-2023.pdf"):
+            self.assertFalse(sn.is_generic(name), name)
+
+    def test_a_title_becomes_a_safe_name_and_the_extension_survives(self):
+        import datetime
+        import suggest_names as sn
+        title = sn.clean_title('Lease/renewal: "Unit 4B"\n  ../etc')
+        self.assertNotIn("/", title)
+        self.assertNotIn(":", title)
+        self.assertEqual(sn.build_name("Lease renewal", datetime.date(2024, 3, 8), ".PDF"), "2024-03-08 Lease renewal.pdf")
+        self.assertLessEqual(len(sn.clean_title("word " * 40)), 60)
+
+    def test_plan_renames_files_that_land_in_a_project_and_not_the_unsorted(self):
+        names = {f: "2024-01-01 Renamed.pdf" for f in self.truth}
+        (self.root / "names.json").write_text(json.dumps(names))
+        (self.root / "assignments.json").write_text(json.dumps(
+            {f: {"primary": self.truth[f]["primary"], "also": [], "sensitivity": "none"} for f in self.truth}))
+        done = run(HERE / "plan_projects.py", self.root / "assignments.json", self.projects, self.folder,
+                   "--names", self.root / "names.json", "--out-dir", self.root)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        rows = [r.split(" | ") for r in (self.root / "organize-plan.md").read_text().splitlines() if r.startswith("| ")][2:]
+        moved = [r[1] for r in rows if "Unsorted" not in r[1] and "Empty" not in r[1]]
+        self.assertTrue(moved and all(Path(m).name.startswith("2024-01-01 Renamed") for m in moved))
+        self.assertTrue(all(len(set(m for m in moved)) == len(moved) for _ in [0]))   # collisions got numbered
+
+
 class ScoreTests(Base):
     def test_perfect_answers_score_perfectly_and_beat_sorting_by_type(self):
         result = scoring.score(self.truth, self.assigned)

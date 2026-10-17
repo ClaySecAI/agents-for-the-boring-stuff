@@ -415,7 +415,83 @@ Tags are stored as an extended attribute on the file, and the tag name is visibl
 folder lives in iCloud Drive, the tag names may sync. A tag named after a sensitive project says
 that the project exists, so think before tagging files in a synced folder.
 
-## 1D.9 Limits
+## 1D.9 Teaching it by correcting it
+
+The model will leave some files in Unsorted and will put a few in the wrong project. You can fix
+those by hand, but the same kind of file will come back next month. `teach.py` turns each fix into
+something that lasts.
+
+```bash
+python3 teach.py <folder> projects.json assignments.json
+```
+
+It walks through the files the model left unsorted (or every file, with `--all`). For each one it
+prints the name, the website it was downloaded from, the date and the start of the contents, and you
+type a project number, `u` to keep it unsorted, Enter to skip, or `q` to stop. Run it in your own
+terminal: it shows you the contents of your files, which is the point. Your answers are saved to
+`corrections.json`.
+
+`rules.py learn` then looks for what the corrected files have in common with each other. A rule is an
+exact match on one of four things: an account or case number in the text, the file's exact path, the
+website it came from, or its name with digits and punctuation removed (so `account_history (2).pdf`
+and `account_history (7).pdf` share a pattern). A rule needs agreement. A number or a path needs one
+example. A website or a name pattern needs two, and all of the examples must name the same project. A
+bank you use for both taxes and a mortgage therefore makes no rule, because the website tells you
+nothing about which project a file belongs to.
+
+```bash
+python3 rules.py learn <folder> projects.json corrections.json --assignments assignments.json
+python3 rules.py apply <folder> assignments.json rules.json
+```
+
+`learn` prints a preview: how many files a rule would decide and how many of those would change.
+`apply` writes `assignments-ruled.json`, which goes into `plan_projects.py` as usual. Files that a rule
+decided are marked `"source": "rule"`. If two rules point at different projects for one file, neither
+wins and the model's answer stands.
+
+The tests cover this without a model. The test fixture has two labelled files per project; the rules
+learned from them decide more than twenty others, and none of those decisions is wrong. That is a
+property of the fixture, whose bank statements share a website and an account number, and a messier
+folder will give you weaker rules. The preview is how you find out before anything moves.
+
+Rules name your websites, account numbers and projects. `rules.json` and `corrections.json` are
+ignored by git and refused by the commit guard.
+
+## 1D.10 Renaming files
+
+Moving a file to the right project does not fix `scan0042.pdf`. `suggest_names.py` asks the local
+model for a short title and builds a name from it: `2024-03-08 Lease renewal.pdf`. The date is the
+file's modified date and the extension is the original one.
+
+```bash
+python3 suggest_names.py <folder>                  # writes names.json
+python3 plan_projects.py --names names.json ...    # puts the new names in the plan
+```
+
+By default it renames only files whose names say nothing: camera and scanner names, `Document (3)`,
+`Untitled`, a long run of hex digits, a number. A name you chose, like `Resume - Clay.pdf`, stays
+unless you pass `--all`. Unsorted and empty files keep their names, because a rename without a
+project is guesswork on guesswork.
+
+This is the one place in the chapter where the model writes free text instead of picking from a list.
+It runs on your machine. The title is cleaned before it can become part of a path: only letters,
+digits, spaces and a few punctuation marks survive, and the length is capped. The new names appear in
+the To column of `organize-plan.md`, so you read them before anything is renamed, and `undo_plan.py`
+restores the old ones. Claude does not see them: `claude-view.txt` has no names.
+
+## 1D.11 Beyond the Mac
+
+Reading the text of a PDF or a scan used to depend on the Swift helper, which needs PDFKit and Vision.
+On other systems `classify_local.py` now falls back to open-source tools when they are installed:
+`pdftotext` (from poppler) for the text layer of a PDF, and `tesseract` for images and for PDFs that
+are scans (`pdftoppm` renders the first page). If none is installed, the file is judged by its name
+and extension, as before. Nothing fails. On Debian or Ubuntu that is
+`apt install poppler-utils tesseract-ocr`; with Homebrew, `brew install poppler tesseract`.
+
+Finder tags are macOS only. On other systems the Also column still records the extra projects, and
+`link_files.py` still works, but `tag_files.py` does nothing useful.
+
+## 1D.13 Limits
 
 - The model only knows the projects you list. A project you forgot ends up in `Unsorted`, or worse,
   inside a similar project. `suggest_projects.py` can propose a draft, but it works from phrases

@@ -1,6 +1,6 @@
 """Turn project assignments into a project-first plan.
 
-    python3 plan_projects.py [--top-level [--keep-folders]] [--flat] [--out-dir DIR] <assignments.json> <projects.json> <folder>
+    python3 plan_projects.py [--top-level [--keep-folders]] [--flat] [--names names.json] [--out-dir DIR] <assignments.json> <projects.json> <folder>
 
 Each file moves to Projects/<its project>/, or, with --flat, to <its project>/ directly inside the
 folder. Nested is the default because everything the tool made then sits in one place that can be
@@ -10,6 +10,9 @@ decides the folder. A mortgage
 refinance needs its pay stubs, tax forms and contract in one place, and splitting them by kind of
 sensitive data would undo that. Instead each project inherits the highest sensitivity among its
 files, and protect-list.txt ranks the projects so you know which to protect first.
+
+With --names names.json (from suggest_names.py) files are renamed as they move. Only files placed in
+a project are renamed; unsorted and empty ones keep their names.
 
 A file that also serves another project stays in one folder (its primary project). The plan's
 fourth column, Also, names the other projects, and tag_files.py turns them into Finder tags.
@@ -73,12 +76,13 @@ def folder_name(project: str) -> str:
 
 
 def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, out_dir: Path | None,
-         keep_folders: bool = False, flat: bool = False) -> None:
+         keep_folders: bool = False, flat: bool = False, names_file: Path | None = None) -> None:
     if not folder.is_dir():
         sys.exit(f"Not a folder: {folder}")
     for needed in (assignments, projects_file):
         if not needed.is_file():
             sys.exit(f"File not found: {needed}")
+    renames = json.loads(names_file.read_text()) if names_file else {}
     root = "" if flat else "Projects/"  # where the project folders go: inside Projects/, or directly in the folder
     assigned = json.loads(assignments.read_text())
     names = [p["name"] for p in json.loads(projects_file.read_text())]
@@ -132,7 +136,8 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
                 else f"{root}{folder_name(primary)}")
         if rel in duplicate_of:
             home += "/_duplicates"
-        base = dest = f"{home}/{Path(rel).name}"
+        new_name = renames.get(rel) if primary not in (UNSORTED, EMPTY) else None
+        base = dest = f"{home}/{new_name or Path(rel).name}"
         n = 2
         while dest in taken:
             stem, dot, ext = base.rpartition(".")
@@ -212,8 +217,9 @@ if __name__ == "__main__":
     ap.add_argument("--flat", action="store_true",
                     help="put the project folders directly in the folder instead of inside Projects/; "
                          "refuses if a project name matches an existing item")
+    ap.add_argument("--names", type=Path, help="names.json from suggest_names.py: rename files as they move")
     ap.add_argument("--out-dir", type=Path)
     a = ap.parse_args()
     if a.keep_folders and not a.top_level:
         ap.error("--keep-folders only applies with --top-level (recursive mode has no folder items)")
-    main(a.assignments, a.projects, a.folder, a.top_level, a.out_dir, a.keep_folders, a.flat)
+    main(a.assignments, a.projects, a.folder, a.top_level, a.out_dir, a.keep_folders, a.flat, a.names)

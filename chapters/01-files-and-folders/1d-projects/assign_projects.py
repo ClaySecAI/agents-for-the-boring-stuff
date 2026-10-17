@@ -149,6 +149,8 @@ def main() -> None:
     ap.add_argument("--no-source", action="store_true")
     ap.add_argument("--no-dates", action="store_true")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--max-tokens", type=int, default=200,
+                    help="longest answer to allow; models that think first may need more (default 200)")
     args = ap.parse_args()
     if not args.folder.is_dir():
         sys.exit(f"Not a folder: {args.folder}")
@@ -172,7 +174,7 @@ def main() -> None:
                           not args.no_source, not args.no_dates)
         try:
             answer = local.classify(args.base_url, args.model, path.name, "", system=system,
-                                    schema=schema, user=user)
+                                    schema=schema, user=user, max_tokens=args.max_tokens)
             results[rel] = clean(answer, names)
         except Exception as err:  # fail closed: plan_projects files a missing answer under Unsorted
             failed += 1

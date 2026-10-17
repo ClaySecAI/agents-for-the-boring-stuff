@@ -17,7 +17,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
+import tempfile
 import urllib.request
 from pathlib import Path
 
@@ -52,18 +54,51 @@ HELPER = Path(__file__).resolve().parent.parent / "extract_text"  # built from e
 EXTRACT_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg", ".heic", ".tif", ".tiff", ".gif", ".bmp", ".webp"}
 
 
+def _run(cmd: list[str], timeout: int = 60) -> str:
+    try:
+        done = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except (subprocess.TimeoutExpired, OSError):
+        return ""
+    return done.stdout if done.returncode == 0 else ""
+
+
+def extract_text(path: Path, limit: int) -> str:
+    """Text from a PDF or image, or "" when no extractor is available.
+
+    macOS: the Swift helper (PDFKit text layer, Vision OCR). Anywhere else, the same two steps
+    with open-source tools if they are installed: pdftotext (poppler) for the text layer of a PDF,
+    and tesseract for OCR on images and on PDFs that turn out to be scans (pdftoppm renders a page).
+    Missing tools are skipped, never an error: the file is then judged by name and extension alone."""
+    suffix = path.suffix.lower()
+    if suffix not in EXTRACT_SUFFIXES:
+        return ""
+    if HELPER.exists():
+        text = _run([str(HELPER), str(path), str(limit)])
+        if text.strip():
+            return text
+    if suffix == ".pdf":
+        if shutil.which("pdftotext"):
+            text = _run(["pdftotext", "-l", "3", "-q", str(path), "-"])
+            if text.strip():
+                return text
+        if shutil.which("pdftoppm") and shutil.which("tesseract"):
+            with tempfile.TemporaryDirectory() as tmp:
+                _run(["pdftoppm", "-r", "150", "-f", "1", "-l", "1", "-png", str(path), f"{tmp}/page"])
+                for image in sorted(Path(tmp).glob("page*.png")):
+                    return _run(["tesseract", str(image), "-", "-l", "eng"], timeout=120)
+        return ""
+    if shutil.which("tesseract"):
+        return _run(["tesseract", str(path), "-", "-l", "eng"], timeout=120)
+    return ""
+
+
 def read_head(path: Path, limit: int = 2000) -> str:
-    # PDFs and images: let the on-device helper pull out text (PDF text layer, or OCR for
-    # scans and screenshots). Without the helper we fall back to raw bytes, so PDFs and
-    # images are judged by filename only.
-    if path.suffix.lower() in EXTRACT_SUFFIXES and HELPER.exists():
-        try:
-            done = subprocess.run([str(HELPER), str(path), str(limit)],
-                                  capture_output=True, text=True, timeout=60)
-            if done.returncode == 0 and done.stdout.strip():
-                return done.stdout[:limit]
-        except (subprocess.TimeoutExpired, OSError):
-            pass
+    # PDFs and images go through extract_text(). Without any extractor we fall back to raw
+    # bytes, so PDFs and images are judged by filename only.
+    if path.suffix.lower() in EXTRACT_SUFFIXES:
+        text = extract_text(path, limit)
+        if text.strip():
+            return text[:limit]
     with path.open("rb") as handle:  # read only the start, never the whole file
         data = handle.read(limit)
     if b"\x00" in data:

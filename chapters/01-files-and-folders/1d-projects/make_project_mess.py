@@ -13,6 +13,9 @@ on your list covers: file them under the nearest project, or leave them unsorted
 --statements adds three account histories that share one account number but say little about
 what the account is for, to test linking files by a shared identifier.
 
+--second-batch adds 24 files that "arrive later": from the same websites, with the same kinds of
+number, and often with almost no content. It is the test bed for rules learned from corrections.
+
 Writes three things:
 
   <target_dir>/            59 small files named the way real downloads are named
@@ -150,6 +153,54 @@ UNSORTED = [
 ]
 
 
+# --second-batch: files that arrive later, from the same websites and with the same kinds of numbers
+# as the first batch, so that rules learned from your corrections about the first batch have something
+# to catch. Several are as bland as the first batch's worst ("Thank you. Your documents have been
+# received."), which only a website or a number can place.
+SECOND_BATCH: dict[str, list[tuple[str, str, list[str], bool]]] = {
+    "Kitchen remodel": [
+        ("order-88232.pdf", "Order #88232 confirmed. Thank you for your purchase.", [], True),
+        ("scan_0201.pdf", "Page 1 of 2. Continued on next page.", [], True),
+        ("change_order_2.pdf", "Change order. Reference: MS-2231-02. Please sign and return.", [], True),
+    ],
+    "Car purchase": [
+        ("document(4).pdf", "Thank you. Your documents have been received. We will contact you shortly.", [], True),
+        ("scan_0202.pdf", "Page 2 of 3. Signature: ____", [], True),
+        ("service_plan.pdf", "Confirmation: thank you for choosing a service plan.", [], True),
+    ],
+    "Conference trip": [
+        ("agenda_day2.pdf", "Day 2 sessions. Room changes are posted at the registration desk.", [], True),
+        ("confirmation_e.pdf", "Confirmation received. See you at the event.", [], True),
+        ("shuttle_times.pdf", "Shuttle departs every 20 minutes from the main entrance.", [], True),
+    ],
+    "Insurance claim": [
+        ("scan_0109.pdf", "Page 3 of 3. Signature page.", [], True),
+        ("claim_followup.pdf", "Re: claim #HC-77120. We received your message and will reply soon.", [], True),
+        ("payment_receipt.pdf", "Payment received. Thank you.", [], True),
+    ],
+    "Job search": [
+        ("application_confirmation.pdf", "Your application has been received. Thank you.", [], True),
+        ("interview_prep.pdf", "Tips for your upcoming conversation.", [], True),
+        ("scan_0301.pdf", "Page 1 of 1.", [], True),
+    ],
+    "Tax prep": [
+        ("document(5).pdf", "Thank you. Your documents have been received. We will contact you shortly.", [], True),
+        ("filing_status.pdf", "Your filing status has been updated. Thank you.", [], True),
+        ("scan_0401.pdf", "Page 1 of 4.", [], True),
+    ],
+    "Marathon training": [
+        ("export_0613.csv", "timestamp,heart_rate\n06:01,120\n06:02,124\n06:03,127", [], True),
+        ("pacing_chart.pdf", "Target splits by mile.", [], True),
+        ("scan_0501.pdf", "Page 1 of 1.", [], True),
+    ],
+    "Software": [
+        ("app-installer.dmg", "[pretend installer] new application", [], True),
+        ("helper-update.pkg", "[pretend installer] helper tool update", [], True),
+        ("driver-pack.zip", "[pretend archive] driver pack", [], True),
+    ],
+}
+
+
 def set_download_source(path: Path, url: str) -> None:
     """Record where a file came from, the way a browser does. macOS only."""
     blob = plistlib.dumps([url, ""], fmt=plistlib.FMT_BINARY).hex()
@@ -174,6 +225,8 @@ def main() -> None:
                     help="every other document has no readable text, like a scan")
     ap.add_argument("--statements", action="store_true",
                     help="add three account histories that share one account number")
+    ap.add_argument("--second-batch", action="store_true",
+                    help="add files that arrive later from the same websites, for testing learned rules")
     ap.add_argument("--hold-out", metavar="PROJECT",
                     help="leave this project off the project list; its files truly belong to no listed project")
     opts = ap.parse_args()
@@ -184,6 +237,9 @@ def main() -> None:
     all_files = {project: list(files) for project, files in FILES.items()}
     if opts.statements:
         all_files["Car purchase"] += STATEMENTS
+    if opts.second_batch:
+        for project, extra in SECOND_BATCH.items():
+            all_files[project] += extra
     if target.exists() and any(target.iterdir()):
         sys.exit(f"{target} already exists and is not empty. Delete it or pick another path.")
     target.mkdir(parents=True, exist_ok=True)

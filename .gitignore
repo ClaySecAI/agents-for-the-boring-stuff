@@ -17,3 +17,7 @@ __pycache__/
 .DS_Store
 classify_apple
 extract_text
+rules*.json
+corrections*.json
+names*.json
+bakeoff-results*.json
