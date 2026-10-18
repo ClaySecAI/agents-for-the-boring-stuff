@@ -11,7 +11,21 @@
       "Bash(rmdir:*)",
       "Bash(sudo:*)",
       "Bash(python3 *skillgate.py release*)",
-      "Bash(python *skillgate.py release*)"
+      "Bash(python *skillgate.py release*)",
+      "Bash(python3 *skillgate.py adopt*)",
+      "Bash(python *skillgate.py adopt*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/chapters/09-skill-security/skillgate.py hook"
+          }
+        ]
+      }
     ]
   }
 }
