@@ -62,6 +62,7 @@ One row per chapter. Variants and follow-ups sit in the last column.
 | 8 | A pre-commit security scan agent | Design note | [Plan: a model that reads your commits](chapters/08-security-reviewer/PLAN.md) |
 | 9 | [Vetting skills before you install them](chapters/09-skill-security/) | Ready | [9B Checking automatically at session start](chapters/09-skill-security/9b-session-hook/) · [9C Agents are files, not folders](chapters/09-skill-security/9c-agents/) |
 | 10 | An editorial agent: how this book is edited | Source notes | [Notes: when the agent fights back](chapters/10-editor/source-notes.md) |
+| 11 | Securing git before you publish | Outline | [Outline: hooks, history, and going public](chapters/11-securing-git/OUTLINE.md) |
 
 Also: [Quick reference](QUICK-REFERENCE.md) (every common task in one page) and [House style](STYLE.md).
 
