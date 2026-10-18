@@ -163,7 +163,7 @@ Run the assignment, then read two things: the `Unsorted` pile, and the files in 
 do not belong. Each pattern you find points to a fix in the list.
 
 - Several unsorted files about one subject mean a project is missing.
-- A project that attracts files it should not mean its description is too broad, or a neighbouring
+- A project that attracts files it should not mean its description is too broad, or a neighboring
   project's description is too thin.
 - Two projects that keep trading the same files mean the boundary needs a sentence in both
   descriptions.

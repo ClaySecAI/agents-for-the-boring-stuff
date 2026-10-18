@@ -45,7 +45,7 @@ Claude Code looks for them.
 | [`apply_plan.py`](apply_plan.py) | Checks a plan against the folder, then carries it out |
 | [`undo_plan.py`](undo_plan.py) | Reverses an applied plan |
 | [`verify.py`](verify.py) | Proves that no file was lost or changed |
-| [`test_roundtrip.py`](test_roundtrip.py) | 15 tests covering plan, apply, verify, and undo, including the refusals |
+| [`test_roundtrip.py`](test_roundtrip.py) | 16 tests covering plan, apply, verify, undo, and the state folder, including the refusals |
 
 The scripts exist because of a division of labor. The agent makes judgments, such as what a
 file is and where it belongs. Plain code does everything that must be exact: hashing,

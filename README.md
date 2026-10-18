@@ -51,7 +51,7 @@ One row per chapter. Variants and follow-ups sit in the last column.
 
 | # | Chapter | Status | Includes |
 |---|---|---|---|
-| 0 | [What agents and language models are](chapters/00-getting-started/) | Ready | [0B Setting up your computer](chapters/00-getting-started/setup.md) |
+| 0 | [What agents and language models are](chapters/00-getting-started/) | Ready | [0B Setting up your computer](chapters/00-getting-started/setup.md) · [0C Check what the agent says it did](chapters/00-getting-started/checking-claims.md) |
 | 1 | [Files and folders](chapters/01-files-and-folders/) | Ready | [1B Local model: LM Studio or Ollama](chapters/01-files-and-folders/1b-local-model/) · [1C Apple's on-device model](chapters/01-files-and-folders/1c-apple-foundation-models/) · [1D Files by project](chapters/01-files-and-folders/1d-projects/) · [1E Keeping it sorted](chapters/01-files-and-folders/1e-schedule/) |
 | 2 | Messy text and documents | Planned | |
 | 3 | Spreadsheets, PDFs and Word files | Planned | |
