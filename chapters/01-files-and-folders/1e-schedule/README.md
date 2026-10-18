@@ -128,6 +128,6 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 
 1. Dry-run the sweep on a practice folder that has project folders and a few new loose files. What does the
    report say about held files?
-2. Add a `folder_rules` entry for a folder of your own, dry-run, run, then undo.
+2. Add a `folder_rules` entry for a subfolder of the practice folder, dry-run, run, then undo.
 3. Write descriptions for two similar projects so they do not overlap, then sweep files that could belong
    to either.
