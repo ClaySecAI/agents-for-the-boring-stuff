@@ -267,14 +267,25 @@ def adapter_agent_scan(binary: str | None, folder: Path, outdir: Path, allowed: 
             "summary": "ran (report format not recognized)", "report": str(out)}
 
 
+def vt_token_from_file() -> str:
+    """The token file VirusTotal's own guide writes: one line, `Authorization: Bearer <token>`."""
+    base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    path = base / "vtai" / "auth.header"
+    try:
+        line = path.read_text().strip()
+    except OSError:
+        return ""
+    return line.split("Bearer", 1)[1].strip() if "Bearer" in line else ""
+
+
 def adapter_virustotal(folder: Path, allowed: bool) -> dict:
     """VirusTotal hash lookups. REMOTE, but only file hashes leave the machine, never content. Needs VT_AGENT_TOKEN.
     A file VirusTotal has never seen proves nothing, and neither does a clean result; both are reported as unknown or clean, not safe."""
     if not allowed:
         return not_run("virustotal", "remote", "skipped: pass --vt to look up file hashes (hashes only, no content)")
-    token = os.environ.get("VT_AGENT_TOKEN")
+    token = os.environ.get("VT_AGENT_TOKEN") or vt_token_from_file()
     if not token:
-        return not_run("virustotal", "remote", "VT_AGENT_TOKEN is not set")
+        return not_run("virustotal", "remote", "no Agent Token: set VT_AGENT_TOKEN (section 9.3)")
     import urllib.error
     import urllib.request
     base = os.environ.get("VT_BASE_URL", "https://ai.virustotal.com/api/v3").rstrip("/")
@@ -284,14 +295,18 @@ def adapter_virustotal(folder: Path, allowed: bool) -> dict:
         request = urllib.request.Request(f"{base}/files/{sha(path)}", headers={"x-apikey": token})
         try:
             with urllib.request.urlopen(request, timeout=20) as response:
-                stats = json.load(response)["data"]["attributes"]["last_analysis_stats"]
+                data = json.load(response)["data"]
+                # Checked against ai.virustotal.com's OpenAPI: data.last_analysis_stats and data.detections.
+                # Classic VirusTotal nests the stats under data.attributes, so accept that too.
+                stats = data.get("last_analysis_stats") or data.get("attributes", {}).get("last_analysis_stats", {})
+                detections = data.get("detections") or []
         except urllib.error.HTTPError as err:
             unknown, errors = unknown + (err.code == 404), errors + (err.code != 404)
             continue
         except Exception:  # noqa: BLE001
             errors += 1
             continue
-        if stats.get("malicious", 0) or stats.get("suspicious", 0):
+        if stats.get("malicious", 0) or stats.get("suspicious", 0) or detections:
             malicious.append(str(path.relative_to(folder)))
         else:
             clean += 1

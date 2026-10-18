@@ -219,7 +219,7 @@ class FlowTests(Base):
                 seen.append(self.path)
                 flagged = self.path.endswith(self.server.flagged)
                 if flagged:
-                    body = json.dumps({"data": {"attributes": {"last_analysis_stats": {"malicious": 3, "suspicious": 0}}}}).encode()
+                    body = json.dumps({"data": {"id": "x", "last_analysis_stats": {"malicious": 3, "suspicious": 0}, "detections": ["Trojan.Generic"]}}).encode()
                     self.send_response(200)
                     self.end_headers()
                     self.wfile.write(body)
