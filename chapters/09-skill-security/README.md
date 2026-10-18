@@ -18,6 +18,18 @@ released by you.
 Each covers the other's weakness. The scan is blind to intent. The reviewer understands intent but can be
 fooled, so a script checks every quote it cites. You make the final call.
 
+Three different questions are being asked, and no one tool answers all of them:
+
+| Question | Best answered by |
+|---|---|
+| Is there known malware in these files? | VirusTotal hash lookup |
+| Does the code or text contain dangerous patterns? | Our rules and SkillSpector |
+| Does it do what it says it does, and could that cause harm? | The reviewer agent |
+
+Most skill problems are the second and third kind: instructions that do not match the stated purpose, or a script
+that quietly reads a secret. Those have no signature to look up. A hash lookup rounds out the set by catching the
+first kind, a known-bad binary or script, and it sends only file hashes.
+
 ## 9.2 The flow
 
 ```
