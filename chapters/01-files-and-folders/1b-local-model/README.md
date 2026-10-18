@@ -61,7 +61,7 @@ swiftc -O extract_text.swift -o extract_text     # run from chapters/01-files-an
 `classify_local.py` finds `extract_text` on its own and uses it for PDFs and images:
 
 - a PDF with a text layer is read directly (PDFKit)
-- a scanned PDF has its first page rendered and read with on-device OCR (Vision)
+- a scanned PDF has its first page rendered and read with on-device optical character recognition, or OCR (Vision)
 - an image or screenshot gets OCR text plus a few scene labels, such as "document"
 
 OCR is imperfect. In one test it read "240" as "249", so treat the output as a strong hint
@@ -86,7 +86,7 @@ python3 apply_plan.py --check practice/organize-plan.md practice/downloads
 Read `practice/organize-plan.md`. When you are satisfied, send the metadata to Claude, then
 apply and verify:
 
-*Listing 1B.4: The Claude gate, the move and the check*
+*Listing 1B.4: The Claude gate, the move, and the check*
 
 ```bash
 python3 validate_plan.py practice/claude-view.txt   # Claude returns approve, or flags files to look at
@@ -110,12 +110,12 @@ enums. The server's constrained decoding limits the model to the listed values. 
 column in the plan holds label codes for the same reason.
 
 The pass also does data-loss prevention. Each file receives a sensitivity label: `financial`,
-`legal`, `government_id`, `health`, `credentials` or `personal`. `make_plan.py` routes labelled
+`legal`, `government_id`, `health`, `credentials`, or `personal`. `make_plan.py` routes labelled
 files to `_sensitive/<kind>/`, where you can see them and later encrypt or exclude them.
 Copies of a sensitive file stay inside that area. A file that cannot be labelled, or that
 receives a value outside the lists, is treated as sensitive. The code fails closed.
 
-Everything else is ordinary code: hashing, the plan table, the coverage check and the move.
+Everything else is ordinary code: hashing, the plan table, the coverage check, and the move.
 The model only supplies labels.
 
 ## 1B.6 Two traps
@@ -147,7 +147,7 @@ prompt.
 ## 1B.7 Choosing a model
 
 A good local model fits in memory beside everything else you run, follows a JSON schema
-reliably and reads documents well. We used `google/gemma-4-12b` (7.5 GB), a reasonable middle size
+reliably, and reads documents well. We used `google/gemma-4-12b` (7.5 GB), a reasonable middle size
 for a 24 GB laptop. A model of 20 billion parameters or more needs about 16 GB for itself and did not
 load beside everything else on that machine, so we did not use one. Try two and compare their plans,
 using the method from

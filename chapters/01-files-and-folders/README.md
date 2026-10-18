@@ -18,7 +18,7 @@ so most of this chapter is about the checks around the agent.
 You will build a file-organizing agent and the machinery that keeps it honest. Along the way
 you will learn to:
 
-- write an agent file with a narrow job, a short tool list and a model sized to the work
+- write an agent file with a narrow job, a short tool list, and a model sized to the work
 - write a skill, a repeatable procedure the agent follows
 - use permissions to limit what the agent can do, whatever its instructions say
 - run the propose, approve, apply, verify loop, and undo a move afterwards
@@ -38,18 +38,18 @@ Claude Code looks for them.
 
 | File | Role |
 |---|---|
-| [`.claude/agents/file-organizer.md`](../../.claude/agents/file-organizer.md) | The agent: its rules, its tools and its model |
+| [`.claude/agents/file-organizer.md`](../../.claude/agents/file-organizer.md) | The agent: its rules, its tools, and its model |
 | [`.claude/skills/organize-folder/SKILL.md`](../../.claude/skills/organize-folder/SKILL.md) | The procedure: inspect, plan, check, ask, apply |
-| [`.claude/settings.json`](../../.claude/settings.json) | Permissions: `rm`, `rmdir` and `sudo` are denied |
+| [`.claude/settings.json`](../../.claude/settings.json) | Permissions: `rm`, `rmdir`, and `sudo` are denied |
 | [`make_mess.py`](make_mess.py) | Builds a fake messy folder to practice on |
 | [`apply_plan.py`](apply_plan.py) | Checks a plan against the folder, then carries it out |
 | [`undo_plan.py`](undo_plan.py) | Reverses an applied plan |
 | [`verify.py`](verify.py) | Proves that no file was lost or changed |
-| [`test_roundtrip.py`](test_roundtrip.py) | 15 tests covering plan, apply, verify and undo, including the refusals |
+| [`test_roundtrip.py`](test_roundtrip.py) | 15 tests covering plan, apply, verify, and undo, including the refusals |
 
 The scripts exist because of a division of labor. The agent makes judgments, such as what a
 file is and where it belongs. Plain code does everything that must be exact: hashing,
-moving, checking and reversing. That split returns in every later chapter.
+moving, checking, and reversing. That split returns in every later chapter.
 
 ## 1.2 Running the agent
 
@@ -112,7 +112,7 @@ You could let the agent run `mv` once per file, and that works. A script is more
 trustworthy because it does exactly what the table says and nothing else. The thing you
 approved is then the thing that runs. `apply_plan.py` has two modes:
 
-*Listing 1.3: Checking, applying and verifying*
+*Listing 1.3: Checking, applying, and verifying*
 
 ```bash
 python3 apply_plan.py --check practice/organize-plan.md practice/downloads   # validate only
@@ -153,7 +153,7 @@ escalation:
 ```
 
 The agent file adds a second layer. Its `tools:` line lists the tools it may use (`Read`,
-`Glob`, `Grep`, `Write` and `Bash`), and its text forbids deleting or overwriting anything.
+`Glob`, `Grep`, `Write`, and `Bash`), and its text forbids deleting or overwriting anything.
 Two layers matter because they fail differently. The instructions can be talked around in
 conversation. The permission rule cannot be.
 
@@ -170,8 +170,8 @@ Match the model to the work:
 
 | Workload | Model tier | Reason |
 |---|---|---|
-| Repetitive, well-defined chores such as sorting, renaming and extracting fields | Small and fast (Haiku) | The task needs little reasoning, so cost and speed matter more |
-| Everyday multi-step work such as summarizing, drafting and light analysis | Mid-tier (Sonnet) | A balance of quality, speed and cost |
+| Repetitive, well-defined chores such as sorting, renaming, and extracting fields | Small and fast (Haiku) | The task needs little reasoning, so cost and speed matter more |
+| Everyday multi-step work such as summarizing, drafting, and light analysis | Mid-tier (Sonnet) | A balance of quality, speed and cost |
 | Ambiguous, high-stakes or long-running work | Most capable (Opus) | Reasoning is worth paying for only where it changes the outcome |
 
 Start with the smallest model you expect to work. Run the fixture, read the plan, and move up
@@ -295,7 +295,7 @@ a second opinion, and `apply_plan.py` and `verify.py` finish the job.
 |---|---|---|---|
 | Local classifier (1B or 1C) | Yes | Yes | Your machine |
 | `make_plan.py`, `apply_plan.py`, `verify.py` | Hashes and moves only | Yes | Your machine, no model |
-| Claude validator (`validate_plan.py`) | No | No | Cloud, given only ids, extensions, sizes, labels and destination folders |
+| Claude validator (`validate_plan.py`) | No | No | Cloud, given only ids, extensions, sizes, labels, and destination folders |
 | Your interactive Claude Code session | Yes, if it uses Read or Bash | Yes | Cloud |
 
 The last row is easy to overlook. The privacy comes from the steps you run yourself in a
@@ -336,7 +336,7 @@ nothing.
 ## 1.9 What real files taught us
 
 We ran both private pipelines on the fixture first, then on a 60-file slice of a real
-Downloads folder (mostly PDFs and emails, plus installers, spreadsheets and some unusual data
+Downloads folder (mostly PDFs and emails, plus installers, spreadsheets, and some unusual data
 files). Each result below is one run.
 
 On the fixture:
@@ -385,13 +385,13 @@ error before blaming the data.
 ## 1.10 Sorting by project instead of type
 
 Everything so far sorts by kind: documents, images, installers. That is rarely how people think
-about their files. A mortgage refinance is a loose collection of PDFs, spreadsheets and emails
+about their files. A mortgage refinance is a loose collection of PDFs, spreadsheets, and emails
 that belong together, and a folder named `Documents` scatters them. Real Downloads folders are
 made of projects.
 
 [Chapter 1D](1d-projects/) sorts by project instead. You supply the list of projects, a local
 model assigns each file to one of them, and a file that serves two projects gets a primary folder
-plus a Finder tag. It reuses this chapter's plan format, coverage check, undo and verifier
+plus a Finder tag. It reuses this chapter's plan format, coverage check, undo, and verifier
 unchanged.
 
 ## 1.11 Limits
