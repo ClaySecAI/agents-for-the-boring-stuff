@@ -24,8 +24,10 @@ Top-level mode was used on one real Downloads folder of well over 100,000 files 
 The validator's boundary was tested once. With only `--tools ""`, the model could still see the account's connectors. After
 adding `--strict-mcp-config` with an empty server list, they were gone (section 1.8).
 
-The two private pipelines (1B and 1C) ran once each on the fixture (28 files) and once on a 60-file slice of a real Downloads
-folder (section 1.9).
+The two private pipelines (1B and 1C) ran once each on the fixture (28 files). On a 60-file slice of a real Downloads folder
+each ran at least twice: once judging by file name alone, and once reading PDF text and OCR output. The first 1C run that read
+contents failed on 31 of the 60 files while a 12B model shared the Mac; run alone, it labeled 59 of 60. Claude's metadata review
+ran on the 1B plan and on the 1C plan from the slice (section 1.9). The record gives no exact count beyond these runs.
 
 ## Not tested
 

@@ -308,8 +308,9 @@ Sections 1.2 to 1.7 send file contents to a cloud model. If your files are sensi
 variants keep the contents local. A model on your own machine reads every file and labels it.
 Claude then reviews only a table of metadata.
 
-- [Chapter 1B](1b-local-model/) uses a local model through LM Studio or Ollama. It works on any
-  operating system and any model size you can fit.
+- [Chapter 1B](1b-local-model/) uses a local model through LM Studio or Ollama. It is written
+  for any operating system and any model size you can fit, but we ran it only on a 24 GB Mac
+  with Gemma 4 12B.
 - [Chapter 1C](1c-apple-foundation-models/) uses the model built into macOS. Nothing needs to
   be downloaded, but it requires a Mac with Apple Intelligence.
 
@@ -362,7 +363,10 @@ one of them is labeled `government_id`. That is far less than the contents.
 
 We ran both private pipelines on the fixture first, then on a 60-file slice of a real
 Downloads folder (mostly PDFs and emails, plus installers, spreadsheets, and some unusual data
-files). Each result below is one run.
+files). No figure below was measured more than once. On the real slice each pipeline ran at
+least twice: first judging files by name alone, then again once it could read PDF text and OCR
+output. The 1C run that read contents needed a second attempt, described at the end of this
+section.
 
 On the fixture:
 
