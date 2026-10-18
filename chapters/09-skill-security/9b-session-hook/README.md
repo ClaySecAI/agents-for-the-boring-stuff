@@ -63,7 +63,30 @@ python3 chapters/09-skill-security/skillgate.py adopt .claude/agents/skill-revie
 The reason goes into `audit.log`. Both `adopt` and `release` are denied to agents in `.claude/settings.json`, so only you can run
 them.
 
-## 9B.4 What the hook does not do
+## 9B.4 Making it take effect
+
+A hook starts working at the next session start. To refresh:
+
+- **Claude app (Code tab):** start a new session.
+- **CLI:** exit and run `claude` again, or run `/clear`, which also starts a fresh session and fires the hook.
+- **After you edit `settings.json`:** open a new session, or check `/hooks` in the CLI to confirm the hook is listed.
+
+The first line the hook prints is your proof it ran. If you see no `skillgate:` line, the hook is not firing: check that
+`.claude/settings.json` has the `hooks` entry and that you opened the session in this project folder, because
+`$CLAUDE_PROJECT_DIR` is the folder you opened.
+
+## 9B.5 After you edit something you adopted
+
+You will change your own skills and agents. The next session the hook says CHANGED, which is the hook doing its job.
+Read what you changed, then adopt it again (adopting a path that is already recorded replaces its hash):
+
+```bash
+python3 chapters/09-skill-security/skillgate.py adopt .claude/agents/file-organizer.md --yes
+```
+
+If you did not make the change, do not adopt it. Compare it with your last commit (`git diff`) first.
+
+## 9B.6 What the hook does not do
 
 - **It detects. It does not block.** A skill you drop into `.claude/skills` is usable immediately. The hook tells you at the
   next session start. It cannot stop a download from executing.
@@ -74,7 +97,7 @@ them.
   archives). The hook says it is not auditing them, rather than hiding that.
 - **Changing hooks mid-session** needs a restart, or a review in the hooks menu, before they apply.
 
-## 9B.5 A step further: asking before anything is written
+## 9B.7 A step further: asking before anything is written
 
 A stronger layer would use a `PreToolUse` hook: before the agent writes or edits anything under `.claude/skills`,
 `.claude/agents` or `settings.json`, Claude Code asks you. That blocks the quiet version of the attack, an agent adding

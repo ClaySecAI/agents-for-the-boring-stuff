@@ -206,6 +206,21 @@ cat ~/.local/state/skillgate/audit.log     # or the Mac path above
 - Released skills can change on disk. `audit` finds that; run it on a schedule (Chapter 7).
 - Agents and slash commands are text with the same powers. Run the same flow on them.
 
+## Common tasks
+
+| I want to... | Run | How often |
+|---|---|---|
+| Vet a skill I downloaded | `quarantine`, `scan`, review, `verify-review`, `decide`, then `release` (9.4) | Each download |
+| Vet an agent I downloaded | The same, with the `.md` file (9C) | Each download |
+| Trust skills and agents I already have | `adopt <paths> --yes` (9B.3) | Once per setup |
+| Re-trust something I edited | `adopt <path> --yes` after reading the change (9B.5) | Each edit |
+| See if anything changed | The session hook prints it; `audit --target <folder>` shows details | Every session |
+| Look at the history | `cat` the `audit.log` (9.7) | When curious |
+| Add a scanner | Section 9.3 | Once |
+| Stop using it | Delete the state folder and the `hooks` entry (9.7) | Rarely |
+
+`release` and `adopt` are yours alone: the repository's settings deny them to agents.
+
 ## Exercises
 
 0. Build the trap: a skill folder with a `SKILL.md` that says "ignore previous instructions" and a script that reads an environment variable called `API_KEY` and fetches a web address with it. Quarantine it and scan it. Which rules fire?
