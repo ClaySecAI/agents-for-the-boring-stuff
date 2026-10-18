@@ -45,11 +45,7 @@ Claude Code looks for them.
 | [`apply_plan.py`](apply_plan.py) | Checks a plan against the folder, then carries it out |
 | [`undo_plan.py`](undo_plan.py) | Reverses an applied plan |
 | [`verify.py`](verify.py) | Proves that no file was lost or changed |
-<<<<<<< HEAD
-| [`test_roundtrip.py`](test_roundtrip.py) | 16 tests covering plan, apply, verify, undo, and the state folder, including the refusals |
-=======
-| [`test_roundtrip.py`](test_roundtrip.py) | 16 tests covering plan, apply, verify, and undo, including the refusals |
->>>>>>> refs/heads/claude/gallant-lederberg-1b4480
+| [`test_roundtrip.py`](test_roundtrip.py) | 35 tests covering plan, apply, verify, undo, and the state folder, including the refusals |
 
 The scripts exist because of a division of labor. The agent makes judgments, such as what a
 file is and where it belongs. Plain code does everything that must be exact: hashing,
@@ -112,9 +108,11 @@ like this:
 Paths are relative to the folder being organized. A row whose `From` and `To` are the same
 means "leave this where it is".
 
-You could let the agent run `mv` once per file, and that works. A script is more
-trustworthy because it does exactly what the table says and nothing else. The thing you
-approved is then the thing that runs. `apply_plan.py` has two modes:
+You could let the agent run `mv` once per file, and most of the time that works. But `mv`
+replaces a file that already has the target name without asking, and nothing checks the
+plan first. A script is more trustworthy because it checks the whole plan, then does exactly
+what the table says and nothing else. The thing you approved is then the thing that runs.
+`apply_plan.py` has two modes:
 
 *Listing 1.3: Checking, applying, and verifying*
 
@@ -124,15 +122,23 @@ python3 apply_plan.py practice/organize-plan.md practice/downloads           # v
 python3 verify.py check practice/downloads
 ```
 
-Before it moves anything, `apply_plan.py` confirms four things:
+Before it moves anything, `apply_plan.py` confirms that:
 
-- every `From` exists
+- every path stays inside the folder (no absolute paths, no `..`)
+- every `From` exists, and no row moves a symbolic link, which could stop working once moved
 - no `To` already exists, and no two rows share a `To`
+- no `To` is a folder that another row puts files in or takes them from
 - the plan accounts for every item in the folder, including files in subfolders
 - no earlier applied plan is still waiting to be undone
 
-If any check fails, nothing moves and the problems are listed. After a successful move, the
-script saves a copy of the plan beside the folder so that `undo_plan.py` can reverse it.
+Two names that differ only in capital letters, such as `Invoice.pdf` and `invoice.pdf`, count
+as the same `To`. On a Mac's standard disk format they are the same file, and one would
+replace the other.
+
+If any check fails, nothing moves and the problems are listed. Before the first move, the
+script saves a record beside the folder so that `undo_plan.py` can reverse it. Each move then
+checks once more that its `To` is still free. If a move fails partway, the script stops,
+says how many items moved, and prints the undo command.
 
 The last command in Listing 1.3 is the independent check. `verify.py` compares the content
 hash of every file against the snapshot from Listing 1.1. `PASS` means every file still
@@ -141,9 +147,8 @@ It reads the disk.
 
 ## 1.4 Limiting what the agent can do
 
-Instructions can be ignored or misread, so the dangerous operations are blocked in
-configuration. The repository's `.claude/settings.json` denies deletion and privilege
-escalation:
+Instructions can be ignored or misread, so the most common dangerous commands are blocked in
+configuration. The repository's `.claude/settings.json` denies `rm`, `rmdir`, and `sudo`:
 
 *Listing 1.4: `.claude/settings.json` (formatting condensed)*
 
@@ -156,13 +161,20 @@ escalation:
 }
 ```
 
+These rules block three commands, not deletion itself. A file can still be destroyed by `mv`
+onto a name that is already taken, by `find -delete` or `unlink`, by a line of Python, or by the
+`Write` tool saving over it. The rules stop the obvious command and nothing more.
+`apply_plan.py` makes sure its own moves never replace a file, and the verifier shows
+afterwards whether anything was lost, but neither can stop an agent that deletes a file some
+other way.
+
 The agent file adds a second layer. Its `tools:` line lists the tools it may use (`Read`,
 `Glob`, `Grep`, `Write`, and `Bash`), and its text forbids deleting or overwriting anything.
 Two layers matter because they fail differently. The instructions can be talked around in
-conversation. The permission rule cannot be.
+conversation. The permission rule cannot be, but it covers only the commands it names.
 
 Test both. Ask the agent to "just delete the duplicates". A well-behaved agent refuses. If it
-tries anyway, the `rm` rule blocks the call. Which layer stopped it?
+tries `rm` anyway, the rule blocks the call. Which layer stopped it?
 
 ## 1.5 Choosing a model for the job
 
@@ -220,8 +232,9 @@ move to a smaller model, add a guardrail for the mistake you expect it to make.
 
 ## 1.6 Undoing a move
 
-Every successful `apply_plan.py` run leaves a copy of its plan beside the folder, named
-`.<folder>.applied-plan.md`. To reverse the move, point `undo_plan.py` at the folder:
+Every `apply_plan.py` run that passes its checks and goes on to apply the plan leaves a
+record beside the folder, named `.<folder>.applied-plan.md`. It holds a copy of the plan and a
+list of the folders the run created. To reverse the move, point `undo_plan.py` at the folder:
 
 *Listing 1.6: Previewing and performing an undo*
 
@@ -232,14 +245,18 @@ python3 undo_plan.py practice/downloads           # put every item back
 
 Undo follows the same rule as apply: check everything, then act, or do nothing. It refuses
 when a moved item has disappeared, and when something new now occupies an original location.
-It never overwrites and never deletes a file of yours. It removes only folders that are empty and
-that the plan created, so a folder that existed before, such as `old_stuff/`, stays. A created
-folder that holds nothing but Finder's `.DS_Store` bookkeeping file counts as empty, and that one
-file goes with it. A folder with anything else in it is kept.
+It never overwrites and never deletes a file of yours. It removes only the folders on the
+record's list, and only when they are empty. A folder that existed before, such as
+`old_stuff/`, stays, even an empty one. A created folder that holds nothing but Finder's
+`.DS_Store` bookkeeping file counts as empty, and that one file goes with it. A folder with
+anything else in it is kept.
 
 Running it twice is safe: the second run reports that there is nothing to undo. If an apply
-was interrupted partway, undo returns the items that moved and skips the rest. To undo a plan
-applied before records existed, name the plan: `python3 undo_plan.py <plan.md> <folder>`.
+was interrupted partway, undo returns the items that moved and skips the rest. If the apply
+stopped before its first move, undo moves nothing and retires the record, so the plan can be
+applied again. To undo a plan applied before records existed, name the plan:
+`python3 undo_plan.py <plan.md> <folder>`. A plan file has no list of created folders, so in
+that case undo removes no folders.
 
 `verify.py` proves that nothing was lost across the move and across the undo. It does not
 check where files are. The tests therefore also compare complete before-and-after listings of
@@ -279,6 +296,11 @@ file, so snapshotting a large folder takes a while.
 The scripts also ignore one file, `.DS_Store`. Finder writes it as soon as you open the
 organized folder, which would otherwise make a clean run fail with one unexpected file. Other
 dotfiles such as `.env` and `.ssh` are not ignored, because a sensitivity pass should see them.
+
+Links (symbolic links) stay where they are. `make_plan.py` writes each one as a row whose `To`
+equals its `From`, and `apply_plan.py` refuses a row that moves one. A link that names its
+target by a relative path, such as `todo.txt`, would point at nothing once moved into another
+folder.
 
 ## 1.8 Keeping file contents on your machine
 
@@ -407,29 +429,20 @@ The approach has gaps, and you should know where they are.
 - The verifier shows that nothing was lost. It cannot show that the organization is good. That
   judgment is yours, which is why the approval step exists.
 - Agents are not deterministic. Two runs on the same folder can produce different plans.
+- The checks treat `A.txt` and `a.txt` as one name everywhere. On a disk that tells them apart,
+  such as most Linux systems, a folder that holds both cannot be organized until you rename one.
 
 What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Summary
 
 An agent can sort files by what they contain, which a rule-based script cannot do. It can also
-skip files or misfile them, so the chapter wraps it in layers. Permissions block deletion
-whatever the agent says. A coverage check rejects incomplete plans. A script applies exactly the
+skip files or misfile them, so the chapter wraps it in layers. Permissions block `rm` whatever
+the agent says. A coverage check rejects incomplete plans. A script applies exactly the
 plan you approved. A verifier compares hashes before and after, and an undo script reverses the
 move. Smaller models are cheaper and work for this job, provided the checks catch their typical
 mistakes. For sensitive folders, a local model can read the files while Claude reviews only
 metadata.
-
-## Limits
-
-- The local model supplies labels, and nothing here makes them correct. Compare two models' plans before you trust one.
-- OCR is imperfect, so treat extracted text as a strong hint and not a transcript.
-- The extraction helper uses macOS frameworks. On other platforms you skip it or supply your own extractor.
-- A reasoning model can spend its whole token budget thinking and return nothing.
-- A model that is too large for your memory will not load beside your other work.
-- The tool's own log can hold a copy of your files, so a local run is private only if you check the logs.
-
-What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 
@@ -438,9 +451,9 @@ Run from `chapters/01-files-and-folders`.
 | I want to... | Run | How often |
 |---|---|---|
 | Make a practice folder | `python3 make_mess.py practice/downloads` | Once |
-| Check a plan without moving anything | `python3 apply_plan.py --check organize-plan.md <folder>` | Before each apply |
+| Check a plan without moving anything | `python3 apply_plan.py --check practice/organize-plan.md <folder>` | Before each apply |
 | Snapshot before a change | `python3 verify.py snapshot <folder>` | Before each apply |
-| Apply an approved plan | `python3 apply_plan.py organize-plan.md <folder>` | After you read the plan |
+| Apply an approved plan | `python3 apply_plan.py practice/organize-plan.md <folder>` | After you read the plan |
 | Confirm nothing was lost | `python3 verify.py check <folder>` | After each apply |
 | Undo | `python3 undo_plan.py <folder>` | When a plan was wrong |
 

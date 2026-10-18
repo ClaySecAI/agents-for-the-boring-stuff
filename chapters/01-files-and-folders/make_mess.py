@@ -1,11 +1,14 @@
 """Create a fake, messy Downloads folder to practice on.
 
-Usage: python make_mess.py [target_dir] [--with-project]   (default: ./practice/downloads)
+    python make_mess.py [target_dir] [--with-project]   (default: ./practice/downloads)
 
 Every file is tiny and contains a plain-text description of what it
 pretends to be, so the agent can learn about it by reading, the same way
 it would with a real file's contents.
 """
+from __future__ import annotations
+
+import argparse
 import sys
 from pathlib import Path
 
@@ -58,11 +61,14 @@ PROJECT_FILES = {
 
 
 def main() -> None:
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("target", nargs="?", type=Path, default=Path("practice/downloads"))
+    ap.add_argument("--with-project", action="store_true", help="also add a nested project folder")
+    args = ap.parse_args()
     files = dict(FILES)
-    if "--with-project" in sys.argv:
+    if args.with_project:
         files.update(PROJECT_FILES)
-    target = Path(args[0] if args else "practice/downloads")
+    target = args.target
     if target.exists() and any(target.iterdir()):
         sys.exit(f"{target} already exists and is not empty. Delete it or pick another path.")
     for name, content in files.items():

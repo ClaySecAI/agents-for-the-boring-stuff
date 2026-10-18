@@ -52,19 +52,23 @@ folders are easier to trust.
 First validate your own plan:
 `python3 chapters/01-files-and-folders/apply_plan.py --check <plan> <folder>`.
 It rejects a plan that skips files (including ones in subfolders), collides on
-destinations, or names files that don't exist. Fix the plan and re-check until it
-passes. Never ask for approval on a plan that fails the check.
+destinations (names that differ only in upper and lower case collide too), moves a link,
+points outside the folder, or names files that don't exist. Fix the plan and re-check
+until it passes. Never ask for approval on a plan that fails the check. If it reports an
+earlier applied plan still on record, tell the user and ask whether to undo it first.
 
 Then show the user a short summary of the plan and ask them to approve or edit it.
 Do not move anything yet. Wait for a clear yes.
 
 ## 4. Apply
 
-Execute exactly what the approved plan says. Prefer running
+Execute exactly what the approved plan says by running
 `python3 chapters/01-files-and-folders/apply_plan.py <plan> <folder>`, which performs the
-plan's table and nothing else. If it isn't available, `mkdir -p` the destinations
-and `mv` each file yourself. Either way, do nothing the plan didn't list. If something
-unexpected comes up, stop and ask.
+plan's table and nothing else. If the script isn't available, or it stops with an error,
+stop and ask. Do not move files by hand: that skips every check, and `mv` overwrites an
+existing file without asking. If the script says it was interrupted, show the user the
+undo command it printed. Do nothing the plan didn't list. Stop and ask if anything else
+unexpected comes up.
 
 ## 5. Report and verify
 
