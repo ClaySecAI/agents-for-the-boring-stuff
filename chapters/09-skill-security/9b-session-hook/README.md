@@ -109,6 +109,12 @@ A stronger layer would use a `PreToolUse` hook: before the agent writes or edits
 instructions to itself. We have not built it, because it also interrupts honest edits, the way it would while writing this
 book. Whether it is worth that friction depends on what you let agents do while you are away. Chapter 7 returns to this.
 
+## 9B.8 Limits
+
+The hook detects and does not block, runs at session start only, compares hashes without reading the skills, and skips the app's
+synced skills (9B.6). The `PreToolUse` layer that would ask before a write is not built (9B.7). Three things are untested: the
+MISSING status, the hook firing in a fresh session, and how its line looks in the CLI as opposed to the app.
+
 What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
