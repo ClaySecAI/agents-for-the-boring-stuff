@@ -105,10 +105,10 @@ launchctl unload ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist
 
 ## 1E.8 Limits
 
-We tested the sweep with a fake model in `test_sweep.py`, with a real model on a practice folder (56 of 59
-files in the right place, undo restoring all 59), and through launchd on a real Downloads folder. We have
-not watched it run unattended for weeks, and nothing here has been tried off a Mac. Look at `status` every
-week for the first month.
+A sweep has not run unattended for weeks, so slow problems, such as a description that drifts out of date, are
+unseen. Nothing here has been tried off a Mac. Look at `status` every week for the first month.
+
+What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 
