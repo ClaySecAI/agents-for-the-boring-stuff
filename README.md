@@ -8,7 +8,7 @@ agent does it.
 
 You still learn skills, but they are different ones:
 
-1. Specifying the task: a clear goal, constraints and a definition of done.
+1. Specifying the task: a clear goal, constraints, and a definition of done.
 2. Scoping the agent: which tools and folders it may touch, and what needs your approval.
 3. Verifying the result: never accepting "done" without an independent check.
 4. Making the work repeatable: packaging it as a skill, then scheduling it.
@@ -41,7 +41,7 @@ Behind that pattern is a division of labor that returns in every chapter:
   list of projects is missing or incomplete.
 - The agent supplies judgment at a scale you would not spend by hand: reading hundreds of files and
   deciding what each one is.
-- Plain code supplies guarantees: exact moves, coverage checks, verification and undo.
+- Plain code supplies guarantees: exact moves, coverage checks, verification, and undo.
 
 When something goes wrong, it usually means one of the three parties was asked to do another's job.
 
@@ -80,13 +80,13 @@ Then open [Chapter 1](chapters/01-files-and-folders/README.md).
 The chapters are tested on realistic files, and sometimes on real ones. Nothing real belongs in
 git, so two layers protect it.
 
-The first is `.gitignore`, which skips practice folders, labels, plans, snapshots and compiled
+The first is `.gitignore`, which skips practice folders, labels, plans, snapshots, and compiled
 helpers. It is only a request, and `git add -f` overrides it.
 
 The second is a pre-commit guard, [`scripts/check_repo_clean.py`](scripts/check_repo_clean.py).
 It inspects what is about to be committed and refuses the commit when:
 
-- a file is not on a short allowlist (documentation, source and one settings file)
+- a file is not on a short allowlist (documentation, source, and one settings file)
 - a file is large
 - a file contains a home-directory path, an email address, a number shaped like a social
   security number, or a key
@@ -117,7 +117,7 @@ tests. The human author set the direction, made the design decisions, ran the co
 needed personal credentials, read the results and decided what to publish.
 
 In practice the work went like this. The author described what a chapter should do. Claude wrote
-the agent files, scripts and drafts, ran experiments on the author's machine and reported what
+the agent files, scripts, and drafts, ran experiments on the author's machine and reported what
 happened, failures included. The author pushed back, chose between options and approved each
 step that touched an account or a real file. Most of the bugs and caveats in the text turned up
 by running the code and not by reading it. Several came from the author's questions, such as
@@ -145,8 +145,8 @@ project asks how much of the chore an agent can do instead.
 - Free online text: [automatetheboringstuff.com](https://automatetheboringstuff.com/), which the
   site offers under a Creative Commons Attribution-NonCommercial-ShareAlike license
 
-This is an independent project. It is not affiliated with, sponsored by or endorsed by Al
-Sweigart or No Starch Press. It reproduces no text, code, figures or exercises from the book. If
+This is an independent project. It is not affiliated with, sponsored by, or endorsed by Al
+Sweigart or No Starch Press. It reproduces no text, code, figures, or exercises from the book. If
 you want to learn Python by writing the automation yourself, buy the book or read it online.
 
 ## License
