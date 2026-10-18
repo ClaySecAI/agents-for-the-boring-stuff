@@ -66,6 +66,7 @@ When something goes wrong, it usually means one of the three parties was asked t
 | 9 | [Vetting skills before you install them](chapters/09-skill-security/) | Ready |
 | 9B | [Checking automatically at session start](chapters/09-skill-security/9b-session-hook/) | Ready |
 | 9C | [Agents are files, not folders](chapters/09-skill-security/9c-agents/) | Ready |
+| 10 | An editorial agent: how this book is edited | Planned |
 | 8 | [A model that reads your commits](chapters/08-security-reviewer/PLAN.md) | Design note |
 
 ## Getting started

@@ -1,0 +1,46 @@
+# House style
+
+Every piece of prose in this book goes through the editorial pass before it is committed: the style linter,
+the avoid-ai-writing skill in edit mode, and the checklist below. The `editor` agent runs all three.
+
+## Voice
+
+- Short sections, one idea each. Lead with the answer or the command. A reader with a short attention span is the
+  reader we write for.
+- Say what was tested and what was not. "We ran it" and "we expect" are different sentences.
+- Write the how-to as if nothing is installed. Show the command, say what it prints, say what to do if it does not.
+- Credit the human and the agent honestly. This book is built with an AI assistant, and says so.
+
+## Chicago conventions we apply
+
+- Serial (Oxford) comma: "files, folders, and links."
+- Spell out one through nine in prose; numerals for sizes, ports, versions, counts in tables and code ("24 GB",
+  "port 1234", "59 files").
+- "percent" in prose; "%" in tables and code.
+- Headings in sentence case, for consistency with the rest of the repository.
+- Straight quotes in markdown and code. Italics for a term on first use. No bold lead-ins at the start of paragraphs.
+- No em dashes. Use a comma, a period, or parentheses.
+- Spell out abbreviations on first use.
+
+## AI patterns we remove
+
+<!-- style:off -->
+The full list is in the avoid-ai-writing skill. The ones we hit most: inflated words (robust, comprehensive, seamless,
+leverage), hollow intensifiers (genuinely, truly), filler openers (it is worth noting), "not X but Y" reveals,
+bold-label bullets with periods, and rule-of-three padding.
+<!-- style:on -->
+
+## Chapter shape
+
+1. One paragraph: what this chapter does and why.
+2. Numbered sections, each short.
+3. A Common tasks table: task, command, how often.
+4. What we tested, with what was not tested stated plainly.
+5. Limits.
+6. Exercises that use practice data, never the reader's real files.
+
+## Safety in examples
+
+- No real file names, folder names, project names, account numbers, or people from anyone's machine. Invent them.
+- Commands are copy-and-paste. One command per code block.
+- Tokens and secrets never appear, even as examples.
