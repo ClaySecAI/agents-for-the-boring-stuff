@@ -205,8 +205,9 @@ def scan_folder(folder: Path, kind: str = "skill") -> list[dict]:
         for lineno, line in enumerate(text.splitlines(), 1):
             if INVISIBLE.search(line):
                 add("high", "invisible-characters", rel, lineno, "zero-width or direction-control characters")
+            scan_line = re.sub(r"^\s*>+\s?", "", line)  # a markdown quote marker is not a shell redirect
             for severity, rule, pattern in RULES:
-                if pattern.search(line):
+                if pattern.search(scan_line):
                     if rule == "network-call" and re.search(r"localhost|127\.0\.0\.1|\[::1\]", line):
                         continue  # talking to your own machine is not a leak
                     add(severity, rule, rel, lineno, line.strip())
