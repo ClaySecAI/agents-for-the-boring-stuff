@@ -9,7 +9,7 @@ description: Run the editorial pass on book prose before committing it: style li
 2. Call the `editor` agent on it with this prompt, filling in the path. Put the rules in the prompt: an agent's own definition may
    be stale, and agents shorten work they think is unnecessary.
 
-   > Edit <path> in place. Follow STYLE.md, including American spelling and the Chapter shape sections (report missing ones, never invent a What we tested section). Before editing, call the Skill tool with `avoid-ai-writing`, then read
+   > Edit <path> in place. Follow STYLE.md, including American spelling and the Chapter shape sections (report missing ones; never write TESTED.md, the author supplies the facts). Before editing, call the Skill tool with `avoid-ai-writing`, then read
    > `.claude/skills/avoid-ai-writing/references/patterns.md` in full, in pages, to its last heading. Do this even if the target
    > is short. End your reply with this ledger, filled in: a line `Ledger`, then `Skill loaded: yes`, `Catalog read through: <text of
    > the last heading you read>`, `Linter findings: <before> -> <after>`, `Editing passes: <n>`, `Model-only checks: <list>`.

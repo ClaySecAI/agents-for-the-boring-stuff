@@ -33,21 +33,24 @@ bold-label bullets with periods, and rule-of-three padding.
 
 ## Chapter shape
 
-Every chapter README, and every sub-chapter README (1B, 9C, and so on), has these sections in this order. The linter requires the
-last four by name.
+Every chapter README, and every sub-chapter README (1B, 9C, and so on), has these in this order. The linter requires them.
 
 1. One paragraph: what this chapter does and why.
 2. Numbered sections, each short. Sub-chapters number as `1D.3`.
-3. **Limits**: what the approach cannot do or gets wrong.
-4. **What we tested**: three parts, in this order.
-   - *Tested:* what ran, on what, how many times, with the numbers.
-   - *Not tested:* what a reader might assume we checked and we did not (other platforms, other models, the real scheduler, real
-     data). Say "none" only if that is true.
-   - *How much to trust it:* one sentence. A single run is an anecdote, not a measurement.
-5. **Common tasks**: a table of task, command, how often.
-6. **Exercises** that use practice data, never the reader's real files.
+3. **Limits**: what the approach cannot do or gets wrong. End it with one line linking `TESTED.md`.
+4. **Common tasks**: a table of task, command, how often.
+5. **Exercises** that use practice data, never the reader's real files.
 
-A setup or concept page with nothing to run still has a "What we tested" section. It says what was not run.
+The testing record lives in a `TESTED.md` beside the README, not in the chapter, so it does not interrupt the lesson. The README
+keeps one line: "What we tested, and what we did not: [TESTED.md](TESTED.md)." Each sub-chapter folder has its own. A setup page
+shares the TESTED.md of the folder it sits in. TESTED.md has three parts, in this order:
+
+- *Tested:* what ran, on what, how many times, with the numbers.
+- *Not tested:* what a reader might assume we checked and we did not (other platforms, other models, the real scheduler, real
+  data). Say "none" only if that is true.
+- *How much to trust it:* one sentence. A single run is an anecdote, not a measurement.
+
+A setup or concept chapter with nothing to run still has a TESTED.md. It says what was not run.
 
 ## Safety in examples
 

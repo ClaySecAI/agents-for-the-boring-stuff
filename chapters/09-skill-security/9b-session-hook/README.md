@@ -109,16 +109,7 @@ A stronger layer would use a `PreToolUse` hook: before the agent writes or edits
 instructions to itself. We have not built it, because it also interrupts honest edits, the way it would while writing this
 book. Whether it is worth that friction depends on what you let agents do while you are away. Chapter 7 returns to this.
 
-## What we tested
-
-`test_skillgate.py` covers the hook's output and logic: the counts it reports, the warning for an item that is not vetted, no
-warning once an item is adopted, the CHANGED status after an edit, and that it never exits with an error. It also covers `adopt`
-(refusing without `--yes`, refusing a high finding, accepting a risk) and `audit`. On this repository the hook ran from the command
-line and reported six items as not vetted before we adopted them.
-
-Not tested: the MISSING status; the hook firing automatically at the start of a real Claude Code session (we ran the command, and
-wired it into `settings.json`, but did not watch a fresh session print the line); and how the line looks in the CLI as opposed to the
-app.
+What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 

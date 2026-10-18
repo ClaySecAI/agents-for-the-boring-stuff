@@ -111,9 +111,9 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 | Trust skills and agents I already have | `adopt <paths> --yes` (9B.3) | Once per setup |
 | Re-trust something I edited | `adopt <path> --yes` after reading the change (9B.5) | Each edit |
 | See if anything changed | The session hook prints it; `audit --target <folder>` shows details | Every session |
-| Look at the history | `cat` the `audit.log` (9.7) | When curious |
+| Look at the history | `cat` the `audit.log` (9.6) | When curious |
 | Add a scanner | Section 9.3 | Once |
-| Stop using it | Delete the state folder and the `hooks` entry (9.7) | Rarely |
+| Stop using it | Delete the state folder and the `hooks` entry (9.6) | Rarely |
 
 `release` and `adopt` are yours alone: the repository's settings deny them to agents.
 
