@@ -14,8 +14,9 @@ slot into it:
 2. The repository's own pre-commit hook, `scripts/check_repo_clean.py`: an allowlist of file types,
    fixed patterns (home paths, email addresses, numbers shaped like social security numbers, keys)
    and a private blocklist kept in `.git/private-terms.txt`.
-3. A global hook (git's `core.hooksPath`, set for every repository on the machine) that runs gitleaks, then a second personal-data check (a
-   whole-word blocklist, the home path and noreply addresses), then the repository's own hook.
+3. A global hook (git's `core.hooksPath`, set for every repository on the machine) that runs
+   gitleaks, then a second personal-data check (a whole-word blocklist, the home path, and noreply
+   addresses), then the repository's own hook.
    Repositories that are meant to hold personal data opt out with
    `git config hooks.allowPersonalData true` and may push only to private repositories.
 
@@ -35,7 +36,7 @@ reading what the model flags.
 
 ## 8.2 Where the model runs
 
-**Default: a local model.** Either LM Studio or Ollama as in
+The default is a local model, either LM Studio or Ollama as in
 [Chapter 1B](../01-files-and-folders/1b-local-model/README.md), or Apple's on-device model as in
 [Chapter 1C](../01-files-and-folders/1c-apple-foundation-models/README.md). The reviewer exists
 because the diff might contain personal data. Sending that diff to a hosted model to ask whether it
@@ -68,17 +69,17 @@ limit what the model can do.
 
 The reviewer is designed so that it can only add a warning or a block. It cannot remove one.
 
-- **One call, no tools, no loop.** The reviewer is a single request to a model with no tools. It
+- One call, no tools, no loop: the reviewer is a single request to a model with no tools. It
   cannot read other files, run commands or reach the network. An "agent" that can run commands
   while reading untrusted text is exactly the scenario Chapter 0.4 warns about, and this design
   deliberately is not one.
-- **It runs after the rules, and the rules decide first.** If `check_repo_clean.py`, gitleaks or the
+- It runs after the rules, and the rules decide first: if `check_repo_clean.py`, gitleaks or the
   global check refuses the commit, the commit is refused. The reviewer is not asked. Nothing the
   model returns can turn a refusal into an approval.
-- **It sees only added lines.** The hook takes the `+` lines of the staged diff, for allowlisted text
+- It sees only added lines: the hook takes the `+` lines of the staged diff, for allowlisted text
   files only. Removed lines are never sent: removing data is the outcome we want, and leaving them
   out roughly halves the prompt.
-- **Its answer has a fixed shape.** The request carries a JSON schema, as in Chapter 1B. `category`
+- Its answer has a fixed shape: the request carries a JSON schema, as in Chapter 1B. `category`
   is an enum and `confidence` is a number between 0 and 1. There is no free-text field such as
   `reason`. A free-text field is the channel through which matched text, or injected text, would
   reach your terminal. The parser drops anything outside the schema and treats an answer that does
@@ -86,9 +87,9 @@ The reviewer is designed so that it can only add a warning or a block. It cannot
 
 With those limits, the worst a successful injection can do is one of two things:
 
-1. **Suppress a finding.** The model says nothing about a real leak. That is the same outcome as
+1. Suppress a finding: the model says nothing about a real leak. That is the same outcome as
    having no reviewer, and the rules have already run.
-2. **Invent a finding.** The model flags a clean line. That costs the person committing a moment
+2. Invent a finding: the model flags a clean line. That costs the person committing a moment
    to look at their own line. It is a nuisance, not a leak.
 
 Neither is worse than the baseline without a reviewer. This is the property the chapter should
@@ -116,8 +117,8 @@ What it should ignore, and the prompt should say so:
 - Documentation of what the guards look for. A sentence such as "the guard blocks home-directory
   paths" describes a pattern; it does not contain one.
 - Generic placeholders: `<your-username>`, `your-model`, `~/Downloads`.
-- Public names in a public role: authors and books in a credits section, product and company names
-  such as LM Studio or Apple.
+- Public names in a public role: authors and books in a credits section, and product and company
+  names such as LM Studio or Apple.
 - Anything the rules already catch. The reviewer is not a second regex. If the hook sees a finding
   on a line the rules would have flagged, that is a sign the rules were bypassed, which is worth a
   warning of its own.
@@ -158,7 +159,7 @@ is already on it).
 
 ## 8.6 When it runs, how fast, and how it fails
 
-**Pre-commit or pre-push.** Both, with different strictness:
+The hook runs at pre-commit and at pre-push, with different strictness:
 
 - **Pre-commit: warn.** It runs often, so it must be fast and must not get in the way. It prints
   findings and lets the commit through. A commit is still local and can be amended.
@@ -167,14 +168,14 @@ is already on it).
   can apply the strict mode only when pushing to a public repository. That fits the split the global
   hook already makes between public and private remotes.
 
-**Size caps.** Only added lines, only allowlisted text files, and only up to a fixed budget per run
+Size caps: only added lines, only allowlisted text files, and only up to a fixed budget per run
 (on the order of a few thousand tokens, which suits the small context windows in 1B and 1C). Files
 are sent one at a time, each in a fresh session, as Chapter 1C does with `LanguageModelSession`, so
 one file's text cannot influence the judgment of another. A diff over the budget is not truncated
 silently: the hook says how many lines it did not read. A large commit, such as a generated fixture,
 is a reason to look at it yourself.
 
-**Confidence to action.** Starting thresholds, to be set from the evaluation in 8.7, not from intuition:
+Confidence to action: starting thresholds, to be set from the evaluation in 8.7, not from intuition:
 
 | Confidence | Pre-commit | Pre-push to a public remote |
 |---|---|---|
@@ -186,7 +187,7 @@ A block on push is overridden the same way as any other finding: change the line
 is wrong, add a note to an ignore list the hook reads (by file and line hash, never by the text), in
 a commit that a person reads. Not with `--no-verify`, which CONTRIBUTING.md already rules out.
 
-**When the model is down: fail open, and say so.** The rules are the enforcement layer, and they
+When the model is down, the hook fails open and says so. The rules are the enforcement layer, and they
 always run. A local server that is not running, a model that is not loaded or an answer that does
 not parse should not block every commit. The hook prints one line saying the reviewer did not run
 and why, and the commit proceeds. The one exception is the strict pre-push mode: there it fails
@@ -197,7 +198,7 @@ This is the opposite of Chapter 1B, which fails closed when a file cannot be lab
 difference is what the model is for. In 1B the model's label is the only thing deciding where a
 sensitive file goes. Here the model is an extra layer above rules that already ran.
 
-**The model's log is a copy of your diff.** Chapter 1B found that LM Studio's server log kept every
+The model's log is a copy of your diff. Chapter 1B found that LM Studio's server log kept every
 prompt it was sent. A reviewer that runs on every commit would write every added line of every
 commit into that log, including the ones it flagged. The chapter should:
 
@@ -215,7 +216,7 @@ The chapter would follow the pattern of
 [`score.py`](../01-files-and-folders/1d-projects/score.py) from Chapter 1D: a generated fixture with
 an answer key, the same prompt for every model, and a table.
 
-**The fixture is generated, not committed.** A set of planted leaks cannot live in the repository
+The fixture is generated, not committed. A set of planted leaks cannot live in the repository
 as data: the guard would refuse it, and rightly so, and the allowlist admits no JSON. Instead, a
 script in the style of `make_project_mess.py` writes the fixture into a `practice*` folder, together
 with an answer key. Anything shaped like a pattern the rules catch is assembled at run time, so the
@@ -258,17 +259,17 @@ set the block threshold where clean lines flagged is close to zero.
 
 Two options:
 
-- **A chapter in this book, after Chapter 7.** It turns the book's own method on the book: propose
+- A chapter in this book, after Chapter 7: it turns the book's own method on the book: propose
   (the model flags lines), approve (you read them), verify (the rules and the evaluation). It reuses
   the local model setup from 1B and 1C and the measuring approach from 1D. The global hook already
   has a slot for it, after the rules.
-- **A separate project.** A reusable hook for any repository, with its own installation and release
+- A separate project: a reusable hook for any repository, with its own installation and release
   process.
 
-**Recommendation: a chapter here first.** The design depends on things the book has already taught,
+Recommendation: a chapter here first. The design depends on things the book has already taught,
 and the chore is one every reader has: keeping their own data out of what they publish. A separate
 project makes sense later, if the hook turns out to be useful outside the book. The chapter's
-scripts would then be its first version. The README's chapter table lists this note as a design
+scripts would then be its first version. The README's chapter table lists it as a design
 note until the chapter is written.
 
 ## 8.9 Open questions
