@@ -49,7 +49,8 @@ class Base(unittest.TestCase):
 
     def stub_scanner(self, high: int) -> Path:
         stub = self.root / "skillspector"
-        report = {"findings": [{"severity": "high"}] * high + [{"severity": "low"}]}
+        report = {"risk_assessment": {"score": 10 * high, "severity": "HIGH" if high else "LOW", "recommendation": "REVIEW"},
+                  "issues": [{"severity": "HIGH"}] * high + [{"severity": "LOW"}]}   # the shape SkillSpector v2.12 writes
         stub.write_text("#!/usr/bin/env python3\nimport sys, json\n"
                         "out = sys.argv[sys.argv.index('--output') + 1]\n"
                         f"open(out, 'w').write(json.dumps({report!r}))\n")
@@ -159,6 +160,67 @@ class FlowTests(Base):
         skill_id = self.quarantine("tidy-notes", GOOD)
         self.gate("scan", skill_id, "--skillspector", self.stub_scanner(high=2))
         self.assertIn("blocked", self.gate("decide", skill_id).stdout)
+
+    def test_remote_scanners_do_not_run_unless_asked_and_never_without_a_token(self):
+        skill_id = self.quarantine("tidy-notes", GOOD)
+        marker = self.root / "agent-scan-was-called"
+        stub = self.root / "snyk-agent-scan"
+        stub.write_text(f"#!/usr/bin/env python3\nopen({str(marker)!r}, 'w').write('x')\nprint('{{\"findings\": [{{\"severity\": \"high\"}}]}}')\n")
+        stub.chmod(0o755)
+        out = self.gate("scan", skill_id, "--agent-scan", stub).stdout
+        self.assertIn("pass --remote", out)
+        self.assertFalse(marker.exists())                               # not even started: nothing was sent
+        env = dict(self.env)
+        env.pop("SNYK_TOKEN", None)
+        no_token = subprocess.run([sys.executable, "-B", str(HERE / "skillgate.py"), "scan", skill_id, "--agent-scan", str(stub), "--remote"],
+                                  capture_output=True, text=True, env=env).stdout
+        self.assertIn("SNYK_TOKEN is not set", no_token)
+        self.assertFalse(marker.exists())
+        env["SNYK_TOKEN"] = "test"
+        with_token = subprocess.run([sys.executable, "-B", str(HERE / "skillgate.py"), "scan", skill_id, "--agent-scan", str(stub), "--remote"],
+                                    capture_output=True, text=True, env=env).stdout
+        self.assertTrue(marker.exists())
+        self.assertIn("State: blocked", with_token)                     # its high finding blocks
+
+    def test_virustotal_sends_only_hashes_and_a_flagged_file_blocks(self):
+        import http.server
+        import threading
+        seen = []
+
+        class Fake(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_GET(self):
+                seen.append(self.path)
+                flagged = self.path.endswith(self.server.flagged)
+                if flagged:
+                    body = json.dumps({"data": {"attributes": {"last_analysis_stats": {"malicious": 3, "suspicious": 0}}}}).encode()
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(body)
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+
+        server = http.server.HTTPServer(("127.0.0.1", 0), Fake)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            skill_id = self.quarantine("tidy-notes", GOOD)
+            folder = self.home / "quarantine" / skill_id
+            server.flagged = skillgate.sha(folder / "SKILL.md")
+            env = {**self.env, "VT_AGENT_TOKEN": "t", "VT_BASE_URL": f"http://127.0.0.1:{server.server_address[1]}"}
+            out = subprocess.run([sys.executable, "-B", str(HERE / "skillgate.py"), "scan", skill_id, "--vt"],
+                                 capture_output=True, text=True, env=env).stdout
+        finally:
+            server.shutdown()
+        self.assertTrue(seen and all(p.startswith("/files/") and len(p.split("/")[-1]) == 64 for p in seen))   # only hashes in the URL
+        self.assertIn("1 flagged", out)
+        self.assertIn("State: blocked", out)
+
+    def test_virustotal_is_off_without_the_flag(self):
+        skill_id = self.quarantine("tidy-notes", GOOD)
+        self.assertIn("pass --vt", self.gate("scan", skill_id).stdout)
 
     def test_a_reviewer_block_verdict_blocks_even_a_clean_scan(self):
         skill_id = self.quarantine("tidy-notes", GOOD)

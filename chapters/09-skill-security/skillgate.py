@@ -192,24 +192,99 @@ def scan_folder(folder: Path) -> list[dict]:
     return sorted(findings, key=lambda f: (order[f["severity"]], f["file"], f["line"], f["rule"]))
 
 
-def run_skillspector(binary: str, folder: Path, out: Path) -> dict:
-    """Run NVIDIA SkillSpector's static pass (no LLM, so no file content leaves the machine) and read its report."""
-    done = subprocess.run([binary, "scan", str(folder), "--no-llm", "--format", "json", "--output", str(out)],
-                          capture_output=True, text=True)
-    if not out.exists():
-        return {"ran": False, "error": (done.stderr or done.stdout).strip()[:200]}
-    report = json.loads(out.read_text())
-    return {"ran": True, "report": str(out), "high_findings": count_serious(report), "exit_code": done.returncode}
+def severity_counts(issues: list[dict]) -> int:
+    return sum(1 for i in issues if str(i.get("severity", "")).lower() in ("high", "critical"))
 
 
 def count_serious(node) -> int:
-    """The report's schema is not documented, so count anything that carries a severity of high or critical."""
+    """For a scanner whose report format we have not seen: count anything labelled high or critical."""
     if isinstance(node, dict):
         here = 1 if str(node.get("severity", "")).lower() in ("high", "critical") else 0
         return here + sum(count_serious(v) for v in node.values())
     if isinstance(node, list):
         return sum(count_serious(v) for v in node)
     return 0
+
+
+def not_run(name: str, privacy: str, why: str) -> dict:
+    return {"name": name, "privacy": privacy, "ran": False, "high_findings": 0, "summary": why}
+
+
+def adapter_skillspector(binary: str | None, folder: Path, outdir: Path) -> dict:
+    """NVIDIA SkillSpector, static pass only (`--no-llm`): local, no content leaves the machine.
+    Report fields (checked against v2.12): risk_assessment{score, severity, recommendation}, issues[{severity, category, location}]."""
+    if not binary:
+        return not_run("skillspector", "local", "not installed")
+    out = outdir / "skillspector.json"
+    done = subprocess.run([binary, "scan", str(folder), "--no-llm", "--format", "json", "--output", str(out)], capture_output=True, text=True)
+    if not out.exists():
+        return not_run("skillspector", "local", "failed: " + (done.stderr or done.stdout).strip()[:120])
+    report = json.loads(out.read_text())
+    issues = report.get("issues") if isinstance(report, dict) else None
+    if isinstance(issues, list):
+        high = severity_counts(issues)
+        risk = report.get("risk_assessment", {})
+        if str(risk.get("recommendation", "")).upper() == "DO_NOT_INSTALL" and not high:
+            high = 1
+        summary = f"risk score {risk.get('score', '?')} ({risk.get('severity', '?')}), {len(issues)} issue(s)"
+    else:
+        high, summary = count_serious(report), "report format not recognized; counted high/critical labels"
+    return {"name": "skillspector", "privacy": "local", "ran": True, "high_findings": high, "summary": summary, "report": str(out)}
+
+
+def adapter_agent_scan(binary: str | None, folder: Path, outdir: Path, allowed: bool) -> dict:
+    """Snyk agent-scan. REMOTE: it sends the skill's content to Snyk's service (secrets redacted) and needs SNYK_TOKEN.
+    Only runs with --remote. Output parsing is generic: we have not seen its real report."""
+    if not allowed:
+        return not_run("agent-scan", "remote", "skipped: sends skill content to Snyk; pass --remote to allow")
+    if not binary:
+        return not_run("agent-scan", "remote", "not installed (snyk-agent-scan)")
+    if not os.environ.get("SNYK_TOKEN"):
+        return not_run("agent-scan", "remote", "SNYK_TOKEN is not set")
+    target = folder / "SKILL.md" if (folder / "SKILL.md").exists() else folder
+    import shlex
+    done = subprocess.run([*shlex.split(binary), str(target), "--json"], capture_output=True, text=True)  # binary may be e.g. "uvx snyk-agent-scan@0.6.0"
+    try:
+        report = json.loads(done.stdout)
+    except ValueError:
+        return not_run("agent-scan", "remote", "failed or gave no JSON: " + (done.stderr or done.stdout).strip()[:120])
+    out = outdir / "agent-scan.json"
+    out.write_text(json.dumps(report))
+    return {"name": "agent-scan", "privacy": "remote", "ran": True, "high_findings": count_serious(report),
+            "summary": "ran (report format unverified)", "report": str(out)}
+
+
+def adapter_virustotal(folder: Path, allowed: bool) -> dict:
+    """VirusTotal hash lookups. REMOTE, but only file hashes leave the machine, never content. Needs VT_AGENT_TOKEN.
+    A file VirusTotal has never seen proves nothing, and neither does a clean result; both are reported as unknown or clean, not safe."""
+    if not allowed:
+        return not_run("virustotal", "remote", "skipped: pass --vt to look up file hashes (hashes only, no content)")
+    token = os.environ.get("VT_AGENT_TOKEN")
+    if not token:
+        return not_run("virustotal", "remote", "VT_AGENT_TOKEN is not set")
+    import urllib.error
+    import urllib.request
+    base = os.environ.get("VT_BASE_URL", "https://ai.virustotal.com/api/v3").rstrip("/")
+    files = sorted(p for p in folder.rglob("*") if p.is_file() and not p.is_symlink())[:20]  # stay inside the rate limit
+    malicious, unknown, clean, errors = [], 0, 0, 0
+    for path in files:
+        request = urllib.request.Request(f"{base}/files/{sha(path)}", headers={"x-apikey": token})
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                stats = json.load(response)["data"]["attributes"]["last_analysis_stats"]
+        except urllib.error.HTTPError as err:
+            unknown, errors = unknown + (err.code == 404), errors + (err.code != 404)
+            continue
+        except Exception:  # noqa: BLE001
+            errors += 1
+            continue
+        if stats.get("malicious", 0) or stats.get("suspicious", 0):
+            malicious.append(str(path.relative_to(folder)))
+        else:
+            clean += 1
+    summary = f"{len(files)} hash(es): {len(malicious)} flagged, {clean} clean, {unknown} unknown to VirusTotal, {errors} error(s)"
+    return {"name": "virustotal", "privacy": "remote", "ran": errors < len(files) or not files, "high_findings": len(malicious),
+            "summary": summary + (" (flagged: " + ", ".join(malicious[:5]) + ")" if malicious else "")}
 
 
 def normalize(text: str) -> str:
@@ -247,9 +322,10 @@ def decide(meta: dict) -> tuple[str, list[str]]:
     highs = [f for f in scan["findings"] if f["severity"] == "high"]
     if highs:
         reasons.append(f"{len(highs)} high-severity finding(s): " + ", ".join(sorted({f['rule'] for f in highs})))
-    ss = scan.get("skillspector", {})
-    if ss.get("ran") and ss.get("high_findings"):
-        reasons.append(f"SkillSpector reported {ss['high_findings']} high or critical finding(s)")
+    scanners = scan.get("scanners", {})
+    for name, result in scanners.items():
+        if result.get("ran") and result.get("high_findings"):
+            reasons.append(f"{name} reported {result['high_findings']} high or critical finding(s)")
     if review and review.get("verdict") == "block":
         reasons.append("the reviewer's verdict is block")
     if reasons:
@@ -263,8 +339,8 @@ def decide(meta: dict) -> tuple[str, list[str]]:
         reasons.append("the reviewer asks for a human look")
     if mediums:
         reasons.append(f"{len(mediums)} medium-severity finding(s): " + ", ".join(sorted({f['rule'] for f in mediums})))
-    if not ss.get("ran"):
-        reasons.append("SkillSpector did not run (not installed or failed)")
+    if not any(r.get("ran") and r.get("privacy") == "local" for r in scanners.values()):
+        reasons.append("no outside scanner ran locally (install SkillSpector)")
     if reasons:
         return "needs-human", reasons
     return "release-candidate", ["no high findings, reviewer allows, evidence verified"]
@@ -298,21 +374,23 @@ def cmd_scan(args) -> None:
         sys.exit("The quarantined files changed since they were copied. Re-quarantine from the source.")
     findings = scan_folder(folder)
     scan = {"time": now(), "findings": findings}
-    binary = args.skillspector or shutil.which("skillspector")
-    if binary:
-        out = home() / "meta" / f"{args.id}.skillspector.json"
-        scan["skillspector"] = run_skillspector(binary, folder, out)
-    else:
-        scan["skillspector"] = {"ran": False, "error": "skillspector is not installed"}
+    outdir = home() / "meta" / f"{args.id}.reports"
+    outdir.mkdir(parents=True, exist_ok=True)
+    scan["scanners"] = {
+        "skillspector": adapter_skillspector(args.skillspector or shutil.which("skillspector"), folder, outdir),
+        "agent-scan": adapter_agent_scan(args.agent_scan or shutil.which("snyk-agent-scan") or shutil.which("agent-scan"), folder, outdir, args.remote),
+        "virustotal": adapter_virustotal(folder, args.vt),
+    }
     meta["scan"] = scan
     meta.pop("review", None)
     state, reasons = decide(meta)
     meta["state"], meta["reasons"] = state, reasons
     save_meta(args.id, meta)
-    log("scan", args.id, findings=len(findings), skillspector=scan["skillspector"].get("ran", False))
+    log("scan", args.id, findings=len(findings), scanners={n: r["ran"] for n, r in scan["scanners"].items()})
     counts = {s: sum(1 for f in findings if f["severity"] == s) for s in reversed(SEVERITY)}
-    print(f"{args.id}: {counts['high']} high, {counts['medium']} medium, {counts['low']} low. "
-          f"SkillSpector: {'ran' if scan['skillspector'].get('ran') else 'did not run'}. State: {state}.")
+    print(f"{args.id}: {counts['high']} high, {counts['medium']} medium, {counts['low']} low. State: {state}.")
+    for name, result in scan["scanners"].items():
+        print(f"  {name:12} {'ran' if result['ran'] else 'no ':3} ({result['privacy']}): {result['summary']}")
     for finding in findings[:25]:
         print(f"  {finding['severity']:6} {finding['rule']:22} {finding['file']}:{finding['line']}")
 
@@ -408,7 +486,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(usage=__doc__)
     sub = ap.add_subparsers(dest="command", required=True)
     p = sub.add_parser("quarantine"); p.add_argument("skill"); p.add_argument("--origin"); p.set_defaults(run=cmd_quarantine)
-    p = sub.add_parser("scan"); p.add_argument("id"); p.add_argument("--skillspector"); p.set_defaults(run=cmd_scan)
+    p = sub.add_parser("scan"); p.add_argument("id"); p.add_argument("--skillspector"); p.add_argument("--agent-scan")
+    p.add_argument("--remote", action="store_true", help="allow scanners that send skill content to a remote service (Snyk agent-scan)")
+    p.add_argument("--vt", action="store_true", help="look up file hashes on VirusTotal (hashes only)"); p.set_defaults(run=cmd_scan)
     p = sub.add_parser("verify-review"); p.add_argument("id"); p.add_argument("review"); p.set_defaults(run=cmd_verify)
     p = sub.add_parser("decide"); p.add_argument("id"); p.set_defaults(run=cmd_decide)
     p = sub.add_parser("release"); p.add_argument("id"); p.add_argument("--target", required=True)
