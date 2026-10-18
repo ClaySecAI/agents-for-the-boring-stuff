@@ -31,10 +31,14 @@ Commands assume the folder named above each table. Replace `<folder>` with a pra
 
 
 def chapter_files() -> list[Path]:
-    """Chapter order: by chapter folder, the chapter's own file first, then its sub-chapters."""
-    found = list((ROOT / "chapters").rglob("README.md")) + list((ROOT / "chapters").rglob("setup.md"))
-    return sorted(found, key=lambda p: (p.relative_to(ROOT / "chapters").parts[0], len(p.relative_to(ROOT / "chapters").parts),
-                                        p.relative_to(ROOT / "chapters").parts[1:]))
+    """Chapter order: by chapter folder; within a folder the README, then setup.md, then other chapter files; then sub-chapters."""
+    found = [p for p in (ROOT / "chapters").rglob("*.md") if p.name not in ("PLAN.md", "source-notes.md")]
+
+    def key(path: Path):
+        parts = path.relative_to(ROOT / "chapters").parts
+        rank = {"README.md": 0, "setup.md": 1}.get(path.name, 2)
+        return (parts[0], len(parts), rank, parts[1:])
+    return sorted(found, key=key)
 
 
 def title_of(text: str) -> str:

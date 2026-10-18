@@ -37,6 +37,14 @@ From the repository root.
 | Check that a server answers | `curl -s http://localhost:1234/v1/models` | When something fails |
 | Check my whole setup | `python3 chapters/00-getting-started/check_setup.py` | After changes |
 
+## [Chapter 0C: Check what the agent says it did](chapters/00-getting-started/checking-claims.md)
+
+| I want to... | Run | How often |
+|---|---|---|
+| Check an editor agent's report | `python3 scripts/verify_editor_ledger.py <report.txt>` | After each editorial pass |
+| Check a skill reviewer's quotes | `python3 chapters/09-skill-security/skillgate.py verify-review <id> <review.json>` | Each vetting |
+| Check that no file was lost | `python3 chapters/01-files-and-folders/verify.py check <folder>` | After each apply |
+
 ## [Chapter 1: Files and folders](chapters/01-files-and-folders/README.md)
 
 Run from `chapters/01-files-and-folders`.
