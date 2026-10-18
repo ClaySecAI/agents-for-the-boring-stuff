@@ -182,6 +182,30 @@ class FlowTests(Base):
         self.assertTrue(marker.exists())
         self.assertIn("State: blocked", with_token)                     # its high finding blocks
 
+    def test_a_scanner_that_returns_an_error_is_not_counted_as_having_run(self):
+        skill_id = self.quarantine("tidy-notes", GOOD)
+        stub = self.root / "snyk-agent-scan"
+        report = {"scan_path_responses": [{"client": "x", "path": "y", "server_risks": [], "skill_risks": [],
+                                           "error": {"message": "Daily usage limit reached", "is_failure": True}}]}
+        stub.write_text(f"#!/usr/bin/env python3\nimport json\nprint(json.dumps({report!r}))\n")
+        stub.chmod(0o755)
+        env = {**self.env, "SNYK_TOKEN": "t"}
+        out = subprocess.run([sys.executable, "-B", str(HERE / "skillgate.py"), "scan", skill_id, "--agent-scan", str(stub), "--remote"],
+                             capture_output=True, text=True, env=env).stdout
+        self.assertIn("nothing analyzed", out)
+        self.assertIn("agent-scan   no", out)
+
+    def test_any_risk_indicator_from_agent_scan_counts_as_high(self):
+        skill_id = self.quarantine("tidy-notes", GOOD)
+        stub = self.root / "snyk-agent-scan"
+        report = {"scan_path_responses": [{"client": "x", "path": "y", "server_risks": [], "skill_risks": [{"id": "r1"}]}]}
+        stub.write_text(f"#!/usr/bin/env python3\nimport json\nprint(json.dumps({report!r}))\n")
+        stub.chmod(0o755)
+        env = {**self.env, "SNYK_TOKEN": "t"}
+        out = subprocess.run([sys.executable, "-B", str(HERE / "skillgate.py"), "scan", skill_id, "--agent-scan", str(stub), "--remote"],
+                             capture_output=True, text=True, env=env).stdout
+        self.assertIn("State: blocked", out)
+
     def test_virustotal_sends_only_hashes_and_a_flagged_file_blocks(self):
         import http.server
         import threading

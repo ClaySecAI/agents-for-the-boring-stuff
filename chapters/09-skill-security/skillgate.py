@@ -250,8 +250,21 @@ def adapter_agent_scan(binary: str | None, folder: Path, outdir: Path, allowed: 
         return not_run("agent-scan", "remote", "failed or gave no JSON: " + (done.stderr or done.stdout).strip()[:120])
     out = outdir / "agent-scan.json"
     out.write_text(json.dumps(report))
+    # Checked against v0.6.8: {"scan_path_responses": [{"client", "path", "server_risks": [], "skill_risks": [], "error": {...}}]}.
+    # A response with an error means nothing was analyzed. That is "did not run", never "clean".
+    responses = report.get("scan_path_responses") if isinstance(report, dict) else None
+    if isinstance(responses, list):
+        failures = [r["error"] for r in responses if isinstance(r, dict) and isinstance(r.get("error"), dict)]
+        if failures or not responses:
+            why = (failures[0].get("message") if failures else "no scan results") or "failed"
+            return not_run("agent-scan", "remote", "failed, nothing analyzed: " + str(why)[:140])
+        risks = [x for r in responses for key in ("skill_risks", "server_risks") for x in (r.get(key) or [])]
+        # We have not seen a risk entry. Fail closed: any entry counts as high, and so does any labelled high or critical.
+        high = max(len(risks), count_serious(risks))
+        return {"name": "agent-scan", "privacy": "remote", "ran": True, "high_findings": high,
+                "summary": f"{len(risks)} risk indicator(s)", "report": str(out)}
     return {"name": "agent-scan", "privacy": "remote", "ran": True, "high_findings": count_serious(report),
-            "summary": "ran (report format unverified)", "report": str(out)}
+            "summary": "ran (report format not recognized)", "report": str(out)}
 
 
 def adapter_virustotal(folder: Path, allowed: bool) -> dict:
