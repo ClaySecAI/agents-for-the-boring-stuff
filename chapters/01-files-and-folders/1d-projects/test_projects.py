@@ -534,7 +534,7 @@ class RenameTests(Base):
         for name in ("IMG_4412.jpg", "scan0042.pdf", "Document (3).pdf", "Untitled.docx", "a3f9c2d41b7e8800aa.pdf",
                      "Screenshot 2024-05-01 at 10.22.pdf", "12345678.pdf"):
             self.assertTrue(sn.is_generic(name), name)
-        for name in ("Resume - Clay.pdf", "lease renewal.pdf", "tax-2023.pdf"):
+        for name in ("Resume - Jordan.pdf", "lease renewal.pdf", "tax-2023.pdf"):
             self.assertFalse(sn.is_generic(name), name)
 
     def test_a_title_becomes_a_safe_name_and_the_extension_survives(self):

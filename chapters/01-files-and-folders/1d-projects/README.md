@@ -471,7 +471,7 @@ python3 plan_projects.py --names names.json ...    # puts the new names in the p
 ```
 
 By default it renames only files whose names say nothing: camera and scanner names, `Document (3)`,
-`Untitled`, a long run of hex digits, a number. A name you chose, like `Resume - Clay.pdf`, stays
+`Untitled`, a long run of hex digits, a number. A name you chose, like `Resume - Jordan.pdf`, stays
 unless you pass `--all`. Unsorted and empty files keep their names, because a rename without a
 project is guesswork on guesswork.
 
