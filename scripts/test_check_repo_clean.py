@@ -57,6 +57,11 @@ class GuardTests(unittest.TestCase):
         self.assertBlocked(self.stage_and_check("classification.json", "{}", force=True), "generated output")
         self.assertBlocked(self.stage_and_check("organize-plan.md", "| a | b |", force=True), "generated output")
 
+    def test_a_vendored_skill_may_keep_its_license_but_nothing_else_unlisted(self):
+        ok = self.stage_and_check(".claude/skills/some-skill/LICENSE", "MIT License\n")
+        self.assertEqual(ok.returncode, 0, ok.stdout)
+        self.assertBlocked(self.stage_and_check(".claude/skills/some-skill/notes.txt", "hello"), "allowlist")
+
     def test_binary_files_are_blocked(self):
         self.assertBlocked(self.stage_and_check("extract_text", b"\x00\x01\x02", force=True),
                            "not on the allowlist", "binary")

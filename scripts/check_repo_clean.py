@@ -27,7 +27,8 @@ from pathlib import Path
 
 ALLOW = ["*.md", "*.py", "*.swift", "LICENSE", ".gitignore", ".claude/settings.json",
          ".githooks/pre-commit", ".github/workflows/*.yml",
-         ".github/ISSUE_TEMPLATE/config.yml"]
+         ".github/ISSUE_TEMPLATE/config.yml",
+         ".claude/skills/*/LICENSE"]  # a vendored skill keeps its upstream license next to it
 # Even an allowed extension is refused if the NAME says it is generated data.
 DENY_NAMES = ["classification*", "claude-view*", "organize-plan*", ".*manifest*", ".*applied-plan*",
               ".*undone-plan*", ".DS_Store", "assignments*", "protect-list*", "truth*", "projects.json",

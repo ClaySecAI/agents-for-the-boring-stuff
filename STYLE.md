@@ -44,3 +44,12 @@ bold-label bullets with periods, and rule-of-three padding.
 - No real file names, folder names, project names, account numbers, or people from anyone's machine. Invent them.
 - Commands are copy-and-paste. One command per code block.
 - Tokens and secrets never appear, even as examples.
+
+## Tools the editorial pass uses
+
+- **avoid-ai-writing**, by Conor Bronsdon (MIT): [github.com/conorbronsdon/avoid-ai-writing](https://github.com/conorbronsdon/avoid-ai-writing).
+  The author of this book contributed to its style guidance. We vendor the skill (`SKILL.md`, `references/patterns.md`, and the license) at
+  v3.38.0, commit `0a4f1ad`, in `.claude/skills/avoid-ai-writing`. It came in through this book's own skill gate (Chapter 9): quarantined,
+  scanned, reviewed, and released by a person, with two scanner findings accepted and their reason on record.
+- **`scripts/style_check.py`**: the deterministic half. Same text in, same findings out.
+- **The `editor` agent** runs both, then checks consistency against this guide.

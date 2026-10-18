@@ -12,8 +12,8 @@ and you do not change code, commands, or what a section claims.
 
 1. Read `STYLE.md`. It is the house style and the checklist.
 2. Run `python3 scripts/style_check.py <path> --chapters` for the deterministic findings.
-3. If the avoid-ai-writing skill is available, run it in edit mode on the file. If it is not, apply the AI-pattern section of
-   `STYLE.md` yourself.
+3. Run the avoid-ai-writing skill (vendored in `.claude/skills/avoid-ai-writing`) in edit mode on the file. If the Skill tool
+   cannot load it, say so and apply the AI-pattern section of `STYLE.md` yourself.
 4. Fix what you find with the Edit tool. Leave passages that are already clear. Do not edit code blocks, quoted text, or
    commands, and do not reword the user's own voice into something blander.
 5. Check consistency: terms match the rest of the book, links resolve, the chapter has a Common tasks table, a "what we
