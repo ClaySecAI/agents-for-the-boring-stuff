@@ -695,8 +695,30 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 
 ## Exercises
 
-1. Write a project list for your own Downloads folder, assign without moving anything, and read the
-   protect list. Which project surprises you?
+1. Write your own project list for a fresh copy of the fixture. Assign and plan without moving
+   anything, then read the protect list. Build the copy:
+
+   ```bash
+   python3 make_project_mess.py practice-mine/downloads
+   ```
+
+   Without opening the fixture's `practice-mine/projects.json`, read the file names in
+   `practice-mine/downloads` and write your list to `practice-mine/my-projects.json`, in the same
+   shape: `[{"name": "...", "description": "..."}]`. Then assign the files:
+
+   ```bash
+   python3 assign_projects.py practice-mine/downloads practice-mine/my-projects.json
+   ```
+
+   Build the plan, which writes `protect-list.txt` beside the folder and moves nothing:
+
+   ```bash
+   python3 plan_projects.py practice-mine/assignments.json practice-mine/my-projects.json practice-mine/downloads
+   ```
+
+   Read `practice-mine/protect-list.txt`. Which project surprises you? Compare your list with the
+   fixture's `practice-mine/projects.json`.
+
 2. Run the assigner on the fixture with `--no-source` and again with `--no-dates`. Which signal
    matters more, and does the answer change on the `--blind` fixture?
 3. Make the descriptions in `projects.json` vaguer. How much does accuracy fall?
