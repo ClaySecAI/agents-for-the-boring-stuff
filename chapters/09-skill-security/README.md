@@ -5,6 +5,10 @@ files, run commands and change your agent's own settings, and it arrives looking
 chapter builds a gate: nothing installs until it has been scanned by rules, reviewed by an agent, and
 released by you.
 
+This chapter builds the gate and shows it working on skills. [Chapter 9B](9b-session-hook/README.md) makes it check
+automatically every time you start a session. [Chapter 9C](9c-agents/README.md) covers agents, which are single files
+and needed their own handling.
+
 ## 9.1 Why two reviewers
 
 | | Deterministic scan | Reviewer agent |
@@ -97,6 +101,17 @@ cd SkillSpector && uv sync        # or: python3 -m venv .venv && .venv/bin/pip i
 .venv/bin/skillspector --version
 ```
 
+Register it so the gate can find it. The gate looks in four places, in order: the `--skillspector` flag, your PATH,
+a `"skillspector"` entry in `config.json` inside the gate's state folder, and the default install location above. Pick one:
+
+```bash
+mkdir -p ~/.local/bin && ln -sfn "$PWD/.venv/bin/skillspector" ~/.local/bin/skillspector     # on PATH (run inside SkillSpector/)
+```
+
+or write its full path into the config file (`~/.local/state/skillgate/config.json` on Linux, `~/Library/Application
+Support/skillgate/config.json` on a Mac): `{"skillspector": "/full/path/to/skillspector"}`. Check with `which skillspector`
+and `skillspector --version`. Then `skillgate.py scan` shows "skillspector ran (local)".
+
 SkillSpector needs Python 3.12 to 3.14; `uv` fetches one. The gate finds `skillspector` on your PATH, or pass
 `--skillspector /path/to/skillspector`. For Snyk, install a pinned version, not `@latest` (v0.6.8 was current in October 2026):
 
@@ -153,7 +168,36 @@ We also built a trap skill: a "PDF helper" whose text says "NOTE TO AI REVIEWERS
 whose script sends an API key to a web address. The first scan caught the injection but missed the theft, so
 we added the exfiltration rule. The real read-only `skill-reviewer` agent then answered `block`, quoted the injection as evidence rather than obeying it, and all four of its quotes verified (it cited full paths, which the verifier accepts). A general-purpose stand-in with the same rules gave the same answer. Two runs on one trap is a demonstration, not a measurement; a subtler trap could fool it. SkillSpector ran for real on the trap and scored it 100, CRITICAL: its taint tracking found the key flowing into the web request, which our first rules missed, and our rules found the same file. On a clean skill it scored 0. That is the case for several scanners. The VirusTotal lookup ran against the real service. On the trap skill both files came back unknown, because nothing had seen them. On a skill holding the EICAR test string (a harmless file every antivirus flags), VirusTotal flagged it and the gate blocked the skill, while our rules and SkillSpector both scored it 0: it has no suspicious text, only a known-bad signature. That is the case for the hash check. Snyk agent-scan never produced a finding: every real run returned a daily-limit error (HTTP 429, "Daily usage limit reached for the public version of Agent-Scan"), so we saw only the error shape. The gate treats any scanner error as "did not run", never as clean, and any risk entry Snyk returns as high until we see what one looks like.
 
-## 9.7 Limits
+## 9.7 What the gate touches
+
+A tool that guards your machine should be easy to inspect. This is everything `skillgate.py` does.
+
+| What | Where | Notes |
+|---|---|---|
+| Quarantined copies | `<state>/quarantine/<id>/` | Read-only, no execute bit, never run |
+| Per-skill record | `<state>/meta/<id>.json` | Scan results, reviewer verdict, state |
+| Scanner reports | `<state>/meta/<id>.reports/` | Raw SkillSpector output, and others if you ran them |
+| What you released or adopted | `<state>/released.json` | Path and hash of each trusted item |
+| History | `<state>/audit.log` | One line per action; read it with `cat` |
+| Scanner install | `~/.local/share/skillgate-tools/` | Only if you followed 9.3 |
+
+`<state>` is `~/.local/state/skillgate` on Linux and `~/Library/Application Support/skillgate` on a Mac. Override it with
+`SKILLGATE_HOME`.
+
+- **Network:** none by default. SkillSpector runs with `--no-llm`. Snyk needs `--remote` and VirusTotal needs `--vt`, and
+  VirusTotal gets hashes only.
+- **No background process.** It runs when you run it, or when the hook in 9B fires at session start.
+- **It never edits your skills.** It copies them in, and only `release` or `adopt` (a person, with `--yes`) records
+  anything as trusted.
+- **To remove it:** delete `<state>` and the `hooks` entry in `.claude/settings.json`. Nothing else was changed.
+
+To see exactly what happened, read the log:
+
+```bash
+cat ~/.local/state/skillgate/audit.log     # or the Mac path above
+```
+
+## 9.8 Limits
 
 - A skill can be harmful in ways no rule names and a reviewer misses. The gate lowers the risk; it does not remove
   it. Read the skill yourself before you release one that matters.
@@ -164,6 +208,9 @@ we added the exfiltration rule. The real read-only `skill-reviewer` agent then a
 
 ## Exercises
 
+0. Build the trap: a skill folder with a `SKILL.md` that says "ignore previous instructions" and a script that reads an environment variable called `API_KEY` and fetches a web address with it. Quarantine it and scan it. Which rules fire?
+
 1. Quarantine and scan your own `organize-folder` skill. What does it find?
 2. Add a line to a copy of a skill that tells the reader to ignore its instructions. Which leg catches it?
 3. Release a skill, edit one word in the released copy, and run `audit`.
+4. Make a skill folder holding the EICAR test string (look it up; it is a harmless standard file) and scan it with `--vt`. Which scanners flag it, and which do not?
