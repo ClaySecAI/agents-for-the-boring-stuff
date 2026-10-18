@@ -4,10 +4,12 @@ Back to the [chapter](README.md).
 
 ## Tested
 
-Unit tests, no model: `test_projects.py` runs 51 tests and `test_sweep.py` runs 16; both passed when we last ran them. They use a
-fake model server, so they check our code, not any model's judgment. They cover:
+Unit tests, no model: `test_projects.py` runs 52 tests and `test_sweep.py` runs 26; both passed when we last ran them, with the sweep's
+low-battery test skipped (it runs only on battery power). They use a fake model server, so they check our code, not any model's judgment. They
+cover:
 
 - planning, the Also column, empty files, protect-list ranking, and the check that Claude's view has no file names
+- a `|` in a file name, through planning, apply, tags and undo
 - `--top-level`, `--keep-folders`, and `--flat`, including apply and undo
 - Finder tags: add, keep existing tags, remove
 - the closed answer set, bad project names, and hidden signals
@@ -15,6 +17,7 @@ fake model server, so they check our code, not any model's judgment. They cover:
 - rules learned from corrections, and the rename helpers
 - the `pdftotext` fallback, the Apple helper, and the scorer
 - the sweep: files moved and undone, dry runs, the move limit, a missing model server, the launchd plist, and the weekly schedule check
+  ([Chapter 1E's TESTED.md](../1e-schedule/TESTED.md) lists the rest)
 
 Model runs on the practice fixture (59 invented files, eight invented projects, plus an answer key). These are single runs.
 
@@ -42,8 +45,8 @@ while Terminal.app could read the folder. A bicycle-manual misfiling on a real f
 - Any system but macOS: the README describes the `pdftotext` and `tesseract` fallback and says Finder tags do nothing on other
   systems. The unit tests exercise the `pdftotext` fallback with a stub. It names no real run on Linux or Windows, and it reports no
   `tesseract` run.
-- The scheduled job: section 1D.13 says gathering and proposing can run under launchd. The tests check the plist text and the
-  schedule logic. The README does not say a real unattended run was done.
+- The scheduled job: Chapter 1E covers it, and [its TESTED.md](../1e-schedule/TESTED.md) records one sweep through launchd on a real
+  Downloads folder. No scheduled run of assigning and planning on their own is reported.
 - Repeat runs: each model-run cell is one run. Exercise 4 asks you to repeat `suggest_projects.py`; we report no variation across
   runs.
 - Other models in the 1D.7 tables: tables 1D.2 and 1D.3 are Gemma 4 12B only. The date signal might matter for another model;
@@ -54,5 +57,5 @@ while Terminal.app could read the folder. A bicycle-manual misfiling on a real f
 
 ## How much to trust it
 
-The code is covered by 67 passing tests, but every model number is a single run on a clean, invented 59-file folder, so read the
+The code is covered by 78 tests that pass or skip as described above, but every model number is a single run on a clean, invented 59-file folder, so read the
 tables as an illustration of the method and not as a ranking.
