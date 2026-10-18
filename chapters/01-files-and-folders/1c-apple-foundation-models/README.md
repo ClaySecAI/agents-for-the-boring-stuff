@@ -2,7 +2,7 @@
 
 This chapter uses the same privacy design as [Chapter 1B](../1b-local-model/README.md). The
 local model is the one already built into macOS, so there is no app to install, no model to
-download and no server to start.
+download, and no server to start.
 
 ## 1C.1 Requirements
 
