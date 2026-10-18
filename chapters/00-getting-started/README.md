@@ -169,6 +169,16 @@ them.
 | Hallucination | A confident answer that is made up |
 | Confabulation | A kind of hallucination: the model fills a gap in what it knows with a plausible invention, such as a file name or a reason, and presents it as fact |
 
+## Limits
+
+- A model can be wrong with complete confidence, so its output is checked before anything acts on it.
+- A model reads only what fits in its context window; the rest is not seen.
+- A local model is weaker than the largest cloud models, and it needs enough memory. Models above about 16 GB on disk did not
+  fit on the 24 GB machine the book was written on.
+- A model cannot reliably tell instructions from content, so the defense is to limit what the model can do.
+
+What we tested, and what we did not: [TESTED.md](TESTED.md).
+
 ## Common tasks
 
 From the repository root.
