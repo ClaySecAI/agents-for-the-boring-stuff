@@ -32,7 +32,7 @@ Model runs on the practice fixture (59 invented files, eight invented projects, 
   Wrong-project totals range from 1 (gemma-4-e4b) to 24 (llama3.2 3B) among the language models, and 10 to 14 among the embedding
   models. The models are 3 to 14B language models (LM Studio and Ollama), Apple's on-device model, and three embedding models.
 
-A real folder: section 1D.13 sorted an iCloud Downloads folder of 411 files (the section also says 412). The README reports
+A real folder: section 1D.13 sorted an iCloud Downloads folder of 411 files. The README reports
 what went wrong, not a score: 222 files were cloud-only, and macOS blocked Python started from the Claude app's terminal panel
 while Terminal.app could read the folder. A bicycle-manual misfiling on a real folder is mentioned in 1D.7.
 

@@ -615,7 +615,7 @@ find "<folder>" -type f -flags +dataless | wc -l
 ```
 
 If the number is not zero, select the folder in Finder, choose Download Now from the context menu, and
-count again. In our folder, 222 of 412 files were cloud-only. Sorted by name alone, half the folder
+count again. In our folder, 222 of 411 files were cloud-only. Sorted by name alone, half the folder
 would have gone to Unsorted.
 
 ### The scripts write hidden files, and they sync
