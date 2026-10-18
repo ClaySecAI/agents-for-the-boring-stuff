@@ -1,9 +1,9 @@
 # Chapter 0B: Setting up your computer
 
 This chapter installs everything the book uses, one step at a time, and ends with a script that checks
-the result. It assumes you have a Mac, Windows or Linux computer and have never used a terminal. Skip any
+the result. It assumes you have a Mac, Windows, or Linux computer and have never used a terminal. Skip any
 step you have already done. You do not need every section: you need Python, Claude Code, and at least one
-of LM Studio, Ollama or Apple's on-device model.
+of LM Studio, Ollama, or Apple's on-device model.
 
 ## 0B.1 How much memory you have
 
@@ -79,7 +79,7 @@ this folder.
 
 ## 0B.5 Claude Code
 
-Claude Code is the agent program from Section 0.2. It needs an Anthropic account (a Claude subscription or
+Claude Code is the agent program from section 0.2. It needs an Anthropic account (a Claude subscription or
 API access). Follow the installation instructions in the official documentation at
 [docs.claude.com](https://docs.claude.com/en/docs/claude-code/overview), since the install command changes
 over time. When it is installed:
@@ -89,7 +89,7 @@ claude --version         # prints a version number
 claude                   # starts a session; sign in when asked, then type /exit to leave
 ```
 
-Start sessions from inside the repository folder, so Claude Code finds the agents, skills and
+Start sessions from inside the repository folder, so Claude Code finds the agents, skills, and
 permissions in `.claude/`.
 
 ## 0B.6 A local model, option 1: LM Studio
@@ -229,7 +229,7 @@ and Claude Code show `ok`, and one local server shows a model, you are ready for
 | `curl` says "connection refused" | The server is not running. Run `lms server start` or `ollama serve`. |
 | A script says "failed" for every file | The model name is wrong. Compare it with `lms ps` or `ollama list`. |
 | Answers come back empty | The model spent its answer budget thinking. The scripts turn thinking off where the server allows it. See section 1B.6. |
-| `Operation not permitted` on Desktop, Documents, Downloads or iCloud Drive | macOS is protecting the folder. Give the application that runs your terminal access in System Settings, Privacy & Security. See section 1D.13. |
+| `Operation not permitted` on Desktop, Documents, Downloads, or iCloud Drive | macOS is protecting the folder. Give the application that runs your terminal access in System Settings, Privacy & Security. See section 1D.13. |
 | Everything is slow | Another model is still loaded. `lms ps`, then `lms unload --all`. |
 
 ## Common tasks
