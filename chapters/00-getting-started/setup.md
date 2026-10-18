@@ -1,9 +1,9 @@
 # Chapter 0B: Setting up your computer
 
 This chapter installs everything the book uses, one step at a time, and ends with a script that checks
-the result. It assumes you have a Mac, Windows, or Linux computer and have never used a terminal. Skip any
-step you have already done. You do not need every section: you need Python, Claude Code, and at least one
-of LM Studio, Ollama, or Apple's on-device model.
+the result. It assumes you have a Mac, Windows, or Linux computer. If you are new to the terminal, section
+0B.2 shows the few commands you need. Skip any step you have already done. You do not need every section:
+you need Python, Claude Code, and at least one of LM Studio, Ollama, or Apple's on-device model.
 
 ## 0B.1 How much memory you have
 
@@ -48,8 +48,8 @@ cd ..                    # go up one folder
 ```
 
 A folder name that contains a space must be wrapped in quotes: `cd "My Files"`. Without the
-quotes the shell sees two names. You can also drag a folder from Finder onto the terminal window to
-paste its path.
+quotes the shell sees two names. On a Mac, you can also drag a folder from Finder onto the terminal window
+to paste its path.
 
 ## 0B.3 Python
 
@@ -66,16 +66,25 @@ or with `brew install python` if you use Homebrew. On Ubuntu, `sudo apt install 
 
 ## 0B.4 The book's files
 
-Get a copy of the repository. With git installed:
+The book's files live in a git repository. Check that you have git:
 
 ```bash
-git clone <repository-url> agents-for-the-boring-stuff
+git --version
+```
+
+If it prints a version number, move on. On a Mac without Apple's developer tools, running `git` offers
+to install them, as `python3` does in 0B.3; accept. On Ubuntu, including Ubuntu on Windows,
+`sudo apt install git`. For other systems, see [git-scm.com](https://git-scm.com/downloads).
+
+Then get a copy of the repository:
+
+```bash
+git clone https://github.com/ClaySecAI/agents-for-the-boring-stuff.git
 cd agents-for-the-boring-stuff
 ```
 
-Replace `<repository-url>` with the address on the repository's GitHub page ("Code" button). Without git,
-use the "Download ZIP" option on the same button and unzip it. All paths in the book are relative to
-this folder.
+Without git, open the [repository page](https://github.com/ClaySecAI/agents-for-the-boring-stuff), use
+"Download ZIP" under the "Code" button, and unzip it. All paths in the book are relative to this folder.
 
 ## 0B.5 Claude Code
 
@@ -177,12 +186,16 @@ Ollama has no window. It runs a server and you manage models from the terminal.
    curl -s http://localhost:11434/v1/models
    ```
 
-5. The scripts talk to Ollama by address and model name instead of LM Studio's identifier:
+5. The scripts talk to Ollama by address and model name instead of LM Studio's identifier. For example,
+   the classifier from Chapter 1B:
 
    ```bash
-   python3 chapters/01-files-and-folders/1d-projects/assign_projects.py <folder> projects.json \
+   python3 chapters/01-files-and-folders/1b-local-model/classify_local.py <folder> \
        --base-url http://localhost:11434/v1 --model granite4.1:8b
    ```
+
+   We have not run this command against Ollama. The Ollama results in section 1D.12 came from the
+   model comparison script.
 
 Stop the server with Control-C in the tab that runs it, or quit the app. Remove a model you no longer
 want with `ollama rm <name>`.
@@ -201,10 +214,12 @@ swiftc --version
 Chapters 1C and 1D build the helpers with `swiftc`. If Apple Intelligence is off or unavailable, the
 helper prints a message and stops, and nothing is sent anywhere.
 
-## 0B.9 Optional tools for other platforms
+## 0B.9 Optional open-source PDF and image readers
 
-Without a Mac there is no built-in PDF and image reader. Two open-source tools fill the gap. The scripts
-use them if they are installed and skip them if not:
+A Mac reads PDFs and images with a small helper built from Apple's frameworks (section 1B.3). Elsewhere
+there is no built-in reader, and two open-source tools fill the gap. On a Mac they are a fallback when the
+helper is not built. The scripts use them if they are installed and skip them if not. We have not tested
+them on any system:
 
 | System | Install |
 |---|---|
@@ -217,8 +232,9 @@ use them if they are installed and skip them if not:
 python3 chapters/00-getting-started/check_setup.py
 ```
 
-It prints one line per item: `ok`, `MISSING` (needed), or `optional`. It changes nothing. When Python
-and Claude Code show `ok`, and one local server shows a model, you are ready for [Chapter 1](../01-files-and-folders/README.md).
+It prints one line per item: `ok`, `MISSING` (needed), `optional`, or `info` (a fact, such as your macOS
+version). It changes nothing. When Python and Claude Code show `ok`, and one local server shows a model or
+your Mac is ready for Apple's on-device model (0B.8), you are ready for [Chapter 1](../01-files-and-folders/README.md).
 
 ## 0B.11 If something fails
 

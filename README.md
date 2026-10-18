@@ -21,11 +21,12 @@ or later. The scripts use only the standard library, and the agent does the actu
 
 ## How each chapter is built
 
-Every chapter folder has the same parts.
+A full chapter, such as 1, 1D, or 9, uses the parts below. Concept chapters and notes do not. Agent
+files and skills are not in the chapter folder: they live in `.claude/`, where Claude Code finds them.
 
 | Part | Contents |
 |---|---|
-| `README.md` | The lesson: the task, the setup, the checks, the limits and some exercises |
+| `README.md` | The lesson: the task, the setup, the checks, the limits, and some exercises |
 | An agent file (`.claude/agents/`) | A specialist with a narrow job and a limited set of tools |
 | A skill (`.claude/skills/`) | A repeatable procedure the agent follows |
 | A fixture | Fake data to practice on, so that your real files come later and only with care |
@@ -58,7 +59,7 @@ One row per chapter. Variants and follow-ups sit in the last column.
 | 4 | Email triage (drafts only, never auto-send) | Planned | |
 | 5 | Checking websites with a browser agent | Planned | |
 | 6 | GUI automation with computer use | Planned | |
-| 7 | Scheduling it all | Planned | |
+| 7 | Scheduling it all | Source notes | [Notes: material cut from Chapter 1E](chapters/07-scheduling/source-notes.md) |
 | 8 | A pre-commit security scan agent | Design note | [Plan: a model that reads your commits](chapters/08-security-reviewer/PLAN.md) |
 | 9 | [Vetting skills before you install them](chapters/09-skill-security/) | Ready | [9B Checking automatically at session start](chapters/09-skill-security/9b-session-hook/) · [9C Agents are files, not folders](chapters/09-skill-security/9c-agents/) |
 | 10 | An editorial agent: how this book is edited | Source notes | [Notes: when the agent fights back](chapters/10-editor/source-notes.md) |
@@ -68,9 +69,13 @@ Also: [Quick reference](QUICK-REFERENCE.md) (every common task in one page) and 
 
 ## Getting started
 
+If you are new to agents, read [Chapter 0](chapters/00-getting-started/README.md) first, then install what the book
+needs with [Chapter 0B](chapters/00-getting-started/setup.md). Then get the files, check your setup, and start Claude Code:
+
 ```bash
 git clone https://github.com/ClaySecAI/agents-for-the-boring-stuff.git
 cd agents-for-the-boring-stuff
+python3 chapters/00-getting-started/check_setup.py
 claude
 ```
 
@@ -93,8 +98,8 @@ It inspects what is about to be committed and refuses the commit when:
   security number, or a key
 - a file contains a term from your private blocklist
 
-The guard never prints what it matched, only where. GitHub runs it again on every push and pull
-request, along with a secret scan of the whole history. That copy cannot see your private
+The guard never prints what it matched, only where. GitHub runs it again on every push to main
+and every pull request, along with a secret scan of the whole history. That copy cannot see your private
 blocklist. See [CONTRIBUTING.md](CONTRIBUTING.md) and, for reporting a problem,
 [SECURITY.md](SECURITY.md).
 

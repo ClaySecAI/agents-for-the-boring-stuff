@@ -30,7 +30,7 @@ constraint and builds the checks around it.
 
 It does not follow instructions perfectly. The same prompt can give different answers on different
 runs, and a small change in wording can change the result. You measure behavior instead of assuming it.
-Section 1D.12 compares a dozen models on the same task and shows what that measurement looks like.
+Section 1D.12 compares eleven models on the same task and shows what that measurement looks like.
 
 ## 0.2 From a model to an agent
 

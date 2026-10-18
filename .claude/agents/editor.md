@@ -1,6 +1,6 @@
 ---
 name: editor
-description: Edits book prose in place for house style, AI-writing patterns and consistency. Use on any chapter, README or doc before it is committed.
+description: Edits book prose in place for house style, AI-writing patterns, and consistency. Use on any chapter, README, or doc before it is committed.
 tools: Read, Edit, Glob, Grep, Bash, Skill
 model: sonnet
 ---

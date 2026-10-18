@@ -40,7 +40,9 @@ Two details matter on a 24 GB Mac. First, cap the context length. The default as
 thousand tokens of context, not 128,000. Second, the identifier `classifier` is the name
 `classify_local.py` asks for by default.
 
-Ollama serves the same API on a different port, under the model's own name instead of an identifier. If you installed Ollama instead, start it (`ollama serve`) and point the script at it:
+Ollama serves the same API on a different port, under the model's own name instead of an
+identifier. No run of this path is recorded; see [TESTED.md](TESTED.md). If you installed Ollama
+instead, start it (`ollama serve`) and point the script at it:
 
 ```bash
 python3 1b-local-model/classify_local.py <folder> --base-url http://localhost:11434/v1 --model <your-model>
@@ -65,8 +67,9 @@ swiftc -O extract_text.swift -o extract_text     # run from chapters/01-files-an
 - an image or screenshot gets OCR text plus a few scene labels, such as "document"
 
 OCR is imperfect. In one test it read "240" as "249", so treat the output as a strong hint
-and not a transcript. On other platforms, skip the helper or substitute your own extractor,
-such as `pdftotext`, inside `read_head()`.
+and not a transcript. Without the helper, on a Mac or elsewhere, `classify_local.py` uses
+`pdftotext`, `pdftoppm`, and `tesseract` when they are installed (section 0B.9). The script includes
+that fallback, but no run of it is recorded.
 
 ## 1B.4 Running the pipeline
 
@@ -158,7 +161,7 @@ check what is current.
 
 - The local model supplies labels, and nothing here makes them correct. Compare two models' plans before you trust one.
 - OCR is imperfect, so treat extracted text as a strong hint and not a transcript.
-- The extraction helper uses macOS frameworks. On other platforms you skip it or supply your own extractor.
+- The extraction helper uses macOS frameworks. Elsewhere the script falls back to `pdftotext` and `tesseract` if they are installed, and no run of that path is recorded.
 - A reasoning model can spend its whole token budget thinking and return nothing.
 - A model that is too large for your memory will not load beside your other work.
 - The tool's own log can hold a copy of your files, so a local run is private only if you check the logs.
