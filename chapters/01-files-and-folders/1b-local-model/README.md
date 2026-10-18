@@ -154,6 +154,17 @@ using the method from
 [section 1.5](../README.md#15-choosing-a-model-for-the-job). Model names change quickly, so
 check what is current.
 
+## Limits
+
+- The local model supplies labels, and nothing here makes them correct. Compare two models' plans before you trust one.
+- OCR is imperfect, so treat extracted text as a strong hint and not a transcript.
+- The extraction helper uses macOS frameworks. On other platforms you skip it or supply your own extractor.
+- A reasoning model can spend its whole token budget thinking and return nothing.
+- A model that is too large for your memory will not load beside your other work.
+- The tool's own log can hold a copy of your files, so a local run is private only if you check the logs.
+
+What we tested, and what we did not: [TESTED.md](TESTED.md).
+
 ## Common tasks
 
 Run from `chapters/01-files-and-folders`.
