@@ -109,6 +109,18 @@ A stronger layer would use a `PreToolUse` hook: before the agent writes or edits
 instructions to itself. We have not built it, because it also interrupts honest edits, the way it would while writing this
 book. Whether it is worth that friction depends on what you let agents do while you are away. Chapter 7 returns to this.
 
+## Common tasks
+
+Run from the repository root.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Trust the skills and agents I have | `python3 chapters/09-skill-security/skillgate.py adopt <paths> --yes` | Once per setup |
+| Re-trust something I edited | The same `adopt` command, after reading the change | Each edit |
+| See what the hook found | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
+| Make a new hook take effect | Start a new session, or `/clear` in the CLI | After editing `settings.json` |
+| Find where it recorded things | The last line `adopt` prints | If the hook says "not vetted" |
+
 ## Exercises
 
 1. Start a new session. Read the one line the hook prints. Does it match what `skillgate.py audit` says?

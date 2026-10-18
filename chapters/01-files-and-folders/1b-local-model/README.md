@@ -154,6 +154,19 @@ using the method from
 [section 1.5](../README.md#15-choosing-a-model-for-the-job). Model names change quickly, so
 check what is current.
 
+## Common tasks
+
+Run from `chapters/01-files-and-folders`.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Classify with LM Studio | `python3 1b-local-model/classify_local.py <folder>` | Each folder |
+| Classify with Ollama | `python3 1b-local-model/classify_local.py <folder> --base-url http://localhost:11434/v1 --model <name>` | Each folder |
+| Build the plan | `python3 make_plan.py practice/classification.json <folder>` | After classifying |
+| Have Claude check the plan (metadata only) | `python3 validate_plan.py practice/claude-view.txt` | Before applying |
+| Let it read PDFs and images (Mac) | `swiftc -O extract_text.swift -o extract_text` | Once |
+| Free the memory when done | `lms unload --all` | After each session |
+
 ## Exercises
 
 1. Swap the model and compare the plans. Where do a small and a large model disagree?

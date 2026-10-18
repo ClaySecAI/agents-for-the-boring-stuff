@@ -110,6 +110,20 @@ files in the right place, undo restoring all 59), and through launchd on a real 
 not watched it run unattended for weeks, and nothing here has been tried off a Mac. Look at `status` every
 week for the first month.
 
+## Common tasks
+
+Run from `chapters/01-files-and-folders/1d-projects`.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Set up the sweep | `python3 sweep.py init ~/Downloads` | Once |
+| Preview a sweep | `python3 sweep.py run --dry-run` | Before the first real one |
+| Run a sweep | `python3 sweep.py run` | On demand |
+| See what happened | `python3 sweep.py status` | Weekly at first |
+| Undo the latest sweep | `python3 sweep.py undo` | When one went wrong |
+| List folders that need a decision | `python3 sweep.py folders` | After adding folders |
+| Turn the schedule off | `launchctl unload ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist` | Rarely |
+
 ## Exercises
 
 1. Dry-run the sweep on a practice folder that has project folders and a few new loose files. What does the

@@ -415,6 +415,19 @@ move. Smaller models are cheaper and work for this job, provided the checks catc
 mistakes. For sensitive folders, a local model can read the files while Claude reviews only
 metadata.
 
+## Common tasks
+
+Run from `chapters/01-files-and-folders`.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Make a practice folder | `python3 make_mess.py practice/downloads` | Once |
+| Check a plan without moving anything | `python3 apply_plan.py --check organize-plan.md <folder>` | Before each apply |
+| Snapshot before a change | `python3 verify.py snapshot <folder>` | Before each apply |
+| Apply an approved plan | `python3 apply_plan.py organize-plan.md <folder>` | After you read the plan |
+| Confirm nothing was lost | `python3 verify.py check <folder>` | After each apply |
+| Undo | `python3 undo_plan.py <folder>` | When a plan was wrong |
+
 ## Exercises
 
 1. Edit `SKILL.md` so the agent sorts photos by year instead of putting them in one folder.

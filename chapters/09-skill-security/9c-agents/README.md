@@ -66,6 +66,16 @@ The reviewer agent works the same way: the quarantine folder holds one file, and
 - **Plugins and MCP servers** bundle code, tools and hooks. A plugin is closer to a package than a skill; treat it as one.
 - **Settings files** (`.claude/settings.json`) can add hooks and permissions. They are not scanned by this gate.
 
+## Common tasks
+
+Run from the repository root.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Vet an agent I downloaded | `python3 chapters/09-skill-security/skillgate.py quarantine <agent.md> --origin "<where>"`, then `scan` | Each download |
+| Install it after review | `python3 chapters/09-skill-security/skillgate.py release <id> --target .claude/agents --yes` | You, after reading |
+| Check my agents for changes | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/agents` | When the hook warns |
+
 ## Exercises
 
 1. Copy `.claude/agents/file-organizer.md` to a temporary file, delete its `tools:` line, and scan it. What changes?

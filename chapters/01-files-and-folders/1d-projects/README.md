@@ -699,6 +699,20 @@ setting it up, installing the weekly job, what a laptop does to a schedule, and 
 - Project names are sensitive. The Claude validator sees only ids, which also limits what it can
   check: it can find dates and sizes that look wrong but cannot judge whether a file belongs.
 
+## Common tasks
+
+Run from `chapters/01-files-and-folders/1d-projects`.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Draft a project list from my files | `python3 suggest_projects.py <folder>` | Once per folder |
+| Assign files to projects | `python3 assign_projects.py <folder> projects.json` | Each sort |
+| Build the plan | `python3 plan_projects.py assignments.json projects.json <folder>` | After assigning |
+| Add Finder tags for second projects | `python3 tag_files.py organize-plan.md <folder>` | After applying |
+| Teach it by correcting | `python3 teach.py <folder> projects.json assignments.json`, then `python3 rules.py learn …` | When it misfiles |
+| Suggest better file names | `python3 suggest_names.py <folder>` | Optional |
+| Compare models | `python3 bakeoff.py --models … --fixtures …` | When choosing a model |
+
 ## Exercises
 
 1. Write a project list for your own Downloads folder, assign without moving anything, and read the

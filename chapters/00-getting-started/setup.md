@@ -231,3 +231,15 @@ and Claude Code show `ok`, and one local server shows a model, you are ready for
 | Answers come back empty | The model spent its answer budget thinking. The scripts turn thinking off where the server allows it. See section 1B.6. |
 | `Operation not permitted` on Desktop, Documents, Downloads or iCloud Drive | macOS is protecting the folder. Give the application that runs your terminal access in System Settings, Privacy & Security. See section 1D.13. |
 | Everything is slow | Another model is still loaded. `lms ps`, then `lms unload --all`. |
+
+## Common tasks
+
+| I want to... | Run | How often |
+|---|---|---|
+| Start LM Studio's server and load a model | `lms server start`, then `lms load google/gemma-4-12b --identifier classifier --context-length 6144` | Each work session |
+| Stop it and free the memory | `lms unload --all`, then `lms server stop` | After each session |
+| See what is loaded | `lms ps` | When unsure |
+| Start Ollama | `ollama serve` | Each session |
+| List downloaded models | `lms ls` or `ollama list` | When needed |
+| Check that a server answers | `curl -s http://localhost:1234/v1/models` | When something fails |
+| Check my whole setup | `python3 chapters/00-getting-started/check_setup.py` | After changes |

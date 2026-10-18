@@ -84,7 +84,7 @@ def check_text(text: str, name: str = "", chapter: bool = False) -> list[tuple[s
             title = stripped.lstrip("#").strip()
             words = [w for w in re.findall(r"[A-Za-z][A-Za-z'-]*", title)]
             caps = [w for w in words[1:] if w[0].isupper() and w.lower() not in SMALL]
-            if len(words) >= 4 and len(caps) >= 3 and not re.match(r"^(Chapter|Listing|Figure|\d)", title):
+            if len(words) >= 4 and len(caps) >= 3 and "](" not in title and not re.match(r"^(Chapter|Listing|Figure|\d)", title):
                 add(number, "title-case-heading", title)
     if paragraph:
         flush()

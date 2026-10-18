@@ -169,6 +169,16 @@ them.
 | Hallucination | A confident answer that is made up |
 | Confabulation | A kind of hallucination: the model fills a gap in what it knows with a plausible invention, such as a file name or a reason, and presents it as fact |
 
+## Common tasks
+
+From the repository root.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Check my computer is ready | `python3 chapters/00-getting-started/check_setup.py` | Once, then after changes |
+| Look up a term | Section 0.7 | When needed |
+| Pick a model for my memory | The table in [0B.1](setup.md) | Once |
+
 ## Exercises
 
 1. Open any chat with a language model and ask the same question twice. Do the answers match? What does

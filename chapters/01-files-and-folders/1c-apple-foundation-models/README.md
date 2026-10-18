@@ -113,6 +113,17 @@ Expect wrong labels too. On the fixture it filed a `.tar.gz` under Images and a 
 A single Swift file compiles with plain `swiftc`. No Xcode project and no `Package.swift` are
 needed.
 
+## Common tasks
+
+Run from `chapters/01-files-and-folders`.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Build the classifier | `swiftc -O 1c-apple-foundation-models/classify_apple.swift -o classify_apple` | Once |
+| Classify a folder | `./classify_apple <folder>` | Each folder |
+| Classify only the top level | `./classify_apple <folder> --top-level` | Large folders |
+| Build the PDF and image reader | `swiftc -O extract_text.swift -o extract_text` | Once |
+
 ## Exercises
 
 1. Run 1B and 1C on the same folder and compare the plans.
