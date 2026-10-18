@@ -68,8 +68,13 @@ cd SkillSpector && uv sync        # or: python3 -m venv .venv && .venv/bin/pip i
 ```
 
 SkillSpector needs Python 3.12 to 3.14; `uv` fetches one. The gate finds `skillspector` on your PATH, or pass
-`--skillspector /path/to/skillspector`. For Snyk, install a pinned version, not `@latest`, and pass it with
-`--agent-scan "uvx snyk-agent-scan@<version>"`. You need a Snyk account and token; the book cannot create one for you.
+`--skillspector /path/to/skillspector`. For Snyk, install a pinned version, not `@latest` (v0.6.8 was current in October 2026):
+
+```bash
+uv tool install snyk-agent-scan==0.6.8
+```
+
+Then `skillgate.py` finds `snyk-agent-scan` on your PATH. Without installing, pass `--agent-scan "uvx snyk-agent-scan@0.6.8"`. You need a Snyk account and token; the book cannot create one for you.
 
 ## 9.4 Vetting a skill
 
