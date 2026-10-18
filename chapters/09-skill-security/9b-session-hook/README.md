@@ -60,6 +60,12 @@ What happened when we did this on this repository's own items:
 python3 chapters/09-skill-security/skillgate.py adopt .claude/agents/skill-reviewer.md --yes --accept-risk "describes what to look for"
 ```
 
+A second refusal came later, and that one was a bug in the gate. We edited our own `edit-chapter` skill to add a prompt template written
+as a markdown quote (lines starting with `>`), and `adopt` refused it for writing to the agent's configuration. The rule had read the
+`>` quote marker as a shell redirect. We read the finding, saw the cause, fixed the rule, and added a test that a quote marker passes
+while a real `echo hi > .claude/skills/...` still fails. A gate that refuses your own work is doing its job, and reading why is how
+you find out whether the skill or the rule is wrong.
+
 The reason goes into `audit.log`. Both `adopt` and `release` are denied to agents in `.claude/settings.json`, so only you can run
 them.
 
