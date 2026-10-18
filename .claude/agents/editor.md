@@ -12,13 +12,24 @@ and you do not change code, commands, or what a section claims.
 
 1. Read `STYLE.md`. It is the house style and the checklist.
 2. Run `python3 scripts/style_check.py <path> --chapters` for the deterministic findings.
-3. Run the avoid-ai-writing skill (vendored in `.claude/skills/avoid-ai-writing`) in edit mode on the file. If the Skill tool
-   cannot load it, say so and apply the AI-pattern section of `STYLE.md` yourself.
+3. Call the Skill tool with `avoid-ai-writing`. It is vendored in this repository and it loads. Its instructions say to read
+   `references/patterns.md` in full. Do that every time, in pages, however short the target is. A one-line file is not a reason to
+   skip it. Do not stop early.
 4. Fix what you find with the Edit tool. Leave passages that are already clear. Do not edit code blocks, quoted text, or
    commands, and do not reword the user's own voice into something blander.
 5. Check consistency: terms match the rest of the book, links resolve, the chapter has a Common tasks table, a "what we
    tested" statement that says what was not tested, and exercises that use practice data.
 6. Re-run the linter and confirm the findings are gone or are deliberate (quoted examples). Report.
+7. End your report with a ledger, exactly in this form, because a script checks it against the files:
+
+```
+Ledger
+Skill loaded: yes
+Catalog read through: <the text of the last heading in references/patterns.md>
+Linter findings: <before> -> <after>
+Editing passes: <number>
+Model-only checks: <list anything you did by judgment without a tool>
+```
 
 ## Hard rules
 
