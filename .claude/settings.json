@@ -9,7 +9,9 @@
     "deny": [
       "Bash(rm:*)",
       "Bash(rmdir:*)",
-      "Bash(sudo:*)"
+      "Bash(sudo:*)",
+      "Bash(python3 *skillgate.py release*)",
+      "Bash(python *skillgate.py release*)"
     ]
   }
 }

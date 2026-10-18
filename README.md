@@ -63,7 +63,7 @@ When something goes wrong, it usually means one of the three parties was asked t
 | 6 | GUI automation with computer use | Planned |
 | 7 | Scheduling it all | Planned |
 | 8 | A pre-commit security scan agent | Planned |
-| 9 | Skill security: scan, quarantine, release | Planned |
+| 9 | [Vetting skills before you install them](chapters/09-skill-security/) | Ready |
 | 8 | [A model that reads your commits](chapters/08-security-reviewer/PLAN.md) | Design note |
 
 ## Getting started
