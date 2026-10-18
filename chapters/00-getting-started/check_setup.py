@@ -2,7 +2,7 @@
 
     python3 check_setup.py
 
-Prints one line per item: ok, missing, or optional. Nothing is installed and no file of yours is read.
+Prints one line per item: ok, MISSING (needed), optional, or info. Nothing is installed and no file of yours is read.
 """
 from __future__ import annotations
 
@@ -40,6 +40,11 @@ def main() -> None:
     ok = sys.version_info >= (3, 9)
     line("ok" if ok else "MISSING", "Python 3.9 or later", platform.python_version())
 
+    # On a Mac without developer tools, /usr/bin/git is a stub that prints a note instead of a version.
+    git_version = version_of(["git", "--version"]) if shutil.which("git") else ""
+    has_git = git_version.startswith("git version")
+    line("ok" if has_git else "optional", "git", git_version if has_git else "clones the book; see 0B.4, or download the ZIP")
+
     claude = shutil.which("claude")
     line("ok" if claude else "MISSING", "claude (Claude Code)",
          version_of(["claude", "--version"]) if claude else "needed for the validation step")
@@ -47,12 +52,14 @@ def main() -> None:
     for name, why in (("lms", "LM Studio command line"), ("ollama", "Ollama")):
         found = shutil.which(name)
         line("ok" if found else "optional", name,
-             ("installed" if name == "ollama" else version_of([name, "--version"])) if found else f"{why}; you need at least one of the two")
+             ("installed" if name == "ollama" else version_of([name, "--version"])) if found else why)
 
     for name, base in (("LM Studio server", "http://localhost:1234/v1"), ("Ollama server", "http://localhost:11434/v1")):
         models = server_models(base)
         if models is None:
             line("optional", name, "not running")
+        elif not models:
+            line("optional", name, "running, no models loaded")
         else:
             line("ok", name, f"{len(models)} model(s): " + ", ".join(models[:4]) + (" ..." if len(models) > 4 else ""))
 
@@ -64,7 +71,8 @@ def main() -> None:
     else:
         for name, why in (("pdftotext", "reads the text in PDFs"), ("tesseract", "reads text in images and scans")):
             line("ok" if shutil.which(name) else "optional", name, why)
-    print("\nYou need Python, and one local model server with a model loaded. The rest is optional.")
+    print("\nYou need Python, Claude Code, and one way to run a model on this computer: LM Studio or Ollama with a model\n"
+          "loaded, or Apple's on-device model on macOS 26 or later. The rest is optional.")
 
 
 if __name__ == "__main__":

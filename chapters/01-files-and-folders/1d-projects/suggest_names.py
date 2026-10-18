@@ -9,7 +9,7 @@ every move.
 Names look like "2024-03-08 Lease renewal.pdf": the file's modified date, a short title the model
 read from the contents, and the original extension, which never changes. By default only files whose
 names say nothing are renamed (IMG_4412.jpg, scan0042.pdf, Document (3).pdf, a long run of hex digits).
-A name you chose yourself, like "Resume - Clay.pdf", is left alone unless you pass --all.
+A name you chose yourself, like "Resume - Jordan.pdf", is left alone unless you pass --all.
 
 Unlike the other model calls in this chapter, the model writes free text here: the title. It runs on
 your machine, and the title is cleaned (characters other than letters, digits, spaces and a few

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
@@ -51,6 +52,20 @@ def common_tasks(text: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def rebase_links(section: str, folder: str) -> str:
+    """Rewrite relative links so they work from the repository root, where QUICK-REFERENCE.md lives.
+
+    A chapter links `setup.md` meaning the file beside it; at the root that is `chapters/<folder>/setup.md`.
+    Web addresses and links to a heading on the same page are left alone."""
+    def fix(match: re.Match) -> str:
+        target = match.group(1)
+        if re.match(r"[a-z][a-z0-9+.-]*:", target, re.I) or target.startswith(("#", "/")):
+            return match.group(0)
+        path, hash_, anchor = target.partition("#")
+        return f"]({os.path.normpath(os.path.join(folder, path)).replace(os.sep, '/')}{hash_}{anchor})"
+    return re.sub(r"\]\(([^)\s]+)\)", fix, section)
+
+
 def build() -> str:
     parts = [HEADER]
     for path in chapter_files():
@@ -59,6 +74,7 @@ def build() -> str:
         if not section:
             continue
         rel = path.relative_to(ROOT)
+        section = rebase_links(section, rel.parent.as_posix())
         parts.append(f"## [{title_of(text)}]({rel})\n\n{section}\n")
     return "\n".join(parts).rstrip() + "\n"
 

@@ -9,11 +9,13 @@ on:
     paths:
       - "chapters/**/*.py"
       - "scripts/**"
+      - ".claude/skills/avoid-ai-writing/references/patterns.md"  # the ledger test reads the real catalog
       - ".github/workflows/tests.yml"
   pull_request:
     paths:
       - "chapters/**/*.py"
       - "scripts/**"
+      - ".claude/skills/avoid-ai-writing/references/patterns.md"  # the ledger test reads the real catalog
       - ".github/workflows/tests.yml"
   workflow_dispatch:  # a manual run from the Actions tab, for when you want one anyway
 
@@ -43,3 +45,11 @@ jobs:
         run: python3 chapters/01-files-and-folders/1d-projects/test_projects.py
       - name: Chapter 1D sweep
         run: python3 chapters/01-files-and-folders/1d-projects/test_sweep.py
+      - name: Chapter 9 skillgate
+        run: python3 chapters/09-skill-security/test_skillgate.py
+      - name: Style linter
+        run: python3 scripts/test_style_check.py
+      - name: Quick reference builder
+        run: python3 scripts/test_build_quick_reference.py
+      - name: Editor ledger check
+        run: python3 scripts/test_verify_editor_ledger.py
