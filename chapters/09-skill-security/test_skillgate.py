@@ -221,6 +221,29 @@ class FlowTests(Base):
                              capture_output=True, text=True, env=env).stdout
         self.assertIn("State: blocked", out)
 
+    def agent_scan_with(self, skill_risks):
+        skill_id = self.quarantine("tidy-notes", GOOD)
+        stub = self.root / "snyk-agent-scan"
+        report = {"scan_path_responses": [{"client": "x", "path": "y", "server_risks": [], "skill_risks": skill_risks}]}
+        stub.write_text(f"#!/usr/bin/env python3\nimport json\nprint(json.dumps({report!r}))\n")
+        stub.chmod(0o755)
+        env = {**self.env, "SNYK_TOKEN": "t"}
+        return subprocess.run([sys.executable, "-B", str(HERE / "skillgate.py"), "scan", skill_id, "--agent-scan", str(stub), "--remote"],
+                              capture_output=True, text=True, env=env).stdout
+
+    def test_agent_scan_entry_with_empty_risk_indexes_is_an_inventory_not_a_risk(self):
+        # The shape v0.6.8 returned for a clean skill: its files listed, no risks.
+        out = self.agent_scan_with([{"name": "tidy-notes", "files": [{"name": "SKILL.md", "type": "instruction"}],
+                                     "risk_indexes": {}}])
+        self.assertIn("agent-scan   ran", out)
+        self.assertIn("0 risk indicator(s), 1 item(s) checked with none", out)
+        self.assertNotIn("State: blocked", out)
+
+    def test_agent_scan_entry_with_risk_indexes_counts_as_high(self):
+        out = self.agent_scan_with([{"name": "tidy-notes", "files": [], "risk_indexes": {"r1": {"description": "x"}}}])
+        self.assertIn("1 risk indicator(s)", out)
+        self.assertIn("State: blocked", out)
+
     def test_virustotal_sends_only_hashes_and_a_flagged_file_blocks(self):
         import http.server
         import threading

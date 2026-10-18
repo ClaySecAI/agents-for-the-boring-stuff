@@ -303,11 +303,15 @@ def adapter_agent_scan(binary: str | None, folder: Path, outdir: Path, allowed: 
         if failures or not responses:
             why = (failures[0].get("message") if failures else "no scan results") or "failed"
             return not_run("agent-scan", "remote", "failed, nothing analyzed: " + str(why)[:140])
-        risks = [x for r in responses for key in ("skill_risks", "server_risks") for x in (r.get(key) or [])]
-        # We have not seen a risk entry. Fail closed: any entry counts as high, and so does any labeled high or critical.
+        entries = [x for r in responses for key in ("skill_risks", "server_risks") for x in (r.get(key) or [])]
+        # Seen in v0.6.8 on a clean skill: one entry per skill, listing its files, with "risk_indexes": {}. That is an
+        # inventory, not a risk. Any other entry, including one whose shape we do not know, still counts as high.
+        inventory = [x for x in entries if isinstance(x, dict) and isinstance(x.get("risk_indexes"), (dict, list))
+                     and not x["risk_indexes"]]
+        risks = [x for x in entries if not any(x is i for i in inventory)]
         high = max(len(risks), count_serious(risks))
         return {"name": "agent-scan", "privacy": "remote", "ran": True, "high_findings": high,
-                "summary": f"{len(risks)} risk indicator(s)", "report": str(out)}
+                "summary": f"{len(risks)} risk indicator(s), {len(inventory)} item(s) checked with none", "report": str(out)}
     return {"name": "agent-scan", "privacy": "remote", "ran": True, "high_findings": count_serious(report),
             "summary": "ran (report format not recognized)", "report": str(out)}
 

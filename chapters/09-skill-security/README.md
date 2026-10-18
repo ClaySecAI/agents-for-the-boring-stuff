@@ -75,11 +75,14 @@ skill you wrote for your own private work. VirusTotal says its normal uploads ar
 so the gate never uploads; it looks files up by hash. A file VirusTotal has never seen is "unknown", and a clean result
 is not proof of safety.
 
-Snyk agent-scan is optional, and we cannot support it. With a valid token (Snyk's API returned 200 for it) and a plan
-that shows 200 tests a month, every scan came back "Daily usage limit reached for the public version of Agent-Scan"
-(HTTP 429), on several tries over days. We could not find out why, so we never saw a real finding from it. The gate
-treats an error as "did not run", never clean. If you have a Snyk plan where it works, the adapter is there, and a
-report that works would let us finish the parser.
+Snyk agent-scan is optional, and we cannot support it. For days, with a valid token (Snyk's API returned 200 for it) and a
+plan that shows 200 tests a month, every scan came back "Daily usage limit reached for the public version of Agent-Scan"
+(HTTP 429). We could not find out why. On 2026-10-18, with a token from a new free account, one scan of a public skill
+worked. It found nothing, and it showed what "nothing" looks like: the skill's files listed with an empty `risk_indexes`.
+
+The gate used to count every entry as high and blocked that skill. Now an empty `risk_indexes` is an inventory, not a
+finding. Any other entry, including one the gate does not recognize, counts as high, and an error still means "did not
+run", never clean. We have not yet seen a report with a real finding.
 
 VirusTotal needs no account. Its Agent Token comes from one anonymous request. This keeps the token in a shell
 variable and prints only its length:
