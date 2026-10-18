@@ -29,7 +29,7 @@ Build the helper once, next to `classify_apple`, which looks for it there:
 swiftc -O extract_text.swift -o extract_text
 ```
 
-Without the helper, PDFs and images are judged by filename alone.
+PDFs and images are judged by filename alone if the helper is missing.
 
 ## 1C.3 Running the pipeline
 
@@ -112,6 +112,18 @@ Expect wrong labels too. On the fixture it filed a `.tar.gz` under Images and a 
 
 A single Swift file compiles with plain `swiftc`. No Xcode project and no `Package.swift` are
 needed.
+
+## Limits
+
+- The on-device model works on text only, so PDFs and images need `extract_text`. Without it, they are judged by filename alone.
+- It is one fixed model of roughly 3B parameters with a small context window, so each file is classified alone from its first 2 KB.
+- It runs only on Apple Intelligence Macs.
+- Its own guardrails can refuse a file. The file stays unlabeled and is treated as sensitive.
+- It is over-cautious by design: it flagged 51 of 60 real files as sensitive.
+- It gets some labels wrong, so the metadata review and your own reading of the plan are the check.
+- It can fail when the Mac is busy, so do not run it alongside other heavy work.
+
+What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 
