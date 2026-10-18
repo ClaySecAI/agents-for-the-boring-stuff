@@ -10,6 +10,9 @@ no model involved. It:
   * gives identical copies the stricter sensitivity label,
   * routes sensitive files (DLP) to _sensitive/<kind>/,
   * routes empty files and "Review" labels to _needs-review/,
+  * leaves links where they are (moving one can break it), and never reads through one,
+  * never gives two files names that differ only in upper and lower case, which a Mac
+    treats as the same name,
   * writes organize-plan.md in the same `From | To | Why` format apply_plan.py reads.
     "Why" holds label codes only, never quoted file content,
   * writes claude-view.txt: the ONLY thing the cloud model gets to see.
@@ -36,6 +39,7 @@ CATEGORIES = {"Documents", "Images", "Spreadsheets", "Installers", "Archives", "
 SENSITIVITIES = {"personal", "financial", "health", "credentials", "government_id", "legal"}
 # A user's own folder with one of these names is left exactly where it is.
 RESERVED_FOLDERS = CATEGORIES | {"Folders", "_sensitive", "_duplicates", "_needs-review"}
+RESERVED_FOLDED = {name.casefold() for name in RESERVED_FOLDERS}  # `documents` is `Documents` on a Mac
 
 
 def sha(path: Path) -> str:
@@ -78,13 +82,17 @@ def main(classification: Path, folder: Path, top_level: bool, out_dir: Path | No
         sys.exit(f"Classification file not found: {classification}. Run a classifier first.")
     labels = json.loads(classification.read_text())
 
+    # A link is checked first: is_file() and is_dir() follow it, and a moved link can stop working.
     if top_level:
         entries = sorted(p for p in folder.iterdir() if p.name not in IGNORED_NAMES)
-        files = [p.name for p in entries if p.is_file()]
-        subfolders = [p.name for p in entries if p.is_dir()]
+        links = [p.name for p in entries if p.is_symlink()]
+        files = [p.name for p in entries if p.is_file() and not p.is_symlink()]
+        subfolders = [p.name for p in entries if p.is_dir() and not p.is_symlink()]
     else:
-        files = sorted(str(p.relative_to(folder)) for p in folder.rglob("*")
-                       if p.is_file() and p.name not in IGNORED_NAMES)
+        # Only a link to a file is an item in recursive mode (see plan_common.items_in).
+        found = sorted(p for p in folder.rglob("*") if p.is_file() and p.name not in IGNORED_NAMES)
+        links = [str(p.relative_to(folder)) for p in found if p.is_symlink()]
+        files = [str(p.relative_to(folder)) for p in found if not p.is_symlink()]
         subfolders = []
 
     seen: dict[str, str] = {}
@@ -106,31 +114,33 @@ def main(classification: Path, folder: Path, top_level: bool, out_dir: Path | No
         labels[original] = {**a, "sensitivity": strict}
         labels[copy] = {**b, "sensitivity": strict}
 
-    taken: set[str] = set()
-    rows = []  # (rel, dest, why, size, kind)  kind: "file" | "folder" | "stay"
+    taken: set[str] = set()  # destinations, case folded
+    rows = []  # (rel, dest, why, size, kind)  kind: "file" | "folder" | "stay" | "link"
     for rel in files:
         size = (folder / rel).stat().st_size
         label = labels.get(rel, {"category": "Review", "sensitivity": "unknown"})
         dest, why = pick_destination(rel, size, label, rel in duplicate_of)
         base, n = dest, 2
-        while dest in taken:
+        while dest.casefold() in taken:
             stem, dot, ext = base.rpartition(".")
             dest = f"{stem} ({n}){dot}{ext}" if dot else f"{base} ({n})"
             n += 1
-        taken.add(dest)
+        taken.add(dest.casefold())
         rows.append((rel, dest, why, size, "file"))
+    for rel in links:
+        rows.append((rel, rel, "link, left in place (moving it could break it)", 0, "link"))
     for name in subfolders:
-        if name in RESERVED_FOLDERS:
+        if name.casefold() in RESERVED_FOLDED:
             rows.append((name, name, "folder, left in place (its name matches a folder this plan uses)", 0, "stay"))
         else:
             dest = f"Folders/{name}"
-            taken.add(dest)
+            taken.add(dest.casefold())
             rows.append((name, dest, "folder, moved as a unit, not inspected", 0, "folder"))
 
     where = (out_dir or folder.resolve().parent)
     where.mkdir(parents=True, exist_ok=True)
     mode_line = ["Mode: top-level", ""] if top_level else []
-    lines = [f"# Plan for {folder.name} (made by a local model + make_plan.py)", "", *mode_line,
+    lines = [f"# Plan for {folder.resolve().name} (made by a local model + make_plan.py)", "", *mode_line,
              "| From | To | Why |", "|---|---|---|"]
     lines += [f"| {rel} | {dest} | {why} |" for rel, dest, why, _size, _kind in rows]
     plan = where / "organize-plan.md"
@@ -145,6 +155,8 @@ def main(classification: Path, folder: Path, top_level: bool, out_dir: Path | No
                 note = (note + " in_subfolder=yes").strip()
             view.append(f"{ids[rel]} | {Path(rel).suffix or '(none)'} | {size} | {why} | "
                         f"{dest.rsplit('/', 1)[0]} | {note}")
+        elif kind == "link":
+            view.append(f"{ids[rel]} | (link) | - | link, not inspected | (left in place) | ")
         else:  # a whole subfolder: no name, no size, no file count
             place = "Folders" if kind == "folder" else "(left in place)"
             view.append(f"{ids[rel]} | (dir) | - | folder, not inspected | {place} | ")

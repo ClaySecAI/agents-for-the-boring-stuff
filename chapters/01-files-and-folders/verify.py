@@ -6,10 +6,14 @@
 The snapshot records a SHA-256 hash of every file's content. The check
 confirms that every original file still exists exactly once, with
 unchanged content, and that nothing new appeared. It doesn't care where
-files ended up, only that none were lost, changed, or invented.
+files ended up, only that none were lost, changed, or invented. A link
+is recorded by where it points, not by the file it points at.
 """
+from __future__ import annotations
+
 import hashlib
 import json
+import os
 import sys
 from collections import Counter
 from pathlib import Path
@@ -30,14 +34,19 @@ def hash_folder(folder: Path) -> Counter:
     hashes = Counter()
     for path in folder.rglob("*"):
         # .DS_Store is Finder bookkeeping that appears the moment you open a folder to look.
-        if path.is_file() and path.name != ".DS_Store":
+        if path.name == ".DS_Store":
+            continue
+        if path.is_symlink():
+            # The plan leaves a link in place, but its target may move and leave it pointing at nothing.
+            hashes["link:" + hashlib.sha256(os.readlink(path).encode()).hexdigest()] += 1
+        elif path.is_file():
             hashes[hash_file(path)] += 1
     return hashes
 
 
 def manifest_path(folder: Path) -> Path:
     # Stored beside the folder, not inside it, so it is never part of the mess.
-    return state_dir(folder) / f".{folder.name}.manifest.json"
+    return state_dir(folder) / f".{folder.resolve().name}.manifest.json"
 
 
 def snapshot(folder: Path) -> None:

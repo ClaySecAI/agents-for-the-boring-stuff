@@ -18,6 +18,8 @@ tool list, not by asking nicely:
 Exit code 0 means "approve", 1 means "flag" (flags are printed). Use it as a gate
 before apply_plan.py.
 """
+from __future__ import annotations
+
 import argparse
 import json
 import re

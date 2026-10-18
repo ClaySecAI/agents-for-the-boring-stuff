@@ -108,9 +108,22 @@ func listFiles(in folder: URL, topLevelOnly: Bool) -> [URL] {
 }
 let files = listFiles(in: folder, topLevelOnly: topLevel)
 
+// The enumerator hands back resolved paths (/private/tmp/...) even when the folder was given through a
+// link (/tmp/...), so cutting the folder path's length off each one would give broken keys. Resolve both
+// and compare whole path components instead.
+let rootParts = folder.resolvingSymlinksInPath().standardizedFileURL.pathComponents
+func relativePath(of url: URL) -> String? {
+    let parts = url.resolvingSymlinksInPath().standardizedFileURL.pathComponents
+    guard parts.count > rootParts.count, Array(parts.prefix(rootParts.count)) == rootParts else { return nil }
+    return parts.dropFirst(rootParts.count).joined(separator: "/")
+}
+
 var results: [String: [String: String]] = [:]
 for (i, url) in files.enumerated() {
-    let rel = String(url.path.dropFirst(folder.path.count + 1))
+    guard let rel = relativePath(of: url) else {
+        print("Cannot place \(url.path) inside \(folder.path). Nothing was written.")
+        exit(1)
+    }
     // A fresh session per file: the context window is small, and files must not influence each other.
     let prompt = "File name: \(url.lastPathComponent)\n\nContent start:\n\(head(of: url))"
     var lastError: Error?
