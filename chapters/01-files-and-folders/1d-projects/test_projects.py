@@ -412,11 +412,11 @@ class RulesTests(Base):
                 "name_key": [key] if key else [], "path": [path]}
 
     def test_a_signal_needs_enough_agreeing_examples_to_become_a_rule(self):
-        labelled = [(self.sig(domain="a.example", path="1"), "Taxes"),
+        labeled = [(self.sig(domain="a.example", path="1"), "Taxes"),
                     (self.sig(domain="a.example", path="2"), "Taxes"),
                     (self.sig(domain="b.example", path="3"), "Taxes"),            # one example: not enough for a domain
                     (self.sig(ident="HC77120", path="4"), "Insurance claim")]     # one example is enough for a number
-        rules, dropped = self.rules.learn(labelled)
+        rules, dropped = self.rules.learn(labeled)
         kinds = {(r["kind"], r["value"]): r["project"] for r in rules}
         self.assertEqual(kinds[("domain", "a.example")], "Taxes")
         self.assertNotIn(("domain", "b.example"), kinds)
@@ -424,10 +424,10 @@ class RulesTests(Base):
         self.assertEqual(dropped, 0)
 
     def test_a_signal_used_for_two_projects_makes_no_rule(self):
-        labelled = [(self.sig(domain="bank.example", path="1"), "Taxes"),
+        labeled = [(self.sig(domain="bank.example", path="1"), "Taxes"),
                     (self.sig(domain="bank.example", path="2"), "Taxes"),
                     (self.sig(domain="bank.example", path="3"), "Mortgage refi")]
-        rules, dropped = self.rules.learn(labelled)
+        rules, dropped = self.rules.learn(labeled)
         self.assertFalse([r for r in rules if r["kind"] == "domain"])
         self.assertEqual(dropped, 1)
 
@@ -468,13 +468,13 @@ class RulesTests(Base):
         # Pretend the model gave up on everything, then label two files per project by hand.
         (self.root / "assignments.json").write_text(json.dumps(
             {f: {"primary": "Unsorted", "also": [], "sensitivity": "none"} for f in self.truth}))
-        labelled, per = [], collections_default()
+        labeled, per = [], collections_default()
         for f in sorted(self.truth):
             project = self.truth[f]["primary"]
             if project != "Unsorted" and per[project] < 2 and assign.download_domain(self.folder / f):
                 per[project] += 1
-                labelled.append({"path": f, "project": project})
-        (self.root / "corrections.json").write_text(json.dumps(labelled))
+                labeled.append({"path": f, "project": project})
+        (self.root / "corrections.json").write_text(json.dumps(labeled))
         learned = run(HERE / "rules.py", "learn", self.folder, self.projects, self.root / "corrections.json",
                       "--assignments", self.root / "assignments.json")
         self.assertEqual(learned.returncode, 0, learned.stderr)

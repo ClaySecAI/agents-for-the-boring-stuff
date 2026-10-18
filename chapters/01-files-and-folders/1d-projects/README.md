@@ -163,7 +163,7 @@ Run the assignment, then read two things: the `Unsorted` pile, and the files in 
 do not belong. Each pattern you find points to a fix in the list.
 
 - Several unsorted files about one subject mean a project is missing.
-- A project that attracts files it should not mean its description is too broad, or a neighbouring
+- A project that attracts files it should not mean its description is too broad, or a neighboring
   project's description is too thin.
 - Two projects that keep trading the same files mean the boundary needs a sentence in both
   descriptions.
@@ -451,7 +451,7 @@ python3 rules.py apply <folder> assignments.json rules.json
 decided are marked `"source": "rule"`. If two rules point at different projects for one file, neither
 wins and the model's answer stands.
 
-The tests cover this without a model. The test fixture has two labelled files per project; the rules
+The tests cover this without a model. The test fixture has two labeled files per project; the rules
 learned from them decide more than twenty others, and none of those decisions is wrong. That is a
 property of the fixture, whose bank statements share a website and an account number, and a messier
 folder will give you weaker rules. The preview is how you find out before anything moves.
@@ -729,7 +729,7 @@ Run from `chapters/01-files-and-folders/1d-projects`.
    you change, and what does that tell you about what the model could not know?
 6. Change the `also` instruction in `assign_projects.py` so the model proposes secondary projects
    more readily. Does recall rise, and what happens to precision?
-7. Hold out each project in turn with `--hold-out`. Which ones have a neighbour on the list that
+7. Hold out each project in turn with `--hold-out`. Which ones have a neighbor on the list that
    attracts their files, and which are left unsorted?
 8. Add a catch-all project such as "Everything else" to a hold-out run. Do the held-out files go
    there, and do files that belong to real projects start going there too?

@@ -159,7 +159,7 @@ A finding is evidence, not a verdict. Our own skills scan with no high findings,
 
 ## 9.6 What we tested
 
-`test_skillgate.py` runs 21 tests with stub scanners and a fake VirusTotal server: every rule class, repeatable findings, tamper
+`test_skillgate.py` runs 26 tests with stub scanners and a fake VirusTotal server: every rule class, repeatable findings, tamper
 detection, the quote check, each decision, release needing `--yes`, no overwrite, audit catching a changed or
 ungated skill, remote scanners staying off without their flag and token, and VirusTotal receiving only hashes.
 

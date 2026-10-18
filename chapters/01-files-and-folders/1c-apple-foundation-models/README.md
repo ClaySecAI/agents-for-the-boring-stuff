@@ -51,7 +51,7 @@ python3 apply_plan.py practice/organize-plan.md practice/downloads
 python3 verify.py check practice/downloads
 ```
 
-On an M4 Pro, all 28 files were labelled in about 18 seconds.
+On an M4 Pro, all 28 files were labeled in about 18 seconds.
 
 For a folder with thousands of files in subfolders, pass `--top-level` so that only loose files
 are classified and each subfolder moves as one unit. See
@@ -91,7 +91,7 @@ Use one session per file. A `LanguageModelSession` keeps its history, and the co
 small. A fresh session also keeps one file from influencing the next.
 
 The on-device model has its own safety guardrails, and they can refuse a file. The script
-catches the error and leaves the file unlabelled, and `make_plan.py` treats an unlabelled file as
+catches the error and leaves the file unlabeled, and `make_plan.py` treats an unlabeled file as
 sensitive. A refusal cannot turn into "looks harmless". In our 60-file test, one file was
 declined with the message "May contain sensitive content". It was sent to review, which is the
 right outcome.

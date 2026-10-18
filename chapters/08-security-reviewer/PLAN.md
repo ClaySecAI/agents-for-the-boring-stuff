@@ -193,7 +193,7 @@ and why, and the commit proceeds. The one exception is the strict pre-push mode:
 closed, because a push to a public remote is the moment you would want the check most, and starting
 the server is a small price for it.
 
-This is the opposite of Chapter 1B, which fails closed when a file cannot be labelled. The
+This is the opposite of Chapter 1B, which fails closed when a file cannot be labeled. The
 difference is what the model is for. In 1B the model's label is the only thing deciding where a
 sensitive file goes. Here the model is an extra layer above rules that already ran.
 

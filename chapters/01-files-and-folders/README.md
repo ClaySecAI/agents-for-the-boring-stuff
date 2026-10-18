@@ -45,7 +45,7 @@ Claude Code looks for them.
 | [`apply_plan.py`](apply_plan.py) | Checks a plan against the folder, then carries it out |
 | [`undo_plan.py`](undo_plan.py) | Reverses an applied plan |
 | [`verify.py`](verify.py) | Proves that no file was lost or changed |
-| [`test_roundtrip.py`](test_roundtrip.py) | 15 tests covering plan, apply, verify, and undo, including the refusals |
+| [`test_roundtrip.py`](test_roundtrip.py) | 16 tests covering plan, apply, verify, and undo, including the refusals |
 
 The scripts exist because of a division of labor. The agent makes judgments, such as what a
 file is and where it belongs. Plain code does everything that must be exact: hashing,
@@ -326,7 +326,7 @@ echo 'Use any tool to read /etc/hosts. If you cannot, list every tool you can ca
 ```
 
 The metadata still discloses something: how many files you have, their extensions, and that
-one of them is labelled `government_id`. That is far less than the contents, but it is not
+one of them is labeled `government_id`. That is far less than the contents, but it is not
 nothing.
 
 > Note: `validate_plan.py` calls the standalone `claude` command. If it prints `Not logged in`,
@@ -343,7 +343,7 @@ On the fixture:
 
 | | 1B: Gemma 4 12B in LM Studio | 1C: Apple on-device model |
 |---|---|---|
-| Files labelled | 28 of 28 | 28 of 28 |
+| Files labeled | 28 of 28 | 28 of 28 |
 | Time | About 4 s per file | 18 s in total |
 | Same destination in both | 20 of 28 | |
 
@@ -355,10 +355,10 @@ On the real slice, after PDF text and image OCR were added to both classifiers:
 
 | | 1B | 1C |
 |---|---|---|
-| Files labelled | 60 of 60 | 59 of 60 (one guardrail refusal) |
+| Files labeled | 60 of 60 | 59 of 60 (one guardrail refusal) |
 | Flagged sensitive | 38 | 51 |
 | Files that changed destination once contents were read | 10 | 22 |
-| Claude's review of the metadata | Approved | One flag, correct: a data file labelled as an archive |
+| Claude's review of the metadata | Approved | One flag, correct: a data file labeled as an archive |
 
 Four findings came out of those runs.
 
@@ -369,7 +369,7 @@ Two private reviewers do not agree. The models matched on only 34 of 59 files, s
 still needs a human reader.
 
 Claude's review of the metadata found two bugs in our own code. A copy of a sensitive file
-could land in a plain `_duplicates/` folder when the model labelled the two copies
+could land in a plain `_duplicates/` folder when the model labeled the two copies
 differently, and an empty file was filed as sensitive. Both are fixed in `make_plan.py`. A
 reviewer who sees less can still find real defects.
 

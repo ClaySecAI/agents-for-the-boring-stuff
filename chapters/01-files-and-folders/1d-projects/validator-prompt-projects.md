@@ -22,7 +22,7 @@ Look for:
 - A project with a single file, or one project that holds an unusually large share of everything.
 - Too much in P0. If more than about a fifth of the items are unsorted, the project list may be
   missing a project; say so once, naming P0, and do not flag every P0 line.
-- Sensitive files left in P0. A file labelled anything other than "none" and left unsorted needs a
+- Sensitive files left in P0. A file labeled anything other than "none" and left unsorted needs a
   human look.
 - A file whose "also" repeats its own project, or lists the same project twice.
 - A copy marked duplicate_of whose project or sensitivity differs from its original's.

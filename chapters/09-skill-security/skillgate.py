@@ -225,7 +225,7 @@ def severity_counts(issues: list[dict]) -> int:
 
 
 def count_serious(node) -> int:
-    """For a scanner whose report format we have not seen: count anything labelled high or critical."""
+    """For a scanner whose report format we have not seen: count anything labeled high or critical."""
     if isinstance(node, dict):
         here = 1 if str(node.get("severity", "")).lower() in ("high", "critical") else 0
         return here + sum(count_serious(v) for v in node.values())
@@ -303,7 +303,7 @@ def adapter_agent_scan(binary: str | None, folder: Path, outdir: Path, allowed: 
             why = (failures[0].get("message") if failures else "no scan results") or "failed"
             return not_run("agent-scan", "remote", "failed, nothing analyzed: " + str(why)[:140])
         risks = [x for r in responses for key in ("skill_risks", "server_risks") for x in (r.get(key) or [])]
-        # We have not seen a risk entry. Fail closed: any entry counts as high, and so does any labelled high or critical.
+        # We have not seen a risk entry. Fail closed: any entry counts as high, and so does any labeled high or critical.
         high = max(len(risks), count_serious(risks))
         return {"name": "agent-scan", "privacy": "remote", "ran": True, "high_findings": high,
                 "summary": f"{len(risks)} risk indicator(s)", "report": str(out)}

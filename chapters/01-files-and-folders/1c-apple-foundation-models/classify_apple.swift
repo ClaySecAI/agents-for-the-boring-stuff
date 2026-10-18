@@ -136,4 +136,4 @@ for (i, url) in files.enumerated() {
 
 let json = try JSONSerialization.data(withJSONObject: results, options: [.prettyPrinted, .sortedKeys])
 try json.write(to: outURL)
-print("Wrote \(outURL.path) (\(results.count) of \(files.count) files labelled)")
+print("Wrote \(outURL.path) (\(results.count) of \(files.count) files labeled)")

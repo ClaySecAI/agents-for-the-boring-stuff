@@ -12,7 +12,7 @@ Compared with the text-generating model in assign_projects.py:
 
   * it is far smaller and faster (a model of 80 to 600 MB, and a second or two for a whole folder)
   * it cannot write anything, so it cannot leak anything through its output
-  * it cannot judge sensitivity, so every file is labelled "unknown" (the most cautious label) unless
+  * it cannot judge sensitivity, so every file is labeled "unknown" (the most cautious label) unless
     you merge in labels from another pass
   * it can learn from examples without any training: give it files you have already sorted with
     --examples and it will treat them as extra descriptions of their projects

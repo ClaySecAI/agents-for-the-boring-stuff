@@ -23,7 +23,7 @@ The gates, all in config.json:
                         (default 50; plugged in always runs; 0 turns the check off)
   manage_model          true: start LM Studio's server and load the model for the sweep, then unload and
                         stop what it started. false: use a server that is already running
-  hold_sensitivities    files the model labelled with one of these stay where they are (default:
+  hold_sensitivities    files the model labeled with one of these stay where they are (default:
                         credentials, unknown); they are counted, never moved
   unsorted              files the model cannot place stay where they are
   every move is written to an undo record in the run's folder BEFORE the first move
