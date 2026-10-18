@@ -532,6 +532,7 @@ def cmd_release(args) -> None:
     save_meta(args.id, meta)
     log("release", args.id, target=str(target), state_at_release=state, accepted_risk=args.accept_risk or "")
     print(f"Released to {target} (state at release: {state}). `audit` will tell you if it changes.")
+    print(f"recorded in {index}")
 
 
 def audit_target(target: Path, kind: str) -> list[tuple[str, str]]:
@@ -601,6 +602,7 @@ def cmd_adopt(args) -> None:
         print(f"adopted  {path.name}: {kind}, {len(findings)} finding(s), none high" if not high else f"adopted  {path.name}: with accepted risk")
     home().mkdir(parents=True, exist_ok=True)
     index.write_text(json.dumps(released, indent=2))
+    print(f"recorded in {index}")  # if this is not the folder you expect, SKILLGATE_HOME is set in this terminal
     sys.exit(1 if refused else 0)
 
 

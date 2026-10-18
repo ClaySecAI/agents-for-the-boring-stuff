@@ -75,6 +75,11 @@ The first line the hook prints is your proof it ran. If you see no `skillgate:` 
 `.claude/settings.json` has the `hooks` entry and that you opened the session in this project folder, because
 `$CLAUDE_PROJECT_DIR` is the folder you opened.
 
+Check the last line `adopt` prints: `recorded in …/released.json`. It should be your real state folder (section 9.7). If it
+points somewhere in `/tmp`, an earlier experiment left `SKILLGATE_HOME` set in that terminal. Run `unset SKILLGATE_HOME` or
+open a fresh terminal, and adopt again. We did exactly this by accident while writing the chapter: six adoptions went to a
+temporary folder and the hook still said "not vetted."
+
 ## 9B.5 After you edit something you adopted
 
 You will change your own skills and agents. The next session the hook says CHANGED, which is the hook doing its job.
