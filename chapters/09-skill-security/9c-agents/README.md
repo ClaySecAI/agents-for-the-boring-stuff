@@ -66,13 +66,12 @@ The reviewer agent works the same way: the quarantine folder holds one file, and
 - **Plugins and MCP servers** bundle code, tools, and hooks. A plugin is closer to a package than a skill; treat it as one.
 - **Settings files** (`.claude/settings.json`) can add hooks and permissions. They are not scanned by this gate.
 
-## What we tested
+## 9C.6 Limits
 
-The unit tests cover an agent going through the whole flow (quarantine, scan, review, release as a file, audit, and CHANGED after an
-edit), and the rules `inherits-all-tools` and `loosens-permissions`. We also ran the scan on this repository's own agents.
+Slash commands, plugins, MCP servers, and settings files are not covered by the agent rules or the gate (9C.5). Three things are
+untested: the `defines-mcp-servers` and `defines-hooks` rules on an agent, slash commands, and plugins.
 
-Not tested: the `defines-mcp-servers` and `defines-hooks` rules for agents (they follow the same code path as skills, but no
-test uses an agent that has them), slash commands, and plugins.
+What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 

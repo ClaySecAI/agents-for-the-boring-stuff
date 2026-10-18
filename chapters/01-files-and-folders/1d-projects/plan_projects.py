@@ -50,7 +50,7 @@ from make_plan import sha  # noqa: E402
 from plan_common import IGNORED_NAMES  # noqa: E402
 
 UNSORTED = "Unsorted"
-# Most protective first. An unlabelled file ("unknown") counts as the most sensitive.
+# Most protective first. An unlabeled file ("unknown") counts as the most sensitive.
 SEVERITY = ["unknown", "credentials", "government_id", "health", "financial", "legal", "personal", "none"]
 RESERVED = {"Projects", "Folders"}
 EMPTY = "(empty)"

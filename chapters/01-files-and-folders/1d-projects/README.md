@@ -451,7 +451,7 @@ python3 rules.py apply <folder> assignments.json rules.json
 decided are marked `"source": "rule"`. If two rules point at different projects for one file, neither
 wins and the model's answer stands.
 
-The tests cover this without a model. The test fixture has two labelled files per project; the rules
+The tests cover this without a model. The test fixture has two labeled files per project; the rules
 learned from them decide more than twenty others, and none of those decisions is wrong. That is a
 property of the fixture, whose bank statements share a website and an account number, and a messier
 folder will give you weaker rules. The preview is how you find out before anything moves.
@@ -701,6 +701,8 @@ setting it up, installing the weekly job, what a laptop does to a schedule, and 
 - Project names are sensitive. The Claude validator sees only ids, which also limits what it can
   check: it can find dates and sizes that look wrong but cannot judge whether a file belongs.
 
+What we tested, and what we did not: [TESTED.md](TESTED.md).
+
 ## Common tasks
 
 Run from `chapters/01-files-and-folders/1d-projects`.
@@ -729,7 +731,7 @@ Run from `chapters/01-files-and-folders/1d-projects`.
    you change, and what does that tell you about what the model could not know?
 6. Change the `also` instruction in `assign_projects.py` so the model proposes secondary projects
    more readily. Does recall rise, and what happens to precision?
-7. Hold out each project in turn with `--hold-out`. Which ones have a neighbour on the list that
+7. Hold out each project in turn with `--hold-out`. Which ones have a neighbor on the list that
    attracts their files, and which are left unsorted?
 8. Add a catch-all project such as "Everything else" to a hold-out run. Do the held-out files go
    there, and do files that belong to real projects start going there too?

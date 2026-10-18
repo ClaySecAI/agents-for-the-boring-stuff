@@ -110,9 +110,9 @@ enums. The server's constrained decoding limits the model to the listed values. 
 column in the plan holds label codes for the same reason.
 
 The pass also does data-loss prevention. Each file receives a sensitivity label: `financial`,
-`legal`, `government_id`, `health`, `credentials`, or `personal`. `make_plan.py` routes labelled
+`legal`, `government_id`, `health`, `credentials`, or `personal`. `make_plan.py` routes labeled
 files to `_sensitive/<kind>/`, where you can see them and later encrypt or exclude them.
-Copies of a sensitive file stay inside that area. A file that cannot be labelled, or that
+Copies of a sensitive file stay inside that area. A file that cannot be labeled, or that
 receives a value outside the lists, is treated as sensitive. The code fails closed.
 
 Everything else is ordinary code: hashing, the plan table, the coverage check, and the move.
@@ -136,7 +136,7 @@ you add: where does it keep a copy of what I gave it?
 
 ### Reasoning models can spend the whole token budget
 
-Our first run labelled 1 of 28 files. Gemma 4 is a reasoning model. It spent nearly all of the
+Our first run labeled 1 of 28 files. Gemma 4 is a reasoning model. It spent nearly all of the
 200 output tokens thinking (197 of 200 in one probe) and returned an empty answer. Setting
 `"reasoning_effort": "none"` in the request fixed it and cut a classification from about 15
 seconds to about 4. For a lookup task, thinking is wasted effort.
@@ -153,6 +153,17 @@ load beside everything else on that machine, so we did not use one. Try two and 
 using the method from
 [section 1.5](../README.md#15-choosing-a-model-for-the-job). Model names change quickly, so
 check what is current.
+
+## Limits
+
+- The local model supplies labels, and nothing here makes them correct. Compare two models' plans before you trust one.
+- OCR is imperfect, so treat extracted text as a strong hint and not a transcript.
+- The extraction helper uses macOS frameworks. On other platforms you skip it or supply your own extractor.
+- A reasoning model can spend its whole token budget thinking and return nothing.
+- A model that is too large for your memory will not load beside your other work.
+- The tool's own log can hold a copy of your files, so a local run is private only if you check the logs.
+
+What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 
@@ -173,5 +184,5 @@ Run from `chapters/01-files-and-folders`.
 2. Add a file containing a made-up social security number. Does it land in
    `_sensitive/government_id/`?
 3. Stop the LM Studio server partway through a run. What happens to the files that were not
-   labelled?
+   labeled?
 4. Read `practice/claude-view.txt`. Could you work out what any file is from that alone?

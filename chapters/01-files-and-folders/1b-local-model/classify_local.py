@@ -161,7 +161,7 @@ def main() -> None:
             continue
         print(f"[{i}/{len(files)}] {rel}: {results[rel]['category']} / {results[rel]['sensitivity']}")
     out.write_text(json.dumps(results, indent=2))
-    print(f"Wrote {out} ({len(results)} of {len(files)} files labelled)")
+    print(f"Wrote {out} ({len(results)} of {len(files)} files labeled)")
 
 
 if __name__ == "__main__":

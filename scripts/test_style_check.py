@@ -34,9 +34,24 @@ class StyleTests(unittest.TestCase):
     def test_long_paragraphs_are_flagged(self):
         self.assertIn("long-paragraph", rules("word " * 140 + "\n"))
 
+    def test_british_spellings_are_flagged_but_american_ones_are_not(self):
+        self.assertEqual(rules("The labelled file and a neighbouring folder.\n"), {"british-spelling"})
+        self.assertEqual(rules("The labeled file, a realistic test, a specialist, and a neighboring folder.\n"), set())
+
+    def test_tested_file_is_required_and_linked(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            readme = Path(d) / "README.md"
+            readme.write_text("# Chapter\n")
+            self.assertEqual([r for _, _, r, _ in sc.check_tested(readme)], ["missing-file"])
+            (Path(d) / "TESTED.md").write_text("# Tested\n")
+            self.assertEqual([r for _, _, r, _ in sc.check_tested(readme)], ["missing-link"])
+            readme.write_text("See [TESTED.md](TESTED.md).\n")
+            self.assertEqual(sc.check_tested(readme), [])
+
     def test_chapters_need_common_tasks_and_exercises(self):
         self.assertEqual(rules("# Chapter\n\ntext\n", chapter=True), {"missing-section"})
-        self.assertEqual(rules("# Chapter\n\n## Common tasks\n\n## Exercises\n", chapter=True), set())
+        self.assertEqual(rules("# Chapter\n\n## 1.9 Limits\n\n## Common tasks\n\n## Exercises\n", chapter=True), set())
 
 
 if __name__ == "__main__":

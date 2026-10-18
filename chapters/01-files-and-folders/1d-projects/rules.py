@@ -12,7 +12,7 @@ with others that belong there, and remember it as a rule. A rule is an exact mat
   name_key    the file's name with digits and punctuation stripped ("account_history (2).pdf"
               becomes "account history"). Names too short to mean anything are ignored
 
-`learn` writes rules.json. A signal becomes a rule only if the files you labelled with it all agree
+`learn` writes rules.json. A signal becomes a rule only if the files you labeled with it all agree
 on one project, and enough of them do (a domain or a name pattern needs two; an identifier or an exact
 path needs one). A website you used for two different projects, such as a bank, therefore makes no rule.
 
@@ -63,18 +63,18 @@ def signals(path: Path, rel: str) -> dict:
     }
 
 
-def learn(labelled: list[tuple[dict, str]], min_support: dict[str, int] | None = None) -> tuple[list[dict], int]:
+def learn(labeled: list[tuple[dict, str]], min_support: dict[str, int] | None = None) -> tuple[list[dict], int]:
     """From (signals, project) pairs make rules. Returns (rules, how many signals were dropped for disagreeing)."""
     need = {**MIN_SUPPORT, **(min_support or {})}
     seen: dict[tuple[str, str], dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for sig, project in labelled:
+    for sig, project in labeled:
         for kind in PRIORITY:
             for value in sig.get(kind, []):
                 seen[(kind, value)][project] += 1
     rules, dropped = [], 0
     for (kind, value), counts in sorted(seen.items()):
         if len(counts) > 1:
-            dropped += 1  # the same signal was labelled with two projects: it proves nothing
+            dropped += 1  # the same signal was labeled with two projects: it proves nothing
             continue
         (project, support), = counts.items()
         if project != UNSORTED and support >= need[kind]:
@@ -127,16 +127,16 @@ def list_files(folder: Path, top_level: bool) -> list[Path]:
 def cmd_learn(args) -> None:
     projects = {p["name"] for p in assign.load_projects(args.projects)}
     corrections = json.loads(args.corrections.read_text())
-    labelled = []
+    labeled = []
     for item in corrections:
         path = args.folder / item["path"]
         if item["project"] in projects | {UNSORTED} and path.is_file():
-            labelled.append((signals(path, item["path"]), item["project"]))
-    rules, dropped = learn(labelled)
+            labeled.append((signals(path, item["path"]), item["project"]))
+    rules, dropped = learn(labeled)
     out = args.out or args.corrections.with_name("rules.json")
     out.write_text(json.dumps(rules, indent=2))
     by_kind = {k: sum(1 for r in rules if r["kind"] == k) for k in PRIORITY}
-    print(f"{len(labelled)} corrections -> {len(rules)} rules "
+    print(f"{len(labeled)} corrections -> {len(rules)} rules "
           f"({', '.join(f'{n} {k}' for k, n in by_kind.items())}); {dropped} signals dropped because they disagreed.")
     if args.assignments:
         assigned = json.loads(args.assignments.read_text())

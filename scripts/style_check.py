@@ -3,8 +3,8 @@
     python3 scripts/style_check.py <file-or-folder>... [--chapters]
 
 Finds what a script can find: em dashes, inflated words, hollow intensifiers, filler openers, bold lead-ins, list labels that
-end in a period, a possibly missing serial comma, Title Case headings, very long paragraphs, and (with --chapters) a chapter
-README that lacks a Common tasks table or Exercises. It does not judge whether the writing is good. That is the editor's job.
+end in a period, a possibly missing serial comma, British spellings, Title Case headings, very long paragraphs, and (with --chapters) a chapter
+README that lacks Limits, Common tasks, Exercises, a TESTED.md beside it, or a link to it. It does not judge whether the writing is good. That is the editor's job.
 Code blocks are skipped, and so is anything between `<!-- style:off -->` and `<!-- style:on -->` (for quoting the patterns). Exit status 1 when anything is found, 0 when clean.
 """
 from __future__ import annotations
@@ -21,6 +21,11 @@ INTENSIFIERS = ["genuinely", "truly", "quite frankly", "to be honest", "it's wor
                 "it's important to note", "needless to say", "at the end of the day"]
 FILLER = ["moreover", "furthermore", "additionally", "in conclusion", "in summary", "let's dive", "let's explore", "let's take a look",
           "when it comes to"]
+# American English (Chicago). Stems that British spelling changes; matched at word start, any ending.
+BRITISH = re.compile(r"\b(?:(?:label|unlabel|cancel|travel|model)l\w*|neighbour\w*|colour\w*|behaviour\w*|favour\w*|honour\w*|"
+                     r"(?:organ|recogn|summar|categor|normal|initial|custom|optim|minim|priorit|sanit|serial|author|util|real|"
+                     r"visual|synchron|special|general|standard|final)is(?:e|ed|es|ing|ation|ations)|"
+                     r"catalogue|centre|grey|whilst|amongst|judgement|defence|offence|artefact|programme)\b", re.I)
 SERIAL = re.compile(r"\b[\w'-]+, [\w'-]+ (and|or) [\w'-]+")
 SMALL = {"a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "with", "vs", "at", "by", "from", "is", "not", "as", "it", "up"}
 
@@ -78,6 +83,8 @@ def check_text(text: str, name: str = "", chapter: bool = False) -> list[tuple[s
             add(number, "bold-lead-in", stripped)
         if re.match(r"([-*]|\d+\.)\s+\*\*[^*:]+\.\*\*", stripped):
             add(number, "list-label-period", stripped)
+        for match in BRITISH.finditer(stripped):
+            add(number, "british-spelling", match.group(0))
         if SERIAL.search(stripped) and not stripped.startswith(("|", "#")) and "`" not in stripped:
             add(number, "serial-comma?", SERIAL.search(stripped).group(0))
         if stripped.startswith("#"):
@@ -89,16 +96,26 @@ def check_text(text: str, name: str = "", chapter: bool = False) -> list[tuple[s
     if paragraph:
         flush()
     if chapter:
-        for needed in ("Common tasks", "Exercises"):
+        for needed in ("Limits", "Common tasks", "Exercises"):
             if not re.search(rf"^#+\s+.*{needed}", text, re.M | re.I):
                 found.append((name, 0, "missing-section", needed))
+    return found
+
+
+def check_tested(path: Path) -> list[tuple[str, int, str, str]]:
+    """A chapter README keeps its testing record in TESTED.md beside it, and links to it."""
+    found = []
+    if not (path.parent / "TESTED.md").exists():
+        found.append((str(path), 0, "missing-file", "TESTED.md"))
+    elif "TESTED.md" not in path.read_text():
+        found.append((str(path), 0, "missing-link", "README does not link TESTED.md"))
     return found
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(usage=__doc__)
     ap.add_argument("paths", nargs="+")
-    ap.add_argument("--chapters", action="store_true", help="also require Common tasks and Exercises in chapter READMEs")
+    ap.add_argument("--chapters", action="store_true", help="also require Limits, Common tasks, Exercises and a linked TESTED.md in chapter READMEs")
     args = ap.parse_args()
     files: list[Path] = []
     for raw in args.paths:
@@ -107,7 +124,7 @@ def main() -> None:
     total = 0
     for path in files:
         is_chapter = args.chapters and path.name == "README.md" and "chapters" in path.parts
-        for name, line, rule, detail in check_text(path.read_text(), str(path), is_chapter):
+        for name, line, rule, detail in check_text(path.read_text(), str(path), is_chapter) + (check_tested(path) if is_chapter else []):
             print(f"{name}:{line}: {rule}: {detail}")
             total += 1
     print(f"{total} finding(s) in {len(files)} file(s).")

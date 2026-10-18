@@ -15,7 +15,7 @@ so most of this chapter is about the checks around the agent.
 
 ## In this chapter
 
-You will build a file-organizing agent and the machinery that keeps it honest. Along the way
+You will build a file-organizing agent and the machinery that checks its work. Along the way
 you will learn to:
 
 - write an agent file with a narrow job, a short tool list, and a model sized to the work
@@ -45,7 +45,11 @@ Claude Code looks for them.
 | [`apply_plan.py`](apply_plan.py) | Checks a plan against the folder, then carries it out |
 | [`undo_plan.py`](undo_plan.py) | Reverses an applied plan |
 | [`verify.py`](verify.py) | Proves that no file was lost or changed |
+<<<<<<< HEAD
 | [`test_roundtrip.py`](test_roundtrip.py) | 16 tests covering plan, apply, verify, undo, and the state folder, including the refusals |
+=======
+| [`test_roundtrip.py`](test_roundtrip.py) | 16 tests covering plan, apply, verify, and undo, including the refusals |
+>>>>>>> refs/heads/claude/gallant-lederberg-1b4480
 
 The scripts exist because of a division of labor. The agent makes judgments, such as what a
 file is and where it belongs. Plain code does everything that must be exact: hashing,
@@ -171,8 +175,8 @@ Match the model to the work:
 | Workload | Model tier | Reason |
 |---|---|---|
 | Repetitive, well-defined chores such as sorting, renaming, and extracting fields | Small and fast (Haiku) | The task needs little reasoning, so cost and speed matter more |
-| Everyday multi-step work such as summarizing, drafting, and light analysis | Mid-tier (Sonnet) | A balance of quality, speed and cost |
-| Ambiguous, high-stakes or long-running work | Most capable (Opus) | Reasoning is worth paying for only where it changes the outcome |
+| Everyday multi-step work such as summarizing, drafting, and light analysis | Mid-tier (Sonnet) | A balance of quality, speed, and cost |
+| Ambiguous, high-stakes, or long-running work | Most capable (Opus) | Reasoning is worth paying for only where it changes the outcome |
 
 Start with the smallest model you expect to work. Run the fixture, read the plan, and move up
 a tier if the plan has mistakes. Starting at the top and never revisiting the choice is the
@@ -326,8 +330,7 @@ echo 'Use any tool to read /etc/hosts. If you cannot, list every tool you can ca
 ```
 
 The metadata still discloses something: how many files you have, their extensions, and that
-one of them is labelled `government_id`. That is far less than the contents, but it is not
-nothing.
+one of them is labeled `government_id`. That is far less than the contents.
 
 > Note: `validate_plan.py` calls the standalone `claude` command. If it prints `Not logged in`,
 > that command is not signed in, even if the desktop app is. Run `claude auth login`, or set
@@ -343,7 +346,7 @@ On the fixture:
 
 | | 1B: Gemma 4 12B in LM Studio | 1C: Apple on-device model |
 |---|---|---|
-| Files labelled | 28 of 28 | 28 of 28 |
+| Files labeled | 28 of 28 | 28 of 28 |
 | Time | About 4 s per file | 18 s in total |
 | Same destination in both | 20 of 28 | |
 
@@ -355,10 +358,10 @@ On the real slice, after PDF text and image OCR were added to both classifiers:
 
 | | 1B | 1C |
 |---|---|---|
-| Files labelled | 60 of 60 | 59 of 60 (one guardrail refusal) |
+| Files labeled | 60 of 60 | 59 of 60 (one guardrail refusal) |
 | Flagged sensitive | 38 | 51 |
 | Files that changed destination once contents were read | 10 | 22 |
-| Claude's review of the metadata | Approved | One flag, correct: a data file labelled as an archive |
+| Claude's review of the metadata | Approved | One flag, correct: a data file labeled as an archive |
 
 Four findings came out of those runs.
 
@@ -369,7 +372,7 @@ Two private reviewers do not agree. The models matched on only 34 of 59 files, s
 still needs a human reader.
 
 Claude's review of the metadata found two bugs in our own code. A copy of a sensitive file
-could land in a plain `_duplicates/` folder when the model labelled the two copies
+could land in a plain `_duplicates/` folder when the model labeled the two copies
 differently, and an empty file was filed as sensitive. Both are fixed in `make_plan.py`. A
 reviewer who sees less can still find real defects.
 
@@ -405,6 +408,8 @@ The approach has gaps, and you should know where they are.
   judgment is yours, which is why the approval step exists.
 - Agents are not deterministic. Two runs on the same folder can produce different plans.
 
+What we tested, and what we did not: [TESTED.md](TESTED.md).
+
 ## Summary
 
 An agent can sort files by what they contain, which a rule-based script cannot do. It can also
@@ -414,6 +419,17 @@ plan you approved. A verifier compares hashes before and after, and an undo scri
 move. Smaller models are cheaper and work for this job, provided the checks catch their typical
 mistakes. For sensitive folders, a local model can read the files while Claude reviews only
 metadata.
+
+## Limits
+
+- The local model supplies labels, and nothing here makes them correct. Compare two models' plans before you trust one.
+- OCR is imperfect, so treat extracted text as a strong hint and not a transcript.
+- The extraction helper uses macOS frameworks. On other platforms you skip it or supply your own extractor.
+- A reasoning model can spend its whole token budget thinking and return nothing.
+- A model that is too large for your memory will not load beside your other work.
+- The tool's own log can hold a copy of your files, so a local run is private only if you check the logs.
+
+What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 
@@ -434,7 +450,7 @@ Run from `chapters/01-files-and-folders`.
 2. Add a rule to the agent file: files modified in the last 24 hours are never moved.
 3. Build a second fixture, such as a messy Desktop, and see whether the skill works unchanged.
 4. Extend `verify.py` to fail when a folder appears that the approved plan does not mention.
-5. Run the chapter with `model: haiku`, `sonnet` and `opus`, then compare the three plans. Where
+5. Run the chapter with `model: haiku`, `sonnet`, and `opus`, then compare the three plans. Where
    do they disagree, and does the extra cost buy anything for this task?
 6. Run the plan twice with the same model and compare. How much do the plans differ?
 

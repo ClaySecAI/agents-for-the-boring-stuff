@@ -29,7 +29,7 @@ Build the helper once, next to `classify_apple`, which looks for it there:
 swiftc -O extract_text.swift -o extract_text
 ```
 
-Without the helper, PDFs and images are judged by filename alone.
+PDFs and images are judged by filename alone if the helper is missing.
 
 ## 1C.3 Running the pipeline
 
@@ -51,7 +51,7 @@ python3 apply_plan.py practice/organize-plan.md practice/downloads
 python3 verify.py check practice/downloads
 ```
 
-On an M4 Pro, all 28 files were labelled in about 18 seconds.
+On an M4 Pro, all 28 files were labeled in about 18 seconds.
 
 For a folder with thousands of files in subfolders, pass `--top-level` so that only loose files
 are classified and each subfolder moves as one unit. See
@@ -91,7 +91,7 @@ Use one session per file. A `LanguageModelSession` keeps its history, and the co
 small. A fresh session also keeps one file from influencing the next.
 
 The on-device model has its own safety guardrails, and they can refuse a file. The script
-catches the error and leaves the file unlabelled, and `make_plan.py` treats an unlabelled file as
+catches the error and leaves the file unlabeled, and `make_plan.py` treats an unlabeled file as
 sensitive. A refusal cannot turn into "looks harmless". In our 60-file test, one file was
 declined with the message "May contain sensitive content". It was sent to review, which is the
 right outcome.
@@ -112,6 +112,18 @@ Expect wrong labels too. On the fixture it filed a `.tar.gz` under Images and a 
 
 A single Swift file compiles with plain `swiftc`. No Xcode project and no `Package.swift` are
 needed.
+
+## Limits
+
+- The on-device model works on text only, so PDFs and images need `extract_text`. Without it, they are judged by filename alone.
+- It is one fixed model of roughly 3B parameters with a small context window, so each file is classified alone from its first 2 KB.
+- It runs only on Apple Intelligence Macs.
+- Its own guardrails can refuse a file. The file stays unlabeled and is treated as sensitive.
+- It is over-cautious by design: it flagged 51 of 60 real files as sensitive.
+- It gets some labels wrong, so the metadata review and your own reading of the plan are the check.
+- It can fail when the Mac is busy, so do not run it alongside other heavy work.
+
+What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 

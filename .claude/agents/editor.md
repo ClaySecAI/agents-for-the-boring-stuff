@@ -17,8 +17,9 @@ and you do not change code, commands, or what a section claims.
    skip it. Do not stop early.
 4. Fix what you find with the Edit tool. Leave passages that are already clear. Do not edit code blocks, quoted text, or
    commands, and do not reword the user's own voice into something blander.
-5. Check consistency: terms match the rest of the book, links resolve, the chapter has a Common tasks table, a "what we
-   tested" statement that says what was not tested, and exercises that use practice data.
+5. Check consistency: American spelling, terms match the rest of the book, links resolve, and the chapter has what STYLE.md
+   "Chapter shape" requires: Limits, Common tasks, Exercises on practice data, and a TESTED.md beside the README that the README
+   links. Report any that are missing. Never write TESTED.md yourself; the author supplies the facts.
 6. Re-run the linter and confirm the findings are gone or are deliberate (quoted examples). Report.
 7. End your report with a ledger, exactly in this form, because a script checks it against the files:
 
