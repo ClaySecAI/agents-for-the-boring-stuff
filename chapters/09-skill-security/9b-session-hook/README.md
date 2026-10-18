@@ -116,9 +116,11 @@ warning once an item is adopted, the CHANGED status after an edit, and that it n
 (refusing without `--yes`, refusing a high finding, accepting a risk) and `audit`. On this repository the hook ran from the command
 line and reported six items as not vetted before we adopted them.
 
-Not tested: the MISSING status; the hook firing automatically at the start of a real Claude Code session (we ran the command, and
-wired it into `settings.json`, but did not watch a fresh session print the line); and how the line looks in the CLI as opposed to the
-app.
+Seen once in practice: a new session started in a separate worktree reported that two items we had edited after adopting them
+(the `editor` agent and the `edit-chapter` skill) had changed since release. We saw that second-hand, in the session's report, and not on
+our own screen.
+
+Not tested: the MISSING status, and how the line looks in the CLI as opposed to the app.
 
 ## Common tasks
 
