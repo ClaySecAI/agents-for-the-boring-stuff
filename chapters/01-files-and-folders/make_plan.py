@@ -33,7 +33,7 @@ import re
 import sys
 from pathlib import Path
 
-from plan_common import IGNORED_NAMES
+from plan_common import IGNORED_NAMES, escape_cell
 
 CATEGORIES = {"Documents", "Images", "Spreadsheets", "Installers", "Archives", "Text", "Review"}
 SENSITIVITIES = {"personal", "financial", "health", "credentials", "government_id", "legal"}
@@ -142,7 +142,7 @@ def main(classification: Path, folder: Path, top_level: bool, out_dir: Path | No
     mode_line = ["Mode: top-level", ""] if top_level else []
     lines = [f"# Plan for {folder.resolve().name} (made by a local model + make_plan.py)", "", *mode_line,
              "| From | To | Why |", "|---|---|---|"]
-    lines += [f"| {rel} | {dest} | {why} |" for rel, dest, why, _size, _kind in rows]
+    lines += [f"| {escape_cell(rel)} | {escape_cell(dest)} | {why} |" for rel, dest, why, _size, _kind in rows]
     plan = where / "organize-plan.md"
     plan.write_text("\n".join(lines) + "\n")
 

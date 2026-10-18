@@ -1,12 +1,18 @@
-"""Tests for sweep.py. A small fake model server stands in for LM Studio, so no model is needed.
+"""Tests for sweep.py. A small fake model server stands in for LM Studio, so no model is needed, and a fake
+`lms` command stands in for LM Studio's, so no real model is loaded or unloaded.
 
     python3 test_sweep.py
 """
 from __future__ import annotations
 
+import argparse
+import contextlib
 import http.server
+import io
+import itertools
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,6 +20,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -23,7 +30,11 @@ PROJECTS = [{"name": "Taxes", "description": "tax forms"}, {"name": "Workouts", 
 
 
 class FakeModel(http.server.BaseHTTPRequestHandler):
-    """Answers by file name: 'tax' -> Taxes, 'key' -> Taxes but credentials, 'mystery' -> Unsorted, else Workouts."""
+    """Answers by file name: 'tax' -> Taxes, 'key' -> Taxes but credentials, 'mystery' -> Unsorted, else Workouts.
+    Like LM Studio, it answers 404 for a model it does not have."""
+
+    accepted = {sweep.DEFAULTS["model"]}
+    asked: list = []
 
     def log_message(self, *args):
         pass
@@ -35,6 +46,12 @@ class FakeModel(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        FakeModel.asked.append(body["model"])
+        if body["model"] not in FakeModel.accepted:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b'{"error": "model not found"}')
+            return
         user = body["messages"][-1]["content"]
         name = user.split("File name: ", 1)[1].splitlines()[0].lower()
         if "mystery" in name:
@@ -64,6 +81,8 @@ class Base(unittest.TestCase):
         cls.server.shutdown()
 
     def setUp(self):
+        FakeModel.accepted = {sweep.DEFAULTS["model"]}
+        FakeModel.asked = []
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
         self.folder = self.root / "Downloads"
@@ -90,13 +109,27 @@ class Base(unittest.TestCase):
         old = time.time() - age_hours * 3600
         os.utime(path, (old, old))
 
-    def sweep(self, *args):
-        env = {**os.environ, "SWEEP_NO_NOTIFY": "1"}
-        return subprocess.run([sys.executable, "-B", str(HERE / "sweep.py"), *args, "--config", str(self.state / "config.json")],
+    def sweep(self, *args, env=None, config=None):
+        env = {**os.environ, "SWEEP_NO_NOTIFY": "1", **(env or {})}
+        config = config or self.state / "config.json"
+        return subprocess.run([sys.executable, "-B", str(HERE / "sweep.py"), *args, "--config", str(config)],
                               capture_output=True, text=True, env=env)
 
-    def listing(self):
-        return sorted(str(p.relative_to(self.folder)) for p in self.folder.rglob("*"))
+    def listing(self, folder=None):
+        folder = folder or self.folder
+        return sorted(str(p.relative_to(folder)) for p in folder.rglob("*"))
+
+    def fake_lms(self):
+        """A fake `lms` first on PATH that logs its arguments. The real one would unload the reader's models."""
+        bin_dir = self.root / "bin"
+        bin_dir.mkdir()
+        log = self.root / "lms.log"
+        lms = bin_dir / "lms"
+        lms.write_text(f'#!/bin/sh\necho "$@" >> "{log}"\n')
+        lms.chmod(0o755)
+        path = f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+        self.assertEqual(shutil.which("lms", path=path), str(lms))
+        return {"PATH": path}, log
 
 
 class PureTests(Base):
@@ -268,6 +301,152 @@ class RunTests(Base):
             (d / "report.json").write_text(json.dumps(data))
         runs = sorted((self.state / "runs").iterdir())
         self.assertIsNone(sweep.days_since_last_sweep(runs))
+
+    def test_an_unmanaged_server_is_asked_for_the_configured_model(self):
+        FakeModel.accepted = {"phi4"}                               # e.g. Ollama, which knows nothing of "sweep"
+        self.config(model="phi4")
+        self.add("tax-form.pdf")
+        done = self.sweep("run")
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("Taxes/tax-form.pdf", self.listing())
+        self.assertEqual(set(FakeModel.asked), {"phi4"})
+
+    def test_a_managed_model_is_loaded_and_unloaded_under_its_own_name(self):
+        env, log = self.fake_lms()
+        FakeModel.accepted = {"sweep"}
+        self.config(manage_model=True)
+        self.add("tax-form.pdf")
+        done = self.sweep("run", env=env)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("Taxes/tax-form.pdf", self.listing())
+        self.assertEqual(set(FakeModel.asked), {"sweep"})
+        calls = log.read_text().splitlines()
+        self.assertIn(f"load {sweep.DEFAULTS['model']} -y --identifier sweep --context-length 6144", calls)
+        self.assertEqual(calls[-1], "unload sweep")
+        self.assertFalse([c for c in calls if "--all" in c])          # the reader's own models stay loaded
+
+    def test_a_sweep_in_which_every_request_fails_is_stopped_and_not_counted(self):
+        self.config(model="not-loaded")
+        self.add("tax-form.pdf")
+        self.add("morning-run.txt")
+        before = self.listing()
+        done = self.sweep("run")
+        self.assertEqual(done.returncode, 1, done.stdout + done.stderr)
+        self.assertIn("answered none of the 2 files", done.stdout)
+        self.assertEqual(self.listing(), before)
+        self.assertIsNone(sweep.days_since_last_sweep(sorted((self.state / "runs").iterdir())))
+
+    def test_a_pipe_in_a_file_name_does_not_block_the_sweep(self):
+        self.add("tax return | 2025.pdf")                       # browsers' "Save as PDF" titles often have one
+        self.add("run | notes.txt", age_hours=0)                # too new: left in place, but still a plan row
+        before = self.listing()
+        done = self.sweep("run")
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("Taxes/tax return | 2025.pdf", self.listing())
+        self.assertIn("run | notes.txt", self.listing())
+        self.assertEqual(self.sweep("undo").returncode, 0)
+        self.assertEqual(self.listing(), before)
+
+    def test_an_undone_sweep_does_not_count_as_the_last_sweep(self):
+        self.add("tax-form.pdf")
+        self.assertEqual(self.sweep("run").returncode, 0)
+        self.assertEqual(self.sweep("undo").returncode, 0)
+        again = self.sweep("run", "--if-due", "7")
+        self.assertNotIn("Not due", again.stdout)
+        self.assertIn("Taxes/tax-form.pdf", self.listing())
+
+
+class InitTests(Base):
+    def init(self, folder, practice):
+        home = self.root / "home"
+        home.mkdir(exist_ok=True)
+        done = self.sweep("init", str(folder), config=practice / "config.json", env={"HOME": str(home)})
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertFalse((home / "Library").exists())                # nothing in the real state folder
+        return done
+
+    def test_a_practice_config_keeps_its_runs_beside_it(self):
+        practice = self.root / "practice"
+        self.init(self.folder, practice)
+        cfg = json.loads((practice / "config.json").read_text())
+        self.assertEqual(Path(cfg["state_dir"]), practice.resolve())
+        self.assertEqual(cfg["projects_root"], "")
+        names = [p["name"] for p in json.loads((practice / "projects.json").read_text())]
+        self.assertEqual(names, ["Taxes", "Workouts"])
+
+    def test_init_keeps_a_project_list_that_is_already_there(self):
+        practice = self.root / "practice"
+        practice.mkdir()
+        (practice / "projects.json").write_text(json.dumps(PROJECTS[:1]))
+        self.assertIn("Kept", self.init(self.folder, practice).stdout)
+        self.assertEqual(json.loads((practice / "projects.json").read_text()), PROJECTS[:1])
+
+    def test_a_folder_sorted_into_Projects_is_swept_into_the_folders_inside_it(self):
+        sorted_folder = self.root / "Sorted"                         # Chapter 1D's default layout
+        for name in ("Taxes", "Workouts", "_Unsorted"):
+            (sorted_folder / "Projects" / name).mkdir(parents=True)
+            (sorted_folder / "Projects" / name / "filed-by-1d.txt").write_text("already filed")
+        practice = self.root / "practice"
+        self.init(sorted_folder, practice)
+        names = [p["name"] for p in json.loads((practice / "projects.json").read_text())]
+        self.assertEqual(names, ["Taxes", "Workouts"])               # not one project named "Projects"
+        config = practice / "config.json"
+        cfg = json.loads(config.read_text())
+        self.assertEqual(cfg["projects_root"], "Projects")
+        config.write_text(json.dumps({**cfg, "base_url": self.url, "manage_model": False, "min_battery_percent": 0}))
+        path = sorted_folder / "tax-form.pdf"
+        path.write_text("content")
+        old = time.time() - 5 * 3600
+        os.utime(path, (old, old))
+        before = self.listing(sorted_folder)
+        done = self.sweep("run", config=config)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("Projects/Taxes/tax-form.pdf", self.listing(sorted_folder))
+        self.assertIn("0 folder(s)", self.sweep("folders", config=config).stdout)
+        self.assertEqual(self.sweep("undo", config=config).returncode, 0)
+        self.assertEqual(self.listing(sorted_folder), before)
+
+
+class VerificationTests(Base):
+    """A moved file that hashes differently undoes the sweep. Run in-process so the hash can be made to change."""
+
+    def run_in_process(self):
+        args = argparse.Namespace(config=self.state / "config.json", dry_run=False, if_due=None)
+        out = io.StringIO()
+        hashes = itertools.count()
+        with mock.patch.dict(os.environ, {"SWEEP_NO_NOTIFY": "1"}), contextlib.redirect_stdout(out), \
+                mock.patch.object(sweep, "sha", lambda path: str(next(hashes))):  # every file reads as changed
+            code = sweep.cmd_run(args)
+        return code, out.getvalue()
+
+    def test_a_changed_file_undoes_the_whole_sweep(self):
+        self.add("tax-form.pdf")
+        self.add("morning-run.txt")
+        before = self.listing()
+        code, out = self.run_in_process()
+        self.assertEqual(code, 2)
+        self.assertIn("sweep undone", out)
+        self.assertEqual(self.listing(), before)
+
+    def test_an_undo_that_is_refused_is_reported_with_the_command_that_finishes_it(self):
+        self.add("tax-form.pdf")
+        before = self.listing()
+        real = sweep.run_script
+
+        def run_script(script, *args, env=None):
+            if script.endswith("undo_plan.py"):            # a new download with the same name arrived meanwhile
+                (self.folder / "tax-form.pdf").write_text("newer")
+            return real(script, *args, env=env)
+
+        with mock.patch.object(sweep, "run_script", run_script):
+            code, out = self.run_in_process()
+        self.assertEqual(code, 2)
+        run_id = next((self.state / "runs").iterdir()).name
+        self.assertIn(f"undo refused, run: sweep.py undo {run_id}", out)
+        (self.folder / "tax-form.pdf").unlink()
+        undone = self.sweep("undo", run_id)
+        self.assertEqual(undone.returncode, 0, undone.stdout + undone.stderr)
+        self.assertEqual(self.listing(), before)
 
 
 if __name__ == "__main__":

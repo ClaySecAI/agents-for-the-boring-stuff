@@ -25,8 +25,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from plan_common import CELL, unescape_cell  # noqa: E402
+
 TAG_ATTR = "com.apple.metadata:_kMDItemUserTags"
-ROW = re.compile(r"^\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
+ROW = re.compile(rf"^\|\s*({CELL})\s*\|\s*({CELL})\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*$")
 
 
 def read_tags(path: Path) -> list[str]:
@@ -59,7 +62,7 @@ def rows_with_also(plan: Path) -> list[tuple[str, str, list[str]]]:
             continue
         also = [a.strip() for a in m.group(4).split(";") if a.strip()]
         if also:
-            rows.append((m.group(1), m.group(2), also))
+            rows.append((unescape_cell(m.group(1)), unescape_cell(m.group(2)), also))
     return rows
 
 

@@ -77,6 +77,18 @@ class PlanTests(Base):
         self.assertIn("PASS", run(CH1 / "verify.py", "check", self.folder).stdout)
         self.assertEqual(listing(self.folder), self.before)
 
+    def test_a_pipe_in_a_file_name_survives_plan_apply_tags_and_undo(self):
+        name = "Order 1182 | Sunrise Motors.pdf"  # browsers' "Save as PDF" titles often have one
+        (self.folder / name).write_text("buyer's order")
+        self.assigned[name] = {"primary": "Car purchase", "also": ["Tax prep"], "sensitivity": "financial"}
+        plan = self.root / "organize-plan.md"
+        self.plan()
+        self.assertEqual(run(CH1 / "apply_plan.py", plan, self.folder).returncode, 0)
+        self.assertTrue((self.folder / "Projects" / "Car purchase" / name).is_file())
+        self.assertIn((name, f"Projects/Car purchase/{name}", ["Tax prep"]), tag_files.rows_with_also(plan))
+        self.assertEqual(run(CH1 / "undo_plan.py", self.folder).returncode, 0)
+        self.assertTrue((self.folder / name).is_file())
+
     def test_what_claude_may_see_has_no_names(self):
         self.plan()
         view = (self.root / "claude-view.txt").read_text()

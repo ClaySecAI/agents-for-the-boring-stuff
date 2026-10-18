@@ -27,9 +27,20 @@ from pathlib import Path
 IGNORED_NAMES = {".DS_Store"}
 
 MODES = ("recursive", "top-level")
-ROW = re.compile(r"^\|\s*(?P<src>[^|]+?)\s*\|\s*(?P<dst>[^|]+?)\s*\|")
+# A "|" inside a file name is written as "\|", as markdown tables do. Browsers' "Save as PDF" often
+# puts one in the title, and an unescaped one would split the cell and break the plan.
+CELL = r"(?:\\\||[^|])+?"
+ROW = re.compile(rf"^\|\s*(?P<src>{CELL})\s*\|\s*(?P<dst>{CELL})\s*\|")
 MODE_LINE = re.compile(r"^Mode:\s*(\S+)\s*$", re.MULTILINE)
 CREATED_LINE = re.compile(r"^Folders created by apply_plan\.py: (.*)$", re.MULTILINE)
+
+
+def escape_cell(text: str) -> str:
+    return text.replace("|", "\\|")
+
+
+def unescape_cell(text: str) -> str:
+    return text.replace("\\|", "|")
 
 
 def parse_plan(text: str) -> tuple[str, list[tuple[str, str]]]:
@@ -42,7 +53,7 @@ def parse_plan(text: str) -> tuple[str, list[tuple[str, str]]]:
         m = ROW.match(line)
         if not m or m["src"] == "From" or set(m["src"]) <= {"-", " "}:
             continue
-        rows.append((m["src"], m["dst"]))
+        rows.append((unescape_cell(m["src"]), unescape_cell(m["dst"])))
     return mode, rows
 
 

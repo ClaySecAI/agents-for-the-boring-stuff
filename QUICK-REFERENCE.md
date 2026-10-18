@@ -89,9 +89,15 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 | I want to... | Run | How often |
 |---|---|---|
 | Draft a project list from my files | `python3 suggest_projects.py <folder>` | Once per folder |
-| Assign files to projects | `python3 assign_projects.py <folder> projects.json` | Each sort |
-| Build the plan | `python3 plan_projects.py assignments.json projects.json <folder>` | After assigning |
-| Add Finder tags for second projects | `python3 tag_files.py organize-plan.md <folder>` | After applying |
+| Record hashes before anything moves | `python3 ../verify.py snapshot <folder>` | Each sort |
+| Assign the loose files to projects (writes `assignments.json` beside the folder) | `python3 assign_projects.py --top-level <folder> projects.json` | Each sort |
+| Link files that share an account number | `python3 link_files.py --top-level <folder> projects.json <folder>/../assignments.json` | After assigning |
+| Build the plan, leaving subfolders where they are | `python3 plan_projects.py --top-level --keep-folders <folder>/../assignments-linked.json projects.json <folder>` | After linking |
+| Check the plan without moving anything | `python3 ../apply_plan.py --check <folder>/../organize-plan.md <folder>` | After reading the plan |
+| Apply the plan | `python3 ../apply_plan.py <folder>/../organize-plan.md <folder>` | After the check passes |
+| Confirm nothing was lost or changed | `python3 ../verify.py check <folder>` | After applying |
+| Add Finder tags for second projects | `python3 tag_files.py <folder>/../organize-plan.md <folder>` | After applying |
+| Undo the sort (remove tags first with `tag_files.py --remove`) | `python3 ../undo_plan.py <folder>` | When a sort went wrong |
 | Teach it by correcting | `python3 teach.py <folder> projects.json assignments.json`, then `python3 rules.py learn …` | When it misfiles |
 | Suggest better file names | `python3 suggest_names.py <folder>` | Optional |
 | Compare models | `python3 bakeoff.py --models … --fixtures …` | When choosing a model |
@@ -103,11 +109,14 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 | I want to... | Run | How often |
 |---|---|---|
 | Set up the sweep | `python3 sweep.py init ~/Downloads` | Once |
+| Set up a practice sweep with its own runs | `python3 sweep.py init --config practice/config.json practice/downloads` | Before the real one |
 | Preview a sweep | `python3 sweep.py run --dry-run` | Before the first real one |
 | Run a sweep | `python3 sweep.py run` | On demand |
 | See what happened | `python3 sweep.py status` | Weekly at first |
 | Undo the latest sweep | `python3 sweep.py undo` | When one went wrong |
+| Undo one particular sweep | `python3 sweep.py undo <run>` | When a sweep reports "undo refused" |
 | List folders that need a decision | `python3 sweep.py folders` | After adding folders |
+| See which Python the schedule runs | `plutil -p ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist` | Before granting Full Disk Access |
 | Turn the schedule off | `launchctl unload ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist` | Rarely |
 
 ## [Chapter 9: Vetting skills before you install them](chapters/09-skill-security/README.md)

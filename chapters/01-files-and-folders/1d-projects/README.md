@@ -343,7 +343,7 @@ apart, which a model might not treat as evidence. We did not separate the two.
 
 Secondary tags barely work. The fixture holds two files that serve a second project, and no run
 found either. Two runs suggested one tag, and it was wrong. The prompt describes the `also` field as
-"usually empty", and the model took it at its word. Exercise 4 asks you to change that and
+"usually empty", and the model took it at its word. Exercise 6 asks you to change that and
 watch recall and precision move against each other.
 
 Claude's review has little to say. Given the metadata for the plan from the blind run, with all
@@ -376,11 +376,11 @@ leaves one project off the list, so its seven files belong to none of the listed
 
 With no similar project on the list, the model leaves the files alone. With one nearby, it files
 them there. The original prompt only said to use `Unsorted` when no project clearly fits, and five
-of the seven roof-repair documents went to a kitchen remodel because both involve contractors. The
-stricter rule adds a sentence saying that a topic none of the descriptions mentions belongs in
-`Unsorted` even when a project is loosely related, with a recipe-and-fitness example. It cut the
-wrong filings from five to three and cost nothing on the two main fixtures, which scored the same
-as before (59 and 55 of 59).
+of the seven roof-repair documents went to wrong projects: four to the kitchen remodel, because both
+involve contractors, and one to the car purchase. The stricter rule adds a sentence saying that a
+topic none of the descriptions mentions belongs in `Unsorted` even when a project is loosely related,
+with a recipe-and-fitness example. It cut the wrong filings from five to three and cost nothing on
+the two main fixtures, which scored the same as before (59 and 55 of 59).
 
 Three of seven is still too many, and this is the failure that matters most. A file left unsorted is
 visible. A file filed under the wrong project disappears into a folder you trust. The same thing
@@ -497,8 +497,8 @@ Finder tags are macOS only. On other systems the Also column still records the e
 
 `bakeoff.py` runs the same assignment task, prompts and scoring against several models, one after
 another, and prints a table. Three synthetic fixtures, 59 files each: the readable one, one where
-file names are replaced with scan numbers (`--blind`), and one with a project hidden from the list
-(`--hold-out`). Numbers are files placed in their true project.
+the text of every other file is replaced with a scan placeholder (`--blind`; names are kept), and one
+with a project hidden from the list (`--hold-out`). Numbers are files placed in their true project.
 
 | Model | Readable | Blind | Hold-out | Wrong-project (total) | Seconds per file |
 |---|---|---|---|---|---|
@@ -514,12 +514,13 @@ file names are replaced with scan numbers (`--blind`), and one with a project hi
 | EmbeddingGemma 300M (embeddings only) | 51 | 46 | 51 | 11 | 0.03 |
 | Qwen3-Embedding 0.6B (embeddings only) | 53 | 46 | 47 | 14 | 0.05 |
 
-Ollama's phi4 (14B, `ollama pull phi4`, run in the bake-off as `ollama:phi4`) landed beside gemma-4-12b: the
-same speed, one more file right on the readable fixture, and four misfiled on the hold-out one.
+Ollama's phi4 (14B, `ollama pull phi4`, run in the bake-off as `ollama:phi4`) landed beside gemma-4-12b: a
+little faster, one file fewer right on the readable fixture, and four misfiled across the three fixtures
+where gemma-4-12b misfiled three.
 
 Three more Ollama models followed. granite4.1 8B and ministral-3 8B sit just behind the best LM Studio
-models and run in under a second per file. llama3.2 3B is the cautionary row: it is the fastest and
-misfiled 24 files, more than any other model, so small is not the same as safe. The count of
+models and take about a second per file or less. llama3.2 3B is the cautionary row: it is the fastest
+language model and misfiled 24 files, more than any other model, so small is not the same as safe. The count of
 misfiled files, not the count of right ones, is what separates these models.
 
 Apple's on-device model, run through the `assign_apple` helper, placed fewer files correctly than
@@ -527,11 +528,12 @@ the 8B to 14B models and misfiled eight. It needs nothing installed or downloade
 second per file, so it suits a Mac where you will not set up a server. Its context window is small, which
 is why long project lists suit it less well than a large model.
 
-Three things stand out. The smallest model is nearly as accurate as the others at a third of the
-time, and it almost never files something under the wrong project; it declines instead. That is the
-right way to be wrong, because an unsorted file costs you a glance and a misfiled one costs you a
-search. The hold-out fixture is where models differ: two of the three, given a file that fits none of
-your projects, picked one anyway (6 and 3 files).
+Three things stand out. The smaller Gemma model, gemma-4-e4b, is nearly as accurate as the larger
+models in well under half the time of gemma-4-12b, and it misfiled one file across the three
+fixtures; when unsure, it declines. That is the right way to be wrong, because an unsorted file costs
+you a glance and a misfiled one costs you a search. Size alone does not explain it: llama3.2 3B is
+smaller still and misfiled the most. The hold-out fixture is where models differ: qwen3.5-9b and
+gemma-4-12b, given files that fit none of your projects, picked a project anyway for 6 and 3 of them.
 
 The embedding rows answer "can a small specialist replace the language model?" Not alone, but the
 newer ones come close enough to matter. Embeddings place a file by similarity to each project's
@@ -539,7 +541,7 @@ description, run roughly forty times faster, and need no prompt. The embedding r
 0.03: the best project must beat the second by that much, or the file stays unsorted. Nomic left a
 third of the files unsorted and misfiled ten more. EmbeddingGemma (333 MB) and Qwen3-Embedding
 (639 MB) placed 46 to 53 of 59 correctly in every fixture, with 11 and 14 misfiled across the three,
-against 1 to 7 for the language models.
+within the 1 to 24 of the language models.
 
 With no margin at all they place every file and get
 6 to 14 wrong per fixture, so the margin matters. The remaining gap is the same one as
@@ -639,44 +641,12 @@ iCloud pushes every move to your other devices, so a bad plan lands everywhere. 
 local folder, and check that the copy is exact, with matching file counts and hashes. Finder tags sync
 too, so a tag named after a sensitive project shows that the project exists. Decide before tagging.
 
-### Running it without a person in the loop
-
-The question these folders raise is whether the whole job could run on a schedule, with nobody at the
-keyboard. Parts of it can, and the line between them is the book's own rule.
-
-*Gathering and proposing can run unattended.* Assigning files to projects, building the plan, running the
-coverage check and asking Claude to review the anonymous table change nothing. Scheduled with launchd
-(`~/Library/LaunchAgents`, a property list that names the command and the time), they produce a plan and
-a report for you to read later. Two requirements follow from the sections above. The program the job
-launches needs the macOS permission, so grant it to the interpreter or to a small launcher script you
-trust, not to Terminal as a whole. And the model server must be running when the job starts, because
-nothing will load it for you.
-
-*Applying should wait for a person, or for gates you wrote in advance.* The agent that built this chapter
-was stopped by the permission system when it tried to move files in the real folder, even though the
-request came from the user. That is the system working as designed: a move you cannot easily reverse is
-the step a person should own. If you decide a task is routine enough to apply without asking, make the
-decision explicit in code rather than in the agent's judgment, and refuse to apply unless every gate
-passes:
-
-- the coverage check passes and nothing is skipped
-- the number of moves is within a limit you set, such as 300
-- no file moves out of a folder you listed as protected, and no sensitive file moves at all
-- the backup copy exists and its hashes match
-- the undo record is written to a local folder before the first move
-- `verify.py` runs afterward, and a failure sends you a notification and runs the undo
-
-For Claude Code itself, headless runs use `claude -p`, and `.claude/settings.json` can allow exactly the
-scripts the job needs and nothing else, the same way this repository denies `rm`. A job that is allowed to
-run `assign_projects.py` and `plan_projects.py` but not `apply_plan.py` cannot apply by accident.
-
-[Chapter 1E](../1e-schedule/README.md) builds that unattended version.
-
 ## 1D.14 Keeping it sorted
 
 A Downloads folder does not stay sorted. `sweep.py` files new arrivals into the project folders you already
-have, on a schedule, with gates in place of your approval. [Chapter 1E](../1e-schedule/README.md) walks through
-setting it up, installing the weekly job, what a laptop does to a schedule, and undoing a sweep.
+have, on a schedule, with gates written in code instead of your approval. [Chapter 1E](../1e-schedule/README.md)
+says which steps can run with nobody watching, then walks through setting it up, installing the weekly job,
+what a laptop does to a schedule, and undoing a sweep.
 
 ## 1D.15 Limits
 
@@ -696,8 +666,8 @@ setting it up, installing the weekly job, what a laptop does to a schedule, and 
 - The fixture is easier than a real folder in some ways and harder in others. Its documents are
   short and clean, and its projects are clearly distinct. Real projects overlap, run for years and
   contain files with no readable text.
-- Results come from single runs of one 12B model on 59 files. Treat the numbers as an illustration
-  of the method, not a measurement of the model.
+- Results come from single runs on fixtures of 59 to 62 files, and every table but the bake-off in 1D.12 uses
+  one 12B model. Treat the numbers as an illustration of the method, not a measurement of the models.
 - Project names are sensitive. The Claude validator sees only ids, which also limits what it can
   check: it can find dates and sizes that look wrong but cannot judge whether a file belongs.
 
@@ -710,17 +680,45 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 | I want to... | Run | How often |
 |---|---|---|
 | Draft a project list from my files | `python3 suggest_projects.py <folder>` | Once per folder |
-| Assign files to projects | `python3 assign_projects.py <folder> projects.json` | Each sort |
-| Build the plan | `python3 plan_projects.py assignments.json projects.json <folder>` | After assigning |
-| Add Finder tags for second projects | `python3 tag_files.py organize-plan.md <folder>` | After applying |
+| Record hashes before anything moves | `python3 ../verify.py snapshot <folder>` | Each sort |
+| Assign the loose files to projects (writes `assignments.json` beside the folder) | `python3 assign_projects.py --top-level <folder> projects.json` | Each sort |
+| Link files that share an account number | `python3 link_files.py --top-level <folder> projects.json <folder>/../assignments.json` | After assigning |
+| Build the plan, leaving subfolders where they are | `python3 plan_projects.py --top-level --keep-folders <folder>/../assignments-linked.json projects.json <folder>` | After linking |
+| Check the plan without moving anything | `python3 ../apply_plan.py --check <folder>/../organize-plan.md <folder>` | After reading the plan |
+| Apply the plan | `python3 ../apply_plan.py <folder>/../organize-plan.md <folder>` | After the check passes |
+| Confirm nothing was lost or changed | `python3 ../verify.py check <folder>` | After applying |
+| Add Finder tags for second projects | `python3 tag_files.py <folder>/../organize-plan.md <folder>` | After applying |
+| Undo the sort (remove tags first with `tag_files.py --remove`) | `python3 ../undo_plan.py <folder>` | When a sort went wrong |
 | Teach it by correcting | `python3 teach.py <folder> projects.json assignments.json`, then `python3 rules.py learn …` | When it misfiles |
 | Suggest better file names | `python3 suggest_names.py <folder>` | Optional |
 | Compare models | `python3 bakeoff.py --models … --fixtures …` | When choosing a model |
 
 ## Exercises
 
-1. Write a project list for your own Downloads folder, assign without moving anything, and read the
-   protect list. Which project surprises you?
+1. Write your own project list for a fresh copy of the fixture. Assign and plan without moving
+   anything, then read the protect list. Build the copy:
+
+   ```bash
+   python3 make_project_mess.py practice-mine/downloads
+   ```
+
+   Without opening the fixture's `practice-mine/projects.json`, read the file names in
+   `practice-mine/downloads` and write your list to `practice-mine/my-projects.json`, in the same
+   shape: `[{"name": "...", "description": "..."}]`. Then assign the files:
+
+   ```bash
+   python3 assign_projects.py practice-mine/downloads practice-mine/my-projects.json
+   ```
+
+   Build the plan, which writes `protect-list.txt` beside the folder and moves nothing:
+
+   ```bash
+   python3 plan_projects.py practice-mine/assignments.json practice-mine/my-projects.json practice-mine/downloads
+   ```
+
+   Read `practice-mine/protect-list.txt`. Which project surprises you? Compare your list with the
+   fixture's `practice-mine/projects.json`.
+
 2. Run the assigner on the fixture with `--no-source` and again with `--no-dates`. Which signal
    matters more, and does the answer change on the `--blind` fixture?
 3. Make the descriptions in `projects.json` vaguer. How much does accuracy fall?
