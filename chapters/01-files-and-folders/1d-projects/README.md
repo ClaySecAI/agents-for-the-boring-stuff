@@ -701,6 +701,8 @@ setting it up, installing the weekly job, what a laptop does to a schedule, and 
 - Project names are sensitive. The Claude validator sees only ids, which also limits what it can
   check: it can find dates and sizes that look wrong but cannot judge whether a file belongs.
 
+What we tested, and what we did not: [TESTED.md](TESTED.md).
+
 ## Common tasks
 
 Run from `chapters/01-files-and-folders/1d-projects`.
