@@ -22,7 +22,8 @@ The gates, all in config.json:
   min_battery_percent   on battery below this percent the sweep skips itself, without counting as a sweep
                         (default 50; plugged in always runs; 0 turns the check off)
   manage_model          true: start LM Studio's server and load the model for the sweep, then unload and
-                        stop what it started. false: use a server that is already running
+                        stop only what it started. false: use a server that is already running (Ollama, or
+                        LM Studio with the model loaded), and ask it for `model` by name
   hold_sensitivities    files the model labeled with one of these stay where they are (default:
                         credentials, unknown); they are counted, never moved
   unsorted              files the model cannot place stay where they are
@@ -39,7 +40,11 @@ alone and counted as untracked in the report; `sweep.py folders` lists them. A f
 belong in several projects (an "attachments" folder) is sorted file by file in a separate, approved
 run, as in the rest of this chapter, and not by a sweep.
 
-Everything a sweep writes goes under state_dir (default ~/Library/Application Support/downloads-sweep):
+Project folders sit directly in the folder, or inside projects_root when Chapter 1D's default sort put them
+in Projects/ (init notices that and sets it).
+
+Everything a sweep writes goes under state_dir, the folder that holds config.json (by default
+~/Library/Application Support/downloads-sweep; a config made with init --config keeps its runs beside it):
 one folder per run with the plan, the assignments, the undo record and a report. The plan and undo
 record hold file names; the report holds only counts, and so does the notification macOS shows.
 
@@ -64,7 +69,7 @@ HERE = Path(__file__).resolve().parent
 CH1 = HERE.parent
 sys.path.insert(0, str(CH1))
 sys.path.insert(0, str(HERE))
-from plan_common import IGNORED_NAMES  # noqa: E402
+from plan_common import IGNORED_NAMES, escape_cell  # noqa: E402
 
 LABEL = "local.boringstuff.downloads-sweep"
 PARTIAL = {".download", ".crdownload", ".part", ".partial", ".tmp", ".opdownload"}
@@ -79,6 +84,7 @@ DEFAULTS = {
     "min_battery_percent": 50,
     "folder_rules": {},
     "manage_model": True,
+    "projects_root": "",
     "state_dir": str(Path.home() / "Library" / "Application Support" / "downloads-sweep"),
 }
 
@@ -91,7 +97,7 @@ def load_config(path: Path | None) -> dict:
     path = path or default_config_path()
     if not path.is_file():
         sys.exit(f"No config at {path}. Run: python3 sweep.py init <folder>")
-    config = {**DEFAULTS, **json.loads(path.read_text())}
+    config = {**DEFAULTS, "state_dir": str(path.resolve().parent), **json.loads(path.read_text())}
     config["_dir"] = path.resolve().parent
     return config
 
@@ -139,8 +145,8 @@ def unit_moves(folder: Path, rules: dict, names: list[str], min_age_minutes: flo
     return result
 
 
-def untracked_folders(folder: Path, names: list[str], rules: dict) -> list[str]:
-    known = {folder_name(n) for n in names} | set(rules)
+def untracked_folders(folder: Path, names: list[str], rules: dict, root: str = "") -> list[str]:
+    known = ({root} if root else {folder_name(n) for n in names}) | set(rules)
     return sorted(p.name for p in folder.iterdir() if p.is_dir() and not p.is_symlink()
                   and not p.name.startswith((".", "_")) and p.name not in known)
 
@@ -162,12 +168,14 @@ def folder_name(project: str) -> str:
     return "".join("-" if c in "\\/|:;" else c for c in project).strip(". ") or "Project"
 
 
-def destinations(folder: Path, moves: dict[str, str]) -> dict[str, str]:
-    """A free destination for every move. An existing file is never overwritten: the newcomer gets (2), (3)..."""
+def destinations(folder: Path, moves: dict[str, str], root: str = "") -> dict[str, str]:
+    """A free destination for every move, inside root/ when there is one. An existing file is never overwritten:
+    the newcomer gets (2), (3)..."""
     taken: set[str] = set()
     result = {}
+    prefix = f"{root}/" if root else ""
     for rel, project in sorted(moves.items()):
-        base = dest = f"{folder_name(project)}/{rel}"
+        base = dest = f"{prefix}{folder_name(project)}/{rel}"
         n = 2
         while dest in taken or (folder / dest).exists():
             stem, dot, ext = base.rpartition(".")
@@ -185,9 +193,9 @@ def write_plan(path: Path, folder: Path, dests: dict[str, str], assigned: dict) 
             label = assigned.get(item)
             why = (f"project={label['primary']} sensitivity={label.get('sensitivity', 'unknown')}" if label
                    else "folder rule, moved whole")
-            lines.append(f"| {item} | {dests[item]} | {why} | |")
+            lines.append(f"| {escape_cell(item)} | {escape_cell(dests[item])} | {why} | |")
         else:
-            lines.append(f"| {item} | {item} | left in place | |")
+            lines.append(f"| {escape_cell(item)} | {escape_cell(item)} | left in place | |")
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -236,19 +244,28 @@ def run_script(script: str, *args: str, env: dict | None = None) -> subprocess.C
 
 
 def cmd_init(args) -> None:
-    folder = Path(args.folder).expanduser()
+    folder = Path(args.folder).expanduser().resolve()
     if not folder.is_dir():
         sys.exit(f"Not a folder: {folder}")
-    state = Path(DEFAULTS["state_dir"])
-    state.mkdir(parents=True, exist_ok=True)
-    config_path = args.config or default_config_path()
+    config_path = (args.config or default_config_path()).expanduser().resolve()
     if config_path.exists():
         sys.exit(f"{config_path} already exists; edit it instead.")
-    existing = sorted(p.name for p in folder.iterdir() if p.is_dir() and not p.name.startswith((".", "_")))
-    projects = [{"name": name, "description": "EDIT ME: one sentence on what belongs in this project."} for name in existing]
-    (config_path.parent / "projects.json").write_text(json.dumps(projects, indent=2))
-    config_path.write_text(json.dumps({**DEFAULTS, "folder": str(folder)}, indent=2))
-    print(f"Wrote {config_path} and projects.json with {len(existing)} folders from {folder.name}.")
+    # The runs go beside the config, so a practice config never shares its runs (or its undo) with the real one.
+    state = config_path.parent
+    state.mkdir(parents=True, exist_ok=True)
+    # Chapter 1D's default sort puts the project folders inside Projects/; --flat puts them in the folder itself.
+    root = "Projects" if (folder / "Projects").is_dir() else ""
+    existing = sorted(p.name for p in (folder / root).iterdir() if p.is_dir() and not p.name.startswith((".", "_")))
+    projects_file = state / "projects.json"
+    if projects_file.exists():
+        print(f"Kept the existing {projects_file}.")
+    else:
+        projects = [{"name": name, "description": "EDIT ME: one sentence on what belongs in this project."} for name in existing]
+        projects_file.write_text(json.dumps(projects, indent=2))
+        print(f"Wrote {projects_file} with {len(existing)} folders from {folder.name}{'/' + root if root else ''}.")
+    config_path.write_text(json.dumps({**DEFAULTS, "folder": str(folder), "projects_root": root, "state_dir": str(state)},
+                                      indent=2))
+    print(f"Wrote {config_path}. Sweeps will keep their runs in {state}.")
     print("Edit projects.json: keep the folders you want sweeps to file into, and give each a real description.")
 
 
@@ -290,11 +307,12 @@ def cmd_run(args) -> int:
             report["stopped"] = "macOS blocked access to the folder"
             return finish(report, run_dir, "stopped: no access to the folder")
         names = [p["name"] for p in json.loads(projects_file.read_text())]
+        root = config["projects_root"].strip("/")
         files, skipped = eligible(folder, config["min_age_minutes"])
         rules = config.get("folder_rules", {})
         units = unit_moves(folder, rules, names, config["min_age_minutes"])
         report.update(eligible=len(files), skipped=skipped, folders_by_rule=len(units),
-                      untracked_folders=len(untracked_folders(folder, names, rules)))
+                      untracked_folders=len(untracked_folders(folder, names, rules, root)))
         if not files and not units:
             return finish(report, run_dir, "nothing new to sort")
 
@@ -326,19 +344,29 @@ def cmd_run(args) -> int:
                 report["stopped"] = "LM Studio's server would not start"
                 return finish(report, run_dir, "stopped: LM Studio's server would not start")
         if files and lms:
-            subprocess.run([lms, "unload", "--all"], capture_output=True)
+            # The sweep loads its own copy under the name "sweep" and later unloads only that, so the models you
+            # loaded yourself stay loaded. A copy left by a sweep that crashed is cleared first.
+            subprocess.run([lms, "unload", "sweep"], capture_output=True, stdin=subprocess.DEVNULL)
             loaded = subprocess.run([lms, "load", config["model"], "-y", "--identifier", "sweep",
-                                     "--context-length", "6144"], capture_output=True).returncode == 0
+                                     "--context-length", "6144"], capture_output=True,
+                                    stdin=subprocess.DEVNULL).returncode == 0
         assigned = {}
         if files:
             only = run_dir / "only.json"
             only.write_text(json.dumps(files))
+            # "sweep" exists only if the sweep loaded it. Otherwise (manage_model false, Ollama, a failed load) the
+            # server is asked for the model by its own name.
             run_script(str(HERE / "assign_projects.py"), folder, projects_file, "--top-level", "--only", only,
-                       "--model", "sweep", "--base-url", config["base_url"], "--out", run_dir / "assignments.json")
-            if not (run_dir / "assignments.json").exists():
-                report["stopped"] = "the model produced no answers"
-                return finish(report, run_dir, "stopped: the model produced no answers")
-            assigned = json.loads((run_dir / "assignments.json").read_text())
+                       "--model", "sweep" if loaded else config["model"], "--base-url", config["base_url"],
+                       "--out", run_dir / "assignments.json")
+            out = run_dir / "assignments.json"
+            assigned = json.loads(out.read_text()) if out.exists() else {}
+            report["failed"] = len(files) - len(assigned)
+            if not assigned:
+                # assign_projects.py counts a failed file and carries on, so a wrong model name or a server that
+                # refuses every request looks like a quiet week. Every file failing is a stopped sweep instead.
+                report["stopped"] = "the model answered none of the files"
+                return finish(report, run_dir, f"stopped: the model answered none of the {len(files)} files")
         moves, held = decide(assigned, names, config["hold_sensitivities"])
         moves.update(units)
         report.update(assigned=len(assigned), held=held, would_move=len(moves))
@@ -347,7 +375,7 @@ def cmd_run(args) -> int:
             return finish(report, run_dir, f"stopped: {len(moves)} moves is over the limit, nothing moved")
         if not moves:
             return finish(report, run_dir, "nothing to move")
-        dests = destinations(folder, moves)
+        dests = destinations(folder, moves, root)
         plan = run_dir / "organize-plan.md"
         write_plan(plan, folder, dests, assigned)
         env = {"PLAN_STATE_DIR": str(run_dir)}
@@ -364,14 +392,22 @@ def cmd_run(args) -> int:
                if (folder / rel).exists() or not (folder / dest).exists()
                or (rel not in units and sha(folder / dest) != before[rel])]
         if applied.returncode != 0 or bad:
-            run_script(str(CH1 / "undo_plan.py"), folder, env=env)
+            if not list(run_dir.glob(".*applied-plan.md")):
+                report["stopped"] = "apply_plan.py refused the plan; nothing was moved"
+                return finish(report, run_dir, "stopped: the plan was refused, nothing moved", failed=True)
+            undone = run_script(str(CH1 / "undo_plan.py"), folder, env=env)
+            if undone.returncode != 0:
+                report["stopped"] = "verification failed and the undo refused"
+                return finish(report, run_dir, f"verification failed; undo refused, run: sweep.py undo {run_id}",
+                              failed=True)
             report["stopped"] = "verification failed; the sweep was undone"
             return finish(report, run_dir, "verification failed; sweep undone", failed=True)
         report["moved"] = len(dests)
-        return finish(report, run_dir, f"sorted {len(dests)} items, held {sum(held.values())}")
+        unanswered = f", {report['failed']} not answered by the model" if report.get("failed") else ""
+        return finish(report, run_dir, f"sorted {len(dests)} items, held {sum(held.values())}{unanswered}")
     finally:
-        if lms and (started_server or loaded):
-            subprocess.run([lms, "unload", "--all"], capture_output=True)
+        if lms and loaded:
+            subprocess.run([lms, "unload", "sweep"], capture_output=True, stdin=subprocess.DEVNULL)
         if started_server and lms:
             subprocess.run([lms, "server", "stop"], capture_output=True)
         if started_daemon and lms:
@@ -396,7 +432,8 @@ def finish(report: dict, run_dir: Path, summary: str, failed: bool = False) -> i
 
 
 def days_since_last_sweep(run_dirs: list[Path], now: datetime.datetime | None = None) -> float | None:
-    """Days since the last sweep that really ran (not a dry run, not a stopped one). None if there is none."""
+    """Days since the last sweep that really ran (not a dry run, not a stopped one, not one that was undone).
+    None if there is none."""
     now = now or datetime.datetime.now()
     latest = None
     for run_dir in run_dirs:
@@ -404,7 +441,7 @@ def days_since_last_sweep(run_dirs: list[Path], now: datetime.datetime | None = 
         if not report.exists():
             continue
         data = json.loads(report.read_text())
-        if data.get("dry_run") or data.get("stopped"):
+        if data.get("dry_run") or data.get("stopped") or list(run_dir.glob(".*undone-plan.md")):
             continue
         try:
             stamp = datetime.datetime.strptime(run_dir.name[:17], "%Y-%m-%d-%H%M%S")
@@ -436,7 +473,8 @@ def cmd_folders(args) -> None:
     projects_file = Path(config["projects_file"])
     projects_file = projects_file if projects_file.is_absolute() else config["_dir"] / projects_file
     names = [p["name"] for p in json.loads(projects_file.read_text())]
-    found = untracked_folders(Path(config["folder"]).expanduser(), names, config.get("folder_rules", {}))
+    found = untracked_folders(Path(config["folder"]).expanduser(), names, config.get("folder_rules", {}),
+                              config["projects_root"].strip("/"))
     print(f"{len(found)} folder(s) are not projects and have no rule:")
     for name in found:
         print(f"  {name}")

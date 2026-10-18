@@ -47,7 +47,7 @@ from pathlib import Path
 CH1 = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(CH1))
 from make_plan import sha  # noqa: E402
-from plan_common import IGNORED_NAMES  # noqa: E402
+from plan_common import IGNORED_NAMES, escape_cell  # noqa: E402
 
 UNSORTED = "Unsorted"
 # Most protective first. An unlabeled file ("unknown") counts as the most sensitive.
@@ -160,7 +160,7 @@ def main(assignments: Path, projects_file: Path, folder: Path, top_level: bool, 
     mode_line = ["Mode: top-level", ""] if top_level else []
     plan = ["# Plan for " + folder.name + " (by project, made by a local model + plan_projects.py)", "",
             *mode_line, "| From | To | Why | Also |", "|---|---|---|---|"]
-    plan += [f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} |" for r in rows]
+    plan += [f"| {escape_cell(r[0])} | {escape_cell(r[1])} | {r[2]} | {r[3]} |" for r in rows]
     (where / "organize-plan.md").write_text("\n".join(plan) + "\n")
 
     item_id = {r[0]: f"f{i:03d}" for i, r in enumerate(rows, 1)}
