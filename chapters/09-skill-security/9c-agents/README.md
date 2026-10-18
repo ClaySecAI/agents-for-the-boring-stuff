@@ -33,7 +33,7 @@ The gate now reads it and checks:
 | `inherits-all-tools` | medium | No `tools:` line, so the agent gets every tool its parent has |
 | `broad-tool-grant` | medium | Asks for Bash, Write, Edit, WebFetch or similar |
 | `loosens-permissions` | high | Sets a permission mode that skips approvals |
-| `defines-mcp-servers` | medium | Brings its own MCP servers |
+| `defines-mcp-servers` | medium | Brings its own Model Context Protocol (MCP) servers |
 | `defines-hooks` | high | Hooks run commands automatically |
 
 The rules from Chapter 9 still apply to the agent's text: pipe-to-shell, secret reads, "hide this from the user."
@@ -63,8 +63,16 @@ The reviewer agent works the same way: the quarantine folder holds one file, and
 
 - **Slash commands** (`.claude/commands/*.md`) are single markdown files with the same powers. The same flow works if you
   pass the file, but the agent-specific rules do not apply.
-- **Plugins and MCP servers** bundle code, tools and hooks. A plugin is closer to a package than a skill; treat it as one.
+- **Plugins and MCP servers** bundle code, tools, and hooks. A plugin is closer to a package than a skill; treat it as one.
 - **Settings files** (`.claude/settings.json`) can add hooks and permissions. They are not scanned by this gate.
+
+## What we tested
+
+The unit tests cover an agent going through the whole flow (quarantine, scan, review, release as a file, audit, and CHANGED after an
+edit), and the rules `inherits-all-tools` and `loosens-permissions`. We also ran the scan on this repository's own agents.
+
+Not tested: the `defines-mcp-servers` and `defines-hooks` rules for agents (they follow the same code path as skills, but no
+test uses an agent that has them), slash commands, and plugins.
 
 ## Common tasks
 
@@ -80,4 +88,4 @@ Run from the repository root.
 
 1. Copy `.claude/agents/file-organizer.md` to a temporary file, delete its `tools:` line, and scan it. What changes?
 2. Add `permissionMode: bypassPermissions` to a copy and scan it. Is the verdict what you expect?
-3. Quarantine, review and release an agent into a scratch folder, then change it and run `audit`.
+3. Quarantine, review, and release an agent into a scratch folder, then change it and run `audit`.

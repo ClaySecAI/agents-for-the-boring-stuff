@@ -93,14 +93,14 @@ If you did not make the change, do not adopt it. Compare it with your last commi
 
 ## 9B.6 What the hook does not do
 
-- **It detects. It does not block.** A skill you drop into `.claude/skills` is usable immediately. The hook tells you at the
+- It detects and does not block. A skill you drop into `.claude/skills` is usable immediately. The hook tells you at the
   next session start. It cannot stop a download from executing.
-- **It runs at session start only.** A change in the middle of a session shows up next time.
-- **It does not read the skills.** It compares hashes. A skill that was bad when you adopted it stays "ok."
-- **It skips the app's synced skills.** The Claude app keeps its own bundle in `~/.claude/skills/synced` and rewrites it
+- It runs at session start only. A change in the middle of a session shows up next time.
+- It does not read the skills. It compares hashes. A skill that was bad when you adopted it stays "ok."
+- It skips the app's synced skills. The Claude app keeps its own bundle in `~/.claude/skills/synced` and rewrites it
   on sync. On our machine that bundle alone scanned with 12 high findings (text that quotes attack phrases, and bundled
   archives). The hook says it is not auditing them, rather than hiding that.
-- **Changing hooks mid-session** needs a restart, or a review in the hooks menu, before they apply.
+- Changing hooks mid-session needs a restart, or a review in the hooks menu, before they apply.
 
 ## 9B.7 A step further: asking before anything is written
 
@@ -108,6 +108,17 @@ A stronger layer would use a `PreToolUse` hook: before the agent writes or edits
 `.claude/agents` or `settings.json`, Claude Code asks you. That blocks the quiet version of the attack, an agent adding
 instructions to itself. We have not built it, because it also interrupts honest edits, the way it would while writing this
 book. Whether it is worth that friction depends on what you let agents do while you are away. Chapter 7 returns to this.
+
+## What we tested
+
+`test_skillgate.py` covers the hook's output and logic: the counts it reports, the warning for an item that is not vetted, no
+warning once an item is adopted, the CHANGED status after an edit, and that it never exits with an error. It also covers `adopt`
+(refusing without `--yes`, refusing a high finding, accepting a risk) and `audit`. On this repository the hook ran from the command
+line and reported six items as not vetted before we adopted them.
+
+Not tested: the MISSING status; the hook firing automatically at the start of a real Claude Code session (we ran the command, and
+wired it into `settings.json`, but did not watch a fresh session print the line); and how the line looks in the CLI as opposed to the
+app.
 
 ## Common tasks
 
@@ -124,5 +135,5 @@ Run from the repository root.
 ## Exercises
 
 1. Start a new session. Read the one line the hook prints. Does it match what `skillgate.py audit` says?
-2. Change one word in an adopted skill and start another session. What does the hook say?
-3. Run `adopt` without `--yes`. What does it tell you?
+2. Copy one of your skills into a scratch folder under `.claude/skills`, adopt the copy, change one word in it, and start another session. What does the hook say?
+3. Run `adopt` on the scratch copy without `--yes`. What does it tell you? Then delete the copy and see what the hook says.
