@@ -33,9 +33,14 @@ directory. For each skill or agent it compares the current hash with the one rec
 | CHANGED | The files differ from what you trusted |
 | UNGATED | Never went through the gate |
 | MISSING | You trusted it, and now it is gone |
+| APP-SYNCED | The Claude app's own synced bundle, counted and named but not audited (9B.6) |
 
-You see one line, for example `skillgate: 6 verified, 0 changed, 0 not vetted`. If anything is wrong, Claude is also told,
-and the details are one command away: `skillgate.py audit --target .claude/skills`.
+You see one line, for example `skillgate: 6 verified, 0 changed, 0 not vetted, 0 missing`. If anything is wrong, Claude is
+also told, and the details are one command away: `skillgate.py audit --target .claude/skills`.
+
+A skill or agent can be a link to a folder or file somewhere else, a common way to work on a skill in one place and use it in
+another. The hook follows the link, checks what it points to, and names it in the line ("linked from elsewhere"). If the link
+is changed to point somewhere else, that item shows CHANGED, even when the new target has the same files.
 
 ## 9B.3 Setting your baseline
 
@@ -49,9 +54,10 @@ python3 chapters/09-skill-security/skillgate.py adopt .claude/skills/* .claude/a
 
 What happened when we did this on this repository's own items:
 
-- The three skills scanned clean.
-- Two agents (`file-organizer`, `project-organizer`) had a medium note: they are allowed to use Bash, which is the point of
-  them. That does not block adoption.
+- The five skills had no high findings. Four scanned clean. `avoid-ai-writing` had one medium note, a false positive: its
+  style guide mentions apps that "curl quotes", and the network-call rule read the verb as the `curl` command.
+- Three agents (`editor`, `file-organizer`, `project-organizer`) had a medium note: they are allowed to use Bash, which they
+  need for their jobs. That does not block adoption.
 - The `skill-reviewer` agent was refused: its text mentions reading `~/.ssh`, because it tells the reviewer to look for exactly
   that. A rule cannot tell a description of an attack from the attack. We read the file, saw why, and adopted it with the
   reason on record:
@@ -66,8 +72,9 @@ as a markdown quote (lines starting with `>`), and `adopt` refused it for writin
 while a real `echo hi > .claude/skills/...` still fails. A gate that refuses your own work is doing its job, and reading why is how
 you find out whether the skill or the rule is wrong.
 
-The reason goes into `audit.log`. Both `adopt` and `release` are denied to agents in `.claude/settings.json`, so only you can run
-them.
+The `--accept-risk` reason goes into `audit.log`. Both `adopt` and `release` have deny rules in `.claude/settings.json`. They stop the plain
+`python3 …` command an agent would usually type, not every way to run the script (9.4), so treat them as a speed bump and run
+both yourself.
 
 ## 9B.4 Making it take effect
 
@@ -81,12 +88,12 @@ The first line the hook prints is your proof it ran. If you see no `skillgate:` 
 `.claude/settings.json` has the `hooks` entry and that you opened the session in this project folder, because
 `$CLAUDE_PROJECT_DIR` is the folder you opened.
 
-Check the last line `adopt` prints: `recorded in …/released.json`. It should be your real state folder (section 9.7). If it
+Check the last line `adopt` prints: `recorded in …/released.json`. It should be your real state folder (section 9.6). If it
 points somewhere in `/tmp`, an earlier experiment left `SKILLGATE_HOME` set in that terminal. Run `unset SKILLGATE_HOME` or
 open a fresh terminal, and adopt again. We did exactly this by accident while writing the chapter: six adoptions went to a
 temporary folder and the hook still said "not vetted."
 
-## 9B.5 After you edit something you adopted
+## 9B.5 After you edit or delete something you adopted
 
 You will change your own skills and agents. The next session the hook says CHANGED, which is the hook doing its job.
 Read what you changed, then adopt it again (adopting a path that is already recorded replaces its hash):
@@ -97,15 +104,28 @@ python3 chapters/09-skill-security/skillgate.py adopt .claude/agents/file-organi
 
 If you did not make the change, do not adopt it. Compare it with your last commit (`git diff`) first.
 
+If you delete something you adopted, the hook says MISSING from then on, because a skill that disappears without your knowing
+is also worth a warning. Once you are sure you deleted it on purpose, clear the record:
+
+```bash
+python3 chapters/09-skill-security/skillgate.py forget .claude/skills/old-skill --yes
+```
+
+`forget` refuses anything that is still on disk. To re-trust an item you changed, adopt it again. Like `adopt`, `forget` is
+yours to run; the repository has no deny rule for it yet.
+
 ## 9B.6 What the hook does not do
 
 - It detects and does not block. A skill you drop into `.claude/skills` is usable immediately. The hook tells you at the
   next session start. It cannot stop a download from executing.
 - It runs at session start only. A change in the middle of a session shows up next time.
 - It does not read the skills. It compares hashes. A skill that was bad when you adopted it stays "ok."
-- It skips the app's synced skills. The Claude app keeps its own bundle in `~/.claude/skills/synced` and rewrites it
-  on sync. On our machine that bundle alone scanned with 12 high findings (text that quotes attack phrases, and bundled
-  archives). The hook says it is not auditing them, rather than hiding that.
+- It does not audit the app's synced skills. The Claude app keeps its own bundle in `~/.claude/skills/synced` and rewrites
+  it on sync. On our machine that bundle alone scanned with 12 high findings (text that quotes attack phrases, and bundled
+  archives). The hook recognizes the bundle by its layout (a manifest listing the skills, and a marker file the app writes
+  beside it), not by the folder's name, and its line names the bundle and how many skills it holds. A folder called `synced`
+  without that layout is audited like any other. Anything that can write to `~/.claude/skills` can copy the layout, which is
+  why the line always names it.
 - Changing hooks mid-session needs a restart, or a review in the hooks menu, before they apply.
 
 ## 9B.7 A step further: asking before anything is written
@@ -115,11 +135,16 @@ A stronger layer would use a `PreToolUse` hook: before the agent writes or edits
 instructions to itself. We have not built it, because it also interrupts honest edits, the way it would while writing this
 book. Whether it is worth that friction depends on what you let agents do while you are away. Chapter 7 returns to this.
 
+The same hook would be the stronger answer to the deny rules in 9.4. It sees each file write before it happens, so it could ask
+before anything writes to the gate's state folder, which a rule about how a command begins cannot do. It cannot see inside a
+script that Bash runs, so an agent with unrestricted Bash can still get around both layers.
+
 ## 9B.8 Limits
 
-The hook detects and does not block, runs at session start only, compares hashes without reading the skills, and skips the app's
-synced skills (9B.6). The `PreToolUse` layer that would ask before a write is not built (9B.7). Three things are untested: the
-MISSING status, the hook firing in a fresh session, and how its line looks in the CLI as opposed to the app.
+The hook detects and does not block, runs at session start only, compares hashes without reading the skills, and does not
+audit the app's synced skills (9B.6). The `PreToolUse` layer that would ask before a write is not built (9B.7). The deny rules
+for `adopt` and `release` are a speed bump, and `forget` has none. Untested: how the line looks in the CLI as opposed to the
+app. The hook firing on its own in a fresh session was seen once, second-hand.
 
 What we tested, and what we did not: [TESTED.md](TESTED.md).
 
@@ -131,12 +156,26 @@ Run from the repository root.
 |---|---|---|
 | Trust the skills and agents I have | `python3 chapters/09-skill-security/skillgate.py adopt <paths> --yes` | Once per setup |
 | Re-trust something I edited | The same `adopt` command, after reading the change | Each edit |
+| Clear something I deleted on purpose | `python3 chapters/09-skill-security/skillgate.py forget <path> --yes` | When the hook says missing |
 | See what the hook found | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
 | Make a new hook take effect | Start a new session, or `/clear` in the CLI | After editing `settings.json` |
 | Find where it recorded things | The last line `adopt` prints | If the hook says "not vetted" |
 
 ## Exercises
 
-1. Start a new session. Read the one line the hook prints. Does it match what `skillgate.py audit` says?
-2. Copy one of your skills into a scratch folder under `.claude/skills`, adopt the copy, change one word in it, and start another session. What does the hook say?
-3. Run `adopt` on the scratch copy without `--yes`. What does it tell you? Then delete the copy and see what the hook says.
+1. Start a new session. Read the one line the hook prints. Does it match what `skillgate.py audit --target .claude/skills` says?
+
+For the next two, use a practice state folder and a practice skills folder, so your real baseline stays as it is. Start with:
+
+```bash
+export SKILLGATE_HOME=<practice>/gate
+```
+
+2. Copy one of your skills into `<practice>/skills`, adopt the copy, change one word in it, and run `audit --target <practice>/skills`. What does it say?
+3. Run `adopt` on the copy without `--yes`. What does it tell you? Then delete the copy, run `audit` again, and clear it with `forget`.
+
+When you finish:
+
+```bash
+unset SKILLGATE_HOME
+```

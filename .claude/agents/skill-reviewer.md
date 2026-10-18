@@ -37,5 +37,6 @@ You review ONE quarantined skill folder, given as a path. You can read files and
  "evidence": [{"file": "path inside the skill", "quote": "an exact, short quote from that file", "concern": "why it matters"}]}
 ```
 
-Every claim needs evidence with an exact quote that a script will search for. An `allow` verdict may have an
-empty evidence list. A `review` or `block` verdict must cite at least one quote. Do not paraphrase inside `quote`.
+Every claim needs evidence with an exact quote that a script will search for. Every verdict must cite at least one
+quote. For `allow`, quote the lines that show what the skill does; an `allow` with no quotes goes to a person.
+Do not paraphrase inside `quote`.

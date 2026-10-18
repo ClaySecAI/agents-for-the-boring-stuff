@@ -121,18 +121,26 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 
 ## [Chapter 9: Vetting skills before you install them](chapters/09-skill-security/README.md)
 
+Run from the repository root.
+
 | I want to... | Run | How often |
 |---|---|---|
-| Vet a skill I downloaded | `quarantine`, `scan`, review, `verify-review`, `decide`, then `release` (9.4) | Each download |
-| Vet an agent I downloaded | The same, with the `.md` file (9C) | Each download |
-| Trust skills and agents I already have | `adopt <paths> --yes` (9B.3) | Once per setup |
-| Re-trust something I edited | `adopt <path> --yes` after reading the change (9B.5) | Each edit |
-| See if anything changed | The session hook prints it; `audit --target <folder>` shows details | Every session |
+| Quarantine a skill I downloaded | `python3 chapters/09-skill-security/skillgate.py quarantine <folder> --origin "<where>"` | Each download |
+| Scan it | `python3 chapters/09-skill-security/skillgate.py scan <id>` | Each download |
+| Check the reviewer's quotes | `python3 chapters/09-skill-security/skillgate.py verify-review <id> <review.json>` | Each download |
+| See the decision and its reasons | `python3 chapters/09-skill-security/skillgate.py decide <id>` | Each download |
+| Release it, after reading the reasons | `python3 chapters/09-skill-security/skillgate.py release <id> --target .claude/skills --yes` | You, not an agent |
+| Vet an agent I downloaded | The same commands, with the `.md` file (9C) | Each download |
+| Trust skills and agents I already have | `python3 chapters/09-skill-security/skillgate.py adopt <paths> --yes` (9B.3) | Once per setup |
+| Re-trust something I edited | The same `adopt` command, after reading the change (9B.5) | Each edit |
+| Clear something I deleted on purpose | `python3 chapters/09-skill-security/skillgate.py forget <path> --yes` (9B.5) | When the hook says missing |
+| See if anything changed | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
 | Look at the history | `cat` the `audit.log` (9.6) | When curious |
 | Add a scanner | Section 9.3 | Once |
 | Stop using it | Delete the state folder and the `hooks` entry (9.6) | Rarely |
 
-`release` and `adopt` are yours alone: the repository's settings deny them to agents.
+`release`, `adopt`, and `forget` are yours to run. The repository's deny rules cover only the first two, and only
+commands that begin with `python3 ` or `python ` (9.4).
 
 ## [Chapter 9B: Checking automatically at session start](chapters/09-skill-security/9b-session-hook/README.md)
 
@@ -142,6 +150,7 @@ Run from the repository root.
 |---|---|---|
 | Trust the skills and agents I have | `python3 chapters/09-skill-security/skillgate.py adopt <paths> --yes` | Once per setup |
 | Re-trust something I edited | The same `adopt` command, after reading the change | Each edit |
+| Clear something I deleted on purpose | `python3 chapters/09-skill-security/skillgate.py forget <path> --yes` | When the hook says missing |
 | See what the hook found | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
 | Make a new hook take effect | Start a new session, or `/clear` in the CLI | After editing `settings.json` |
 | Find where it recorded things | The last line `adopt` prints | If the hook says "not vetted" |
