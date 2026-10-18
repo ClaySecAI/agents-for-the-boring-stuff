@@ -7,7 +7,7 @@ discussions about that, and treat the people in them with respect.
 
 - Be patient with beginners. The book is written for people who are new to agents, and a question
   that looks basic is the kind of question the book is for.
-- Criticize code, text and decisions, not people.
+- Criticize code, text, and decisions, not people.
 - Assume good intent, and ask when something is unclear.
 
 ## Not acceptable

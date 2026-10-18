@@ -1,12 +1,12 @@
 # Contributing
 
-Corrections, bug reports and pull requests are welcome. The project tests its code on real folders,
+Corrections, bug reports, and pull requests are welcome. The project tests its code on real folders,
 so the one rule that matters most is about what never goes into git.
 
 ## Never commit real data
 
 That means no real files, and nothing derived from them: plans, manifests, labels, project lists,
-snapshots, reports, model logs, screenshots or pasted output. A file name alone can say a lot ("2025
+snapshots, reports, model logs, screenshots, or pasted output. A file name alone can say a lot ("2025
 W2.pdf", a doctor's name, a client). Once pushed to a public repository, data may be copied and
 indexed, and deleting the commit does not undo that.
 
@@ -26,7 +26,7 @@ python3 scripts/test_check_repo_clean.py
 ```
 
 The blocklist lives inside `.git/`, so it is never committed. Put your name, username, the name of
-your computer, your employer and any real file names you tested with in it.
+your computer, your employer, and any real file names you tested with in it.
 
 The same guard runs on GitHub for every pull request, together with a secret scan of the history
 (see [.github/workflows/checks.yml](.github/workflows/checks.yml)). The macOS test run is a separate workflow ([tests.yml](.github/workflows/tests.yml)) that starts only when
@@ -45,15 +45,20 @@ request and change the guard and its tests in the same commit. Do not get past i
 - Match the style of the file you are changing. Scripts use the standard library only, unless a
   chapter says otherwise, and must run on Python 3.9 (start each file with
   `from __future__ import annotations`). CI tests 3.9 and 3.12.
-- Run the tests for the chapter you touched before you open a pull request:
+- Run the tests for the chapter or script you touched before you open a pull request:
 
   ```bash
   python3 chapters/01-files-and-folders/test_roundtrip.py
   python3 chapters/01-files-and-folders/1d-projects/test_projects.py
   python3 chapters/01-files-and-folders/1d-projects/test_sweep.py
+  python3 chapters/09-skill-security/test_skillgate.py
+  python3 scripts/test_check_repo_clean.py
+  python3 scripts/test_style_check.py
+  python3 scripts/test_build_quick_reference.py
+  python3 scripts/test_verify_editor_ledger.py
   ```
 
-- Anything that moves files needs a plan you can read, a manifest and a working undo, with a test that
+- Anything that moves files needs a plan you can read, a manifest, and a working undo, with a test that
   shows all three.
 
 ## Security problems and conduct

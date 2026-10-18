@@ -70,7 +70,7 @@ python3 make_plan.py --top-level practice/classification.json practice/downloads
 | Language | Python, over HTTP | Swift, calling a system framework |
 | Model | Your choice, any size that fits | One fixed model of roughly 3B parameters |
 | Limits answers to the fixed lists with | A JSON schema containing enums | `@Generable` enums (guided generation) |
-| Platforms | Mac, Windows, Linux | Apple Intelligence Macs only |
+| Platforms | Mac; Windows and Linux untested | Apple Intelligence Macs only |
 | Context window | You set it | Small, so each file is classified alone from its first 2 KB |
 
 The fourth row shows one idea in two runtimes: constrain the output type, not the prompt. In
@@ -92,15 +92,15 @@ small. A fresh session also keeps one file from influencing the next.
 
 The on-device model has its own safety guardrails, and they can refuse a file. The script
 catches the error and leaves the file unlabeled, and `make_plan.py` treats an unlabeled file as
-sensitive. A refusal cannot turn into "looks harmless". In our 60-file test, one file was
-declined with the message "May contain sensitive content". It was sent to review, which is the
-right outcome.
+sensitive. A refusal cannot turn into "looks harmless". In our 60-file test (two runs, described
+below), one file was declined with the message "May contain sensitive content". It was sent to
+review, which is the right outcome.
 
-Do not run the classifier while the Mac is busy. On the same 60 files, our first run with PDF
-extraction failed on 31 of them with a `SensitiveContentAnalysis` error, including installers
-that had no extracted text. A 12B model was running at the same time. Run alone, 59 of 60
-succeeded. The script now retries once and then fails closed. The general point is to check the
-kind of error before blaming the data.
+Do not run the classifier while the Mac is busy. We ran it twice on the same 60 files. The
+first run, with PDF extraction, failed on 31 of them with a `SensitiveContentAnalysis` error,
+including installers that had no extracted text. A 12B model was running at the same time. The
+second run, with nothing else running, succeeded on 59 of 60. The script now retries once and
+then fails closed. The general point is to check the kind of error before blaming the data.
 
 Expect over-caution. When unsure, the model was told to prefer a sensitive label, and it flagged
 51 of the 60 real files, which makes `_sensitive/` the largest folder. Tighten the `@Guide`

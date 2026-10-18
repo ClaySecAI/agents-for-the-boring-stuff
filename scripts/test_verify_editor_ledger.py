@@ -1,6 +1,7 @@
 """Tests for verify_editor_ledger.py.  python3 scripts/test_verify_editor_ledger.py"""
 from __future__ import annotations
 
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -23,6 +24,15 @@ class LedgerTests(unittest.TestCase):
     def test_stopping_early_is_caught_by_the_wrong_last_heading(self):
         early = GOOD.replace("Return to the output contract", "Middle")
         self.assertTrue(any("last heading" in p for p in v.verify(early, CATALOG)))
+
+    def test_a_failure_does_not_print_the_expected_heading(self):
+        early = GOOD.replace("Return to the output contract", "Middle")
+        self.assertNotIn("Return to the output contract", " ".join(v.verify(early, CATALOG)))
+
+    def test_help_prints_usage_and_exits_zero(self):
+        done = subprocess.run([sys.executable, str(Path(v.__file__)), "--help"], capture_output=True, text=True)
+        self.assertEqual(done.returncode, 0)
+        self.assertIn("verify_editor_ledger.py <report.txt>", done.stdout)
 
     def test_skill_not_loaded_fails(self):
         self.assertTrue(v.verify(GOOD.replace("yes", "no", 1), CATALOG))

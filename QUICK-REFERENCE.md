@@ -23,7 +23,7 @@ From the repository root.
 |---|---|---|
 | Check my computer is ready | `python3 chapters/00-getting-started/check_setup.py` | Once, then after changes |
 | Look up a term | Section 0.7 | When needed |
-| Pick a model for my memory | The table in [0B.1](setup.md) | Once |
+| Pick a model for my memory | The table in [0B.1](chapters/00-getting-started/setup.md) | Once |
 
 ## [Chapter 0B: Setting up your computer](chapters/00-getting-started/setup.md)
 

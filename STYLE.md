@@ -42,7 +42,7 @@ Every chapter README, and every sub-chapter README (1B, 9C, and so on), has thes
 5. **Exercises** that use practice data, never the reader's real files.
 
 The testing record lives in a `TESTED.md` beside the README, not in the chapter, so it does not interrupt the lesson. The README
-keeps one line: "What we tested, and what we did not: [TESTED.md](TESTED.md)." Each sub-chapter folder has its own. A setup page
+keeps one line: "What we tested, and what we did not: `[TESTED.md](TESTED.md)`." Each sub-chapter folder has its own. A setup page
 shares the TESTED.md of the folder it sits in. TESTED.md has three parts, in this order:
 
 - *Tested:* what ran, on what, how many times, with the numbers.

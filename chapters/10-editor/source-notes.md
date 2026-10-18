@@ -10,12 +10,13 @@ properly by asking it.
 1. **Runs 1 and 2 (real chapters):** the editor reported, honestly, "I did not run the avoid-ai-writing skill. I checked by hand." Its process said
    "if the skill is available." It never tried.
 2. **Diagnostic:** we asked it to call the skill and quote what came back. It loaded with no error. The cause was not a tooling limit. In a third run it
-   read 431 of the catalog's 747 lines and said the rest was not needed because the target was one sentence.
+   read 431 of the catalog's 746 lines and said the rest was not needed because the target was one sentence.
 3. **Fix 1: make the claim checkable.** The editor must end its report with a ledger that names the catalog's last heading. A script
-   (`scripts/verify_editor_ledger.py`) checks it against the real file. An agent that stopped early cannot know that heading.
+   (`scripts/verify_editor_ledger.py`) checks it against the real file. That catches an agent that skipped the end by accident. It does not
+   stop one that looks the heading up on purpose: `grep '^#' patterns.md | tail -1` prints it.
 4. **Re-test:** the agent wrote its own ledger format and again skipped the catalog. Its definition file had changed during the session, and it
    behaved as if it had not seen the change. We cannot prove that from outside, so the lesson is practical: do not depend on a definition being fresh.
-5. **Fix 2: put the rules in the prompt.** The `edit-chapter` skill now sends the rules with every call. The next run read the catalog to the end, wrote
+5. **Fix 2: put the rules in the prompt.** The `edit-chapter` skill now sends the rules with every call. The next run said it read the catalog to the end, wrote
    the ledger in the right form, and the script verified it.
 
 ## The lessons

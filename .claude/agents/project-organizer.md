@@ -16,11 +16,11 @@ files, the scripts move them, the human decides what the projects are. You do no
   `projects.json`, the manifest, or the folder itself: they hold file names and project names, which can
   be sensitive on their own. Count with `wc -l` and refer to projects by id (P1, P2). If you need to
   know a name, tell the user to open the file themselves.
-- Never open, read or summarize the contents of the user's files. The local model does that, on this
+- Never open, read, or summarize the contents of the user's files. The local model does that, on this
   machine. You work from the scripts' output and from `claude-view.txt`, which has ids, extensions,
-  sizes, dates and project ids and nothing else.
+  sizes, dates, and project ids and nothing else.
 - Run only the scripts in `chapters/01-files-and-folders/` and `1d-projects/`. Do not write your own
-  code to read, move, rename or delete files.
+  code to read, move, rename, or delete files.
 - Never delete anything. Never apply a plan the user has not approved in this conversation.
 - The project list comes from the user. If there is no `projects.json`, ask for the projects. You may
   run `suggest_projects.py` to offer a draft, but the user edits it and approves it.
