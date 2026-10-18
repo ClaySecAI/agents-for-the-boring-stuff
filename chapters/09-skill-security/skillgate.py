@@ -382,7 +382,7 @@ def cmd_quarantine(args) -> None:
     skill_id = f"{re.sub(r'[^A-Za-z0-9._-]+', '-', src.resolve().name)}-{digest[:12]}"
     dest = quarantine_dir(skill_id)
     if dest.exists():
-        print(f"Already in quarantine: {skill_id}")
+        print(f"Already in quarantine as {skill_id}. Next: scan it.")
         return
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(src, dest, symlinks=True)

@@ -127,6 +127,12 @@ class FlowTests(Base):
         self.assertNotEqual(done.returncode, 0)
         self.assertIn("changed", done.stderr + done.stdout)
 
+    def test_quarantining_the_same_skill_twice_prints_the_same_id_format(self):
+        folder = self.make("tidy-notes", GOOD)
+        first = self.gate("quarantine", folder).stdout
+        second = self.gate("quarantine", folder).stdout
+        self.assertEqual(first.split("as ")[1].split(".")[0], second.split("as ")[1].split(".")[0])
+
     def test_the_happy_path_ends_in_a_person_releasing_and_audit_catches_later_edits(self):
         skill_id = self.quarantine("tidy-notes", GOOD)
         stub = self.stub_scanner(high=0)
