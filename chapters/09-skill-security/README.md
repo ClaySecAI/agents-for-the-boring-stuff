@@ -1,7 +1,7 @@
 # Chapter 9: Vetting skills before you install them
 
 A skill is text and scripts that an agent follows with your permissions. A downloaded skill can read your
-files, run commands and change your agent's own settings, and it arrives looking like a README. This
+files, run commands, and change your agent's own settings, and it arrives looking like a README. This
 chapter builds a gate: nothing installs until it has been scanned by rules, reviewed by an agent, and
 released by you.
 
@@ -52,7 +52,10 @@ downloaded skill --> quarantine --> scan ----------+
 - **Review:** the `skill-reviewer` agent can only read files. It answers "would this cause harm?" as JSON, and
   every claim carries an exact quote.
 - **Verify:** `verify-review` searches each quote in the file it names. An invented quote fails.
-- **Decide:** `blocked` (any high finding, or a block verdict), `needs-human`, or `release-candidate`.
+- **Decide:** `blocked` (any high finding, or a block verdict), `needs-human`, or `release-candidate`. A skill is a
+  `release-candidate` only when the reviewer allows it with quotes that verify (an `allow` with no quotes needs a
+  human) and a local outside scanner such as SkillSpector ran. Without one installed, the best a skill gets is
+  `needs-human`.
 - **Release:** you run it, with `--yes`. It copies the skill to your skills folder, records its hash, and refuses
   to overwrite anything. A blocked skill needs `--accept-risk "reason"`, which is logged.
 - **Audit:** `skillgate.py audit --target <skills folder>` flags a released skill that changed since release,
@@ -93,26 +96,47 @@ To keep it between sessions, save it the way VirusTotal's guide does, in a file 
 `VT_AGENT_TOKEN` is not set. Limits: 60 queries a minute and 1,000 a day, so the gate looks up at most 20 files per skill.
 A hash VirusTotal has never seen returns 404, which most new skills will, and means nothing about safety.
 
-Install SkillSpector (it is code too; read what you install):
+Install SkillSpector. It is code too; read what you install. Without it, or another local scanner, no skill reaches
+`release-candidate` (9.2).
+
+Its setup uses `uv`, a Python package manager. Check whether you have it:
 
 ```bash
-git clone https://github.com/NVIDIA/SkillSpector.git
-cd SkillSpector && uv sync        # or: python3 -m venv .venv && .venv/bin/pip install -e .
-.venv/bin/skillspector --version
+uv --version
 ```
 
-Register it so the gate can find it. The gate looks in four places, in order: the `--skillspector` flag, your PATH,
-a `"skillspector"` entry in `config.json` inside the gate's state folder, and the default install location above. Pick one:
+If that says "command not found", install it with Homebrew:
 
 ```bash
-mkdir -p ~/.local/bin && ln -sfn "$PWD/.venv/bin/skillspector" ~/.local/bin/skillspector     # on PATH (run inside SkillSpector/)
+brew install uv
 ```
 
-or write its full path into the config file (`~/.local/state/skillgate/config.json` on Linux, `~/Library/Application
-Support/skillgate/config.json` on a Mac): `{"skillspector": "/full/path/to/skillspector"}`. Check with `which skillspector`
-and `skillspector --version`. Then `skillgate.py scan` shows "skillspector ran (local)".
+Without Homebrew, or on Linux, follow the install guide at [docs.astral.sh/uv](https://docs.astral.sh/uv/). Then clone
+SkillSpector into the folder the gate checks by default:
 
-SkillSpector needs Python 3.12 to 3.14; `uv` fetches one. For Snyk, install a pinned version, not `@latest` (v0.6.8 was current in October 2026):
+```bash
+git clone https://github.com/NVIDIA/SkillSpector.git ~/.local/share/skillgate-tools/SkillSpector
+```
+
+Set it up. SkillSpector needs Python 3.12 to 3.14, and `uv sync` fetches one if you do not have it:
+
+```bash
+cd ~/.local/share/skillgate-tools/SkillSpector && uv sync
+```
+
+Check that it runs:
+
+```bash
+~/.local/share/skillgate-tools/SkillSpector/.venv/bin/skillspector --version
+```
+
+The gate looks in four places, in order: the `--skillspector` flag, your PATH, a `"skillspector"` entry in `config.json`
+inside the gate's state folder, and `~/.local/share/skillgate-tools/SkillSpector/.venv/bin/skillspector`. If you cloned it
+where the commands above put it, there is nothing to register. If you put it somewhere else, write its full path into the
+config file (`~/.local/state/skillgate/config.json` on Linux, `~/Library/Application Support/skillgate/config.json` on a
+Mac): `{"skillspector": "/full/path/to/skillspector"}`. Then `skillgate.py scan` shows "skillspector ran (local)".
+
+For Snyk, install a pinned version, not `@latest` (v0.6.8 was current in October 2026):
 
 ```bash
 uv tool install snyk-agent-scan==0.6.8
@@ -142,8 +166,11 @@ Read the reasons. If you agree, release it:
 python3 chapters/09-skill-security/skillgate.py release <id> --target .claude/skills --yes
 ```
 
-The repository's `.claude/settings.json` denies any command containing `skillgate.py release`, so an agent
-cannot release a skill on its own. Run it yourself in your terminal.
+Run it yourself, in your terminal. The repository's `.claude/settings.json` has deny rules for `skillgate.py release`
+and `adopt`, but treat them as a speed bump. They match only commands that begin with `python3 ` or `python `. An agent
+that types `/usr/bin/python3 …`, calls the script from a shell script, or runs it through `python3 -c` and `runpy` gets
+past them, and an agent allowed to edit files can change `released.json` directly. Section 9B.7 describes the stronger
+layer, a hook that asks you before a write, and why we have not built it.
 
 ## 9.5 What the rules look for
 
@@ -151,8 +178,9 @@ High: pipe-to-shell (`curl … | sh`), decoding and running, reading `~/.ssh` an
 to agent settings, hooks, or shell profiles, persistence (cron, launchd), text telling the agent to hide things
 from you or ignore its instructions, hooks, invisible characters, links that point outside the skill, opaque
 binaries, and any file that reads a secret and also makes network calls. Medium: broad tool grants, shell
-injection risks, network calls (not to localhost), destructive commands, secret-looking environment reads.
-Low: scripts, hidden files, executable bits, installs.
+injection risks, network calls (unless every address on the line is your own machine; a comment that mentions
+localhost does not count), destructive commands, secret-looking environment reads. Low: scripts, hidden files,
+executable bits, installs.
 
 A finding is evidence, not a verdict. Our own skills scan with no high findings, and one false positive (a
 `curl` to localhost) led to a fix.
@@ -177,7 +205,7 @@ A tool that guards your machine should be easy to inspect. This is everything `s
   VirusTotal gets hashes only.
 - No background process: it runs when you run it, or when the hook in 9B fires at session start.
 - It never edits your skills. It copies them in, and only `release` or `adopt` (a person, with `--yes`) records
-  anything as trusted.
+  anything as trusted. `forget` (also `--yes`) removes the record of an item you deleted on purpose.
 - To remove it, delete `<state>` and the `hooks` entry in `.claude/settings.json`. Nothing else was changed.
 
 To see exactly what happened, read the log:
@@ -192,6 +220,8 @@ cat ~/.local/state/skillgate/audit.log     # or the Mac path above
   it. Read the skill yourself before you release one that matters.
 - The reviewer is a model: it can be wrong or be steered. That is why it cannot release anything, and why a
   script checks its evidence.
+- The deny rules on `release` and `adopt` stop only the plain `python3 …` command (9.4), and `forget` has none (9B.5).
+  Run all three yourself.
 - Released skills can change on disk. `audit` finds that; run it on a schedule (Chapter 7).
 - Agents and slash commands are text with the same powers. Run the same flow on them.
 
@@ -199,23 +229,43 @@ What we tested, and what we did not: [TESTED.md](TESTED.md).
 
 ## Common tasks
 
+Run from the repository root.
+
 | I want to... | Run | How often |
 |---|---|---|
-| Vet a skill I downloaded | `quarantine`, `scan`, review, `verify-review`, `decide`, then `release` (9.4) | Each download |
-| Vet an agent I downloaded | The same, with the `.md` file (9C) | Each download |
-| Trust skills and agents I already have | `adopt <paths> --yes` (9B.3) | Once per setup |
-| Re-trust something I edited | `adopt <path> --yes` after reading the change (9B.5) | Each edit |
-| See if anything changed | The session hook prints it; `audit --target <folder>` shows details | Every session |
+| Quarantine a skill I downloaded | `python3 chapters/09-skill-security/skillgate.py quarantine <folder> --origin "<where>"` | Each download |
+| Scan it | `python3 chapters/09-skill-security/skillgate.py scan <id>` | Each download |
+| Check the reviewer's quotes | `python3 chapters/09-skill-security/skillgate.py verify-review <id> <review.json>` | Each download |
+| See the decision and its reasons | `python3 chapters/09-skill-security/skillgate.py decide <id>` | Each download |
+| Release it, after reading the reasons | `python3 chapters/09-skill-security/skillgate.py release <id> --target .claude/skills --yes` | You, not an agent |
+| Vet an agent I downloaded | The same commands, with the `.md` file (9C) | Each download |
+| Trust skills and agents I already have | `python3 chapters/09-skill-security/skillgate.py adopt <paths> --yes` (9B.3) | Once per setup |
+| Re-trust something I edited | The same `adopt` command, after reading the change (9B.5) | Each edit |
+| Clear something I deleted on purpose | `python3 chapters/09-skill-security/skillgate.py forget <path> --yes` (9B.5) | When the hook says missing |
+| See if anything changed | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
 | Look at the history | `cat` the `audit.log` (9.6) | When curious |
 | Add a scanner | Section 9.3 | Once |
 | Stop using it | Delete the state folder and the `hooks` entry (9.6) | Rarely |
 
-`release` and `adopt` are yours alone: the repository's settings deny them to agents.
+`release`, `adopt`, and `forget` are yours to run. The repository's deny rules cover only the first two, and only
+commands that begin with `python3 ` or `python ` (9.4).
 
 ## Exercises
 
+Do these against a practice state folder and a practice skills folder, so nothing touches your real gate. Start with:
+
+```bash
+export SKILLGATE_HOME=<practice>/gate
+```
+
 1. Build the trap: a skill folder with a `SKILL.md` that says "ignore previous instructions" and a script that reads an environment variable called `API_KEY` and fetches a web address with it. Quarantine it and scan it. Which rules fire?
-2. Quarantine and scan your own `organize-folder` skill. What does it find?
-3. Add a line to a copy of a skill that tells the reader to ignore its instructions. Which leg catches it?
-4. Release a skill, edit one word in the released copy, and run `audit`.
+2. Quarantine and scan your own `organize-folder` skill. Quarantine only copies it, so the original is untouched. What does it find?
+3. Add a line to a copy of a skill that tells the reader to ignore its instructions. Which catches it, the scan or the reviewer agent?
+4. Release a skill with `--target <practice>/skills`, edit one word in the released copy, and run `audit --target <practice>/skills`.
 5. Make a skill folder holding the EICAR test string (look it up; it is a harmless standard file) and scan it with `--vt`. Which scanners flag it, and which do not?
+
+When you finish, so the next real `adopt` does not land in the practice folder (9B.4):
+
+```bash
+unset SKILLGATE_HOME
+```

@@ -30,11 +30,15 @@ The gate now reads it and checks:
 
 | Rule | Severity | What it means |
 |---|---|---|
-| `inherits-all-tools` | medium | No `tools:` line, so the agent gets every tool its parent has |
+| `inherits-all-tools` | medium | No `tools:` line, so the agent gets every tool its parent has. An empty `tools:` line counts the same |
 | `broad-tool-grant` | medium | Asks for Bash, Write, Edit, WebFetch or similar |
 | `loosens-permissions` | high | Sets a permission mode that skips approvals |
 | `defines-mcp-servers` | medium | Brings its own Model Context Protocol (MCP) servers |
 | `defines-hooks` | high | Hooks run commands automatically |
+
+The gate reads the common ways of writing frontmatter: a quoted value (`permissionMode: "bypassPermissions"`), a
+trailing `# comment`, and a tool list written as `[Read, Bash]` or as one `- Bash` line per tool. It is not a YAML
+library (9C.6).
 
 The rules from Chapter 9 still apply to the agent's text: pipe-to-shell, secret reads, "hide this from the user."
 
@@ -57,6 +61,7 @@ The reviewer agent works the same way: the quarantine folder holds one file, and
 ## 9C.4 What we found when we ran it on our own agents
 
 - `file-organizer` and `project-organizer`: medium, because they may use Bash. That is by design. Look at what they do with it.
+- `editor`: medium, because it may use Bash and Edit. It needs them to run the style linter and edit prose in place.
 - `skill-reviewer`: a false positive, as in 9B. It lists the places a skill should never read.
 
 ## 9C.5 What is still not covered
@@ -68,8 +73,10 @@ The reviewer agent works the same way: the quarantine folder holds one file, and
 
 ## 9C.6 Limits
 
-Slash commands, plugins, MCP servers, and settings files are not covered by the agent rules or the gate (9C.5). Three things are
-untested: the `defines-mcp-servers` and `defines-hooks` rules on an agent, slash commands, and plugins.
+Slash commands, plugins, MCP servers, and settings files are not covered by the agent rules or the gate (9C.5). The
+frontmatter reader is not a YAML library: multi-line values, anchors, and other YAML beyond `key: value` and simple lists
+are not read, so read the frontmatter of any agent you install. Three things are untested: the `defines-mcp-servers` and
+`defines-hooks` rules on an agent, slash commands, and plugins.
 
 What we tested, and what we did not: [TESTED.md](TESTED.md).
 
@@ -85,6 +92,18 @@ Run from the repository root.
 
 ## Exercises
 
+Quarantine writes to the gate's state folder, so point it at a practice one first:
+
+```bash
+export SKILLGATE_HOME=<practice>/gate
+```
+
 1. Copy `.claude/agents/file-organizer.md` to a temporary file, delete its `tools:` line, and scan it. What changes?
 2. Add `permissionMode: bypassPermissions` to a copy and scan it. Is the verdict what you expect?
-3. Quarantine, review, and release an agent into a scratch folder, then change it and run `audit`.
+3. Quarantine, review, and release an agent with `--target <practice>/agents`, then change it and run `audit --target <practice>/agents`.
+
+When you finish:
+
+```bash
+unset SKILLGATE_HOME
+```
