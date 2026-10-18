@@ -47,27 +47,23 @@ When something goes wrong, it usually means one of the three parties was asked t
 
 ## Chapters
 
-| # | Topic | Status |
-|---|---|---|
-| 0 | [What agents and language models are](chapters/00-getting-started/) | Ready |
-| 0B | [Setting up your computer](chapters/00-getting-started/setup.md) | Ready |
-| 1 | [Files and folders](chapters/01-files-and-folders/) | Ready |
-| 1B | [Keeping contents local: LM Studio or Ollama](chapters/01-files-and-folders/1b-local-model/) | Ready |
-| 1C | [Keeping contents local: Apple's on-device model](chapters/01-files-and-folders/1c-apple-foundation-models/) | Ready |
-| 1D | [Files by project, not by type](chapters/01-files-and-folders/1d-projects/) | Ready |
-| 1E | [Running it on a schedule](chapters/01-files-and-folders/1e-schedule/) | Ready |
-| 2 | Messy text and documents | Planned |
-| 3 | Spreadsheets, PDFs and Word files | Planned |
-| 4 | Email triage (drafts only, never auto-send) | Planned |
-| 5 | Checking websites with a browser agent | Planned |
-| 6 | GUI automation with computer use | Planned |
-| 7 | Scheduling it all | Planned |
-| 8 | A pre-commit security scan agent | Planned |
-| 9 | [Vetting skills before you install them](chapters/09-skill-security/) | Ready |
-| 9B | [Checking automatically at session start](chapters/09-skill-security/9b-session-hook/) | Ready |
-| 9C | [Agents are files, not folders](chapters/09-skill-security/9c-agents/) | Ready |
-| 10 | An editorial agent: how this book is edited | Planned |
-| 8 | [A model that reads your commits](chapters/08-security-reviewer/PLAN.md) | Design note |
+One row per chapter. Variants and follow-ups sit in the last column.
+
+| # | Chapter | Status | Includes |
+|---|---|---|---|
+| 0 | [What agents and language models are](chapters/00-getting-started/) | Ready | [0B Setting up your computer](chapters/00-getting-started/setup.md) |
+| 1 | [Files and folders](chapters/01-files-and-folders/) | Ready | [1B Local model: LM Studio or Ollama](chapters/01-files-and-folders/1b-local-model/) · [1C Apple's on-device model](chapters/01-files-and-folders/1c-apple-foundation-models/) · [1D Files by project](chapters/01-files-and-folders/1d-projects/) · [1E Keeping it sorted](chapters/01-files-and-folders/1e-schedule/) |
+| 2 | Messy text and documents | Planned | |
+| 3 | Spreadsheets, PDFs and Word files | Planned | |
+| 4 | Email triage (drafts only, never auto-send) | Planned | |
+| 5 | Checking websites with a browser agent | Planned | |
+| 6 | GUI automation with computer use | Planned | |
+| 7 | Scheduling it all | Planned | |
+| 8 | A pre-commit security scan agent | Design note | [Plan: a model that reads your commits](chapters/08-security-reviewer/PLAN.md) |
+| 9 | [Vetting skills before you install them](chapters/09-skill-security/) | Ready | [9B Checking automatically at session start](chapters/09-skill-security/9b-session-hook/) · [9C Agents are files, not folders](chapters/09-skill-security/9c-agents/) |
+| 10 | An editorial agent: how this book is edited | Planned | |
+
+Also: [Quick reference](QUICK-REFERENCE.md) (every common task in one page) and [House style](STYLE.md).
 
 ## Getting started
 
