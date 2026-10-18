@@ -1,7 +1,7 @@
 # Chapter 1D: Files by project, not by type
 
 Sorting by type is how computers think about files. People think in projects. A mortgage
-refinance is a pile of PDFs, spreadsheets and emails that belong together, and a folder called
+refinance is a pile of PDFs, spreadsheets, and emails that belong together, and a folder called
 `Documents` scatters them among everything else you have ever downloaded. When you open a real
 Downloads folder, what you see is a handful of efforts: a house, a job search, a tax return, a
 training plan, plus a drawer of installers.
@@ -31,7 +31,7 @@ and sensitivity becomes a property of the project: it inherits the highest label
 A ranked list tells you which projects to protect first.
 
 Claude's part shrinks to what it can see without knowing anything private. It receives a table
-with ids, extensions, sizes, dates and project numbers (`P1`, `P2`). It never sees file names or
+with ids, extensions, sizes, dates, and project numbers (`P1`, `P2`). It never sees file names or
 project names, because a project called "identity theft case" is itself sensitive.
 
 ## 1D.2 What you need
@@ -85,7 +85,7 @@ kinds of knowledge that no file contains:
   know that six of them deserve a folder and the rest are noise.
 - Where the boundaries are. A tax form can belong to a mortgage refinance or to your tax return.
   The right answer depends on how you will look for it later.
-- What to call them. The names become folder names, tags and the words you search for.
+- What to call them. The names become folder names, tags, and the words you search for.
 
 The list also does a job for the machinery. It becomes the set of answers the model may give, which
 is what stops it from inventing folders or leaking contents into its output. It has to choose from
@@ -194,7 +194,7 @@ python3 ../apply_plan.py --check practice-projects/organize-plan.md practice-pro
 `link_files.py` is explained in section 1D.6. It writes `link-report.md`, which lists every group of
 files it joined together and what it decided. Read that, then `organize-plan.md`, then
 `protect-list.txt` to see which projects hold the most sensitive material. Send Claude the metadata
-and, when you are satisfied, apply and verify:
+and, when you are satisfied, apply, and verify:
 
 *Listing 1D.4: The Claude gate, the move and the tags*
 
@@ -294,7 +294,7 @@ conflicts. One bank account number can pay for a mortgage and a tax bill, and me
 be wrong. The report lists each group's members and what was decided, with file names for you and
 nothing but counts on the terminal. Identifiers are never written anywhere.
 
-Only numbers that follow one of those keywords count. Phone numbers, dates and bare digit strings
+Only numbers that follow one of those keywords count. Phone numbers, dates, and bare digit strings
 are ignored on purpose. Low precision here is costly, because a wrong link moves several files at
 once.
 
@@ -428,7 +428,7 @@ python3 teach.py <folder> projects.json assignments.json
 ```
 
 It walks through the files the model left unsorted (or every file, with `--all`). For each one it
-prints the name, the website it was downloaded from, the date and the start of the contents, and you
+prints the name, the website it was downloaded from, the date, and the start of the contents, and you
 type a project number, `u` to keep it unsorted, Enter to skip, or `q` to stop. Run it in your own
 terminal: it shows you the contents of your files, which is the point. Your answers are saved to
 `corrections.json`.
@@ -456,7 +456,7 @@ learned from them decide more than twenty others, and none of those decisions is
 property of the fixture, whose bank statements share a website and an account number, and a messier
 folder will give you weaker rules. The preview is how you find out before anything moves.
 
-Rules name your websites, account numbers and projects. `rules.json` and `corrections.json` are
+Rules name your websites, account numbers, and projects. `rules.json` and `corrections.json` are
 ignored by git and refused by the commit guard.
 
 ## 1D.10 Renaming files
@@ -477,7 +477,7 @@ project is guesswork on guesswork.
 
 This is the one place in the chapter where the model writes free text instead of picking from a list.
 It runs on your machine. The title is cleaned before it can become part of a path: only letters,
-digits, spaces and a few punctuation marks survive, and the length is capped. The new names appear in
+digits, spaces, and a few punctuation marks survive, and the length is capped. The new names appear in
 the To column of `organize-plan.md`, so you read them before anything is renamed, and `undo_plan.py`
 restores the old ones. Claude does not see them: `claude-view.txt` has no names.
 
@@ -539,14 +539,16 @@ description, run roughly forty times faster, and need no prompt. The embedding r
 0.03: the best project must beat the second by that much, or the file stays unsorted. Nomic left a
 third of the files unsorted and misfiled ten more. EmbeddingGemma (333 MB) and Qwen3-Embedding
 (639 MB) placed 46 to 53 of 59 correctly in every fixture, with 11 and 14 misfiled across the three,
-against 1 to 7 for the language models. With no margin at all they place every file and get
-6 to 14 wrong per fixture, so the margin is doing real work. The remaining gap is the same one as
+against 1 to 7 for the language models.
+
+With no margin at all they place every file and get
+6 to 14 wrong per fixture, so the margin matters. The remaining gap is the same one as
 before: statements from different accounts at one bank look alike. Giving embeddings example files
 made things worse, since the shared boilerplate drowned the signal. Their natural use is a cheap
 first pass whose confident answers you keep and whose doubts go to a language model;
 `embed_assign.py` is there to try that, and it takes `--preset embeddinggemma` or `--preset qwen3`.
 
-Small models built for documents exist, such as Donut, LayoutLM and the Florence family, but they
+Small models built for documents exist, such as Donut, LayoutLM, and the Florence family, but they
 identify layout and fields (this is an invoice, here is the total), not which of your projects a file
 serves, and most expect a page image rather than text. For this task the embedding models
 (EmbeddingGemma, Qwen3-Embedding) are the nearest fit, and they are the two extra rows above.
@@ -584,7 +586,7 @@ fixture. Add `--embed text-embedding-nomic-embed-text-v1.5` to include an embedd
 ## 1D.13 Protected and synced folders
 
 Everything so far ran against a folder an ordinary program can read. Three common folders are not like
-that: your iCloud Drive, and any folder under Desktop, Documents or Downloads on a Mac, and any folder
+that: your iCloud Drive, and any folder under Desktop, Documents, or Downloads on a Mac, and any folder
 that syncs to another service. We sorted an iCloud Downloads folder of 411 files, and four things
 went wrong that the book's earlier chapters would not have warned you about.
 
@@ -628,7 +630,7 @@ export PLAN_STATE_DIR="$HOME/Documents/icloud-downloads-state"
 ```
 
 Set it again, with the same value, whenever you run `verify.py` or `undo_plan.py` on that folder.
-The project list, assignments and plan should live outside the synced folder too. We kept them in a
+The project list, assignments, and plan should live outside the synced folder too. We kept them in a
 scratch folder.
 
 ### Moves and tags sync as well
