@@ -3,8 +3,8 @@
     python3 scripts/style_check.py <file-or-folder>... [--chapters]
 
 Finds what a script can find: em dashes, inflated words, hollow intensifiers, filler openers, bold lead-ins, list labels that
-end in a period, a possibly missing serial comma, Title Case headings, very long paragraphs, and (with --chapters) a chapter
-README that lacks a Common tasks table or Exercises. It does not judge whether the writing is good. That is the editor's job.
+end in a period, a possibly missing serial comma, British spellings, Title Case headings, very long paragraphs, and (with --chapters) a chapter
+README that lacks What we tested, Limits, Common tasks or Exercises. It does not judge whether the writing is good. That is the editor's job.
 Code blocks are skipped, and so is anything between `<!-- style:off -->` and `<!-- style:on -->` (for quoting the patterns). Exit status 1 when anything is found, 0 when clean.
 """
 from __future__ import annotations
@@ -21,6 +21,11 @@ INTENSIFIERS = ["genuinely", "truly", "quite frankly", "to be honest", "it's wor
                 "it's important to note", "needless to say", "at the end of the day"]
 FILLER = ["moreover", "furthermore", "additionally", "in conclusion", "in summary", "let's dive", "let's explore", "let's take a look",
           "when it comes to"]
+# American English (Chicago). Stems that British spelling changes; matched at word start, any ending.
+BRITISH = re.compile(r"\b(?:(?:label|unlabel|cancel|travel|model)l\w*|neighbour\w*|colour\w*|behaviour\w*|favour\w*|honour\w*|"
+                     r"(?:organ|recogn|summar|categor|normal|initial|custom|optim|minim|priorit|sanit|serial|author|util|real|"
+                     r"visual|synchron|special|general|standard|final)is(?:e|ed|es|ing|ation|ations)|"
+                     r"catalogue|centre|grey|whilst|amongst|judgement|defence|offence|artefact|programme)\b", re.I)
 SERIAL = re.compile(r"\b[\w'-]+, [\w'-]+ (and|or) [\w'-]+")
 SMALL = {"a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "with", "vs", "at", "by", "from", "is", "not", "as", "it", "up"}
 
@@ -78,6 +83,8 @@ def check_text(text: str, name: str = "", chapter: bool = False) -> list[tuple[s
             add(number, "bold-lead-in", stripped)
         if re.match(r"([-*]|\d+\.)\s+\*\*[^*:]+\.\*\*", stripped):
             add(number, "list-label-period", stripped)
+        for match in BRITISH.finditer(stripped):
+            add(number, "british-spelling", match.group(0))
         if SERIAL.search(stripped) and not stripped.startswith(("|", "#")) and "`" not in stripped:
             add(number, "serial-comma?", SERIAL.search(stripped).group(0))
         if stripped.startswith("#"):
@@ -89,7 +96,7 @@ def check_text(text: str, name: str = "", chapter: bool = False) -> list[tuple[s
     if paragraph:
         flush()
     if chapter:
-        for needed in ("Common tasks", "Exercises"):
+        for needed in ("What we tested", "Limits", "Common tasks", "Exercises"):
             if not re.search(rf"^#+\s+.*{needed}", text, re.M | re.I):
                 found.append((name, 0, "missing-section", needed))
     return found
@@ -98,7 +105,7 @@ def check_text(text: str, name: str = "", chapter: bool = False) -> list[tuple[s
 def main() -> None:
     ap = argparse.ArgumentParser(usage=__doc__)
     ap.add_argument("paths", nargs="+")
-    ap.add_argument("--chapters", action="store_true", help="also require Common tasks and Exercises in chapter READMEs")
+    ap.add_argument("--chapters", action="store_true", help="also require What we tested, Limits, Common tasks and Exercises in chapter READMEs")
     args = ap.parse_args()
     files: list[Path] = []
     for raw in args.paths:

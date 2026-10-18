@@ -21,6 +21,7 @@ the avoid-ai-writing skill in edit mode, and the checklist below. The `editor` a
 - Straight quotes in markdown and code. Italics for a term on first use. No bold lead-ins at the start of paragraphs.
 - No em dashes. Use a comma, a period, or parentheses.
 - Spell out abbreviations on first use.
+- American English throughout: "labeled", "neighbor", "color", "organize", "gray", "judgment". The linter flags the British forms.
 
 ## AI patterns we remove
 
@@ -32,12 +33,21 @@ bold-label bullets with periods, and rule-of-three padding.
 
 ## Chapter shape
 
+Every chapter README, and every sub-chapter README (1B, 9C, and so on), has these sections in this order. The linter requires the
+last four by name.
+
 1. One paragraph: what this chapter does and why.
-2. Numbered sections, each short.
-3. A Common tasks table: task, command, how often.
-4. What we tested, with what was not tested stated plainly.
-5. Limits.
-6. Exercises that use practice data, never the reader's real files.
+2. Numbered sections, each short. Sub-chapters number as `1D.3`.
+3. **Limits**: what the approach cannot do or gets wrong.
+4. **What we tested**: three parts, in this order.
+   - *Tested:* what ran, on what, how many times, with the numbers.
+   - *Not tested:* what a reader might assume we checked and we did not (other platforms, other models, the real scheduler, real
+     data). Say "none" only if that is true.
+   - *How much to trust it:* one sentence. A single run is an anecdote, not a measurement.
+5. **Common tasks**: a table of task, command, how often.
+6. **Exercises** that use practice data, never the reader's real files.
+
+A setup or concept page with nothing to run still has a "What we tested" section. It says what was not run.
 
 ## Safety in examples
 
