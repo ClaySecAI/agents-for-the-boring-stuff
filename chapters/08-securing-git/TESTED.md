@@ -37,7 +37,7 @@ Back to the [chapter](README.md).
 - `push-verifier` three times on this repository before a push. The first run said NOT PUSHABLE because the history audit report was
   older than the last commit, and it also showed that its own guard command needed a flag. After we fixed both, the later runs said
   PUSHABLE WITH WARNINGS with no blockers.
-- The first three tools' tests on Python 3.9 and 3.12 in CI: all passed.
+- All five test suites in this chapter on Python 3.9 and 3.12 in CI, on macOS: all passed.
 
 ## Not tested
 
@@ -50,8 +50,6 @@ Back to the [chapter](README.md).
 - `audit_history.py` on a large repository. The largest we ran had 101 commits.
 - `prepublic_check.py` against a repository that is actually misconfigured. The failing cases run against a fake GitHub.
 - The signed-out check against a private repository on the real service.
-- Python 3.9 and 3.12 for the retention check and the example hook. The first three tools' test suites passed on both in CI after
-  the first push. The two newer suites had not run there when this was written.
 - `retention_check.py` setting a repository it cannot change, such as one where you lack admin rights, and an archived repository on
   the real service. Those cases run against a fake GitHub.
 - `push-verifier` on a repository with a real problem. We did not plant a fake leak in a commit and check that its diff read and its
