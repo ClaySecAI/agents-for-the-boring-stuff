@@ -13,7 +13,7 @@ push. The scripts give facts and you give the verdict, using the fixed rules bel
 1. Find what would be pushed: `git status --short`, then `git log --oneline @{upstream}..HEAD`. If there is no upstream, use
    `git log --oneline -20` and say so. If the working tree has uncommitted files, list them as "not part of this push".
 2. Run these, one command at a time, and record each exit code:
-   - `python3 scripts/check_repo_clean.py`
+   - `python3 scripts/check_repo_clean.py --all`
    - `gitleaks git --log-opts="@{upstream}..HEAD" --redact --no-banner` (skip the range if there is no upstream and scan with
      `--log-opts="-20"`)
    - each `test_*.py` under `chapters/` that changed in the outgoing commits, with `python3 -I`
