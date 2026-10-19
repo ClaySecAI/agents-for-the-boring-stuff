@@ -62,6 +62,10 @@ planting a fake leak and watching it get caught.
   commit, and confirm the history scan still finds it.
 - Read every hit in context. Most of ours were public records, documentation of the patterns themselves, or a
   name the author put on a profile page on purpose.
+- The history audit agent (`audit_history.py`, with `.claude/agents/history-auditor.md`) does the scan above in
+  one command, runs the planted-token control first, and sorts the hits with a local model so the likely real ones
+  come first. The model only orders the list. It cannot clear a hit, its answer is two enum values, and matched
+  text goes to a local server only. The report holds counts and masked locations, so a hosted agent can read it.
 
 ### 8.6 Fixing history, and what it cannot fix
 
@@ -86,10 +90,19 @@ A checklist, in the order it was done for this book:
 - Community files: a security policy, contributing guide, code of conduct, and issue and pull request templates
   that ask people not to paste their own file names, hostnames, or tokens.
 - Look at the result signed out.
+- `prepublic_check.py` runs this checklist read-only through `gh`: the audit ran since the last commit, secret scanning
+  and push protection, private vulnerability reporting, rules against force pushes and deletion, required checks that a path
+  filter can skip, community files, stored CI artifacts, and the signed-out view. On a private repository, the
+  settings a free plan offers only when public are warnings, not failures.
 
 ### 8.8 Where agents fit
 
 - Agent commits go through the same hooks, which is the point of making them global.
+- The history audit agent reads reports, not history: it never sees the text that matched.
+- The `git-security-checker` agent runs two read-only scripts and explains the result. `prepublic_check.py` is
+  section 8.7 as code. `drift_check.py` walks a folder of repositories and reports any that step around the global
+  hooks: a local email override, a local `core.hooksPath`, a credential inside a remote URL, a repository that
+  allows personal data but has a remote that is not private. Run it on a schedule (Chapter 7).
 - Chapter 10's skill gate covers what agents are told, not what they commit.
 - Chapter 9's design note adds a local model that reads diffs for what the rules miss.
 
@@ -115,6 +128,14 @@ These become TESTED.md once the chapter is written. Single runs on one Mac.
 - The worktree bug in the repository guard, with a test that fails on the old code and passes on the fix.
 - A history rewrite of one public repository: 18 commits moved to a noreply address, tree unchanged, tag moved,
   force push guarded by a lease.
+- The history audit script: 21 tests on invented repositories (a deleted token still found, a blocklist term in a
+  line and a file name, a home path, a non-noreply email, a model that approves everything, a model that returns
+  garbage, a model that is down, a remote model URL refused). A run on three real repositories: two clean, one hit
+  that the model called deliberate and public.
+- The pre-public check: 16 tests against a fake GitHub. A run on this repository found one warning: 20 stored CI
+  artifacts, all empty gitleaks result files, which the author checked by downloading one.
+- The drift check: 16 tests on scratch repositories with a scratch global config. A run on the author's three
+  repositories found no drift.
 - Not tested: the force-push rule against an actual force push; a second machine; Linux; Windows.
 
 ## Decisions made

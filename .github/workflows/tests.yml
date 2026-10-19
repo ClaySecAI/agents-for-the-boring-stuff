@@ -47,6 +47,14 @@ jobs:
         run: python3 chapters/01-files-and-folders/1d-projects/test_sweep.py
       - name: Chapter 10 skillgate
         run: python3 chapters/10-skill-security/test_skillgate.py
+      - name: Install gitleaks
+        run: brew install gitleaks  # the history audit tests skip without it
+      - name: Chapter 8 history audit
+        run: python3 chapters/08-securing-git/test_audit_history.py
+      - name: Chapter 8 pre-public check
+        run: python3 chapters/08-securing-git/test_prepublic_check.py
+      - name: Chapter 8 drift check
+        run: python3 chapters/08-securing-git/test_drift_check.py
       - name: Style linter
         run: python3 scripts/test_style_check.py
       - name: Quick reference builder

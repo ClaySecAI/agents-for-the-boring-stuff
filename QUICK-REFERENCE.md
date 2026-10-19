@@ -119,6 +119,21 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 | See which Python the schedule runs | `plutil -p ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist` | Before granting Full Disk Access |
 | Turn the schedule off | `launchctl unload ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist` | Rarely |
 
+## [Chapter 8: Securing git before you publish](chapters/08-securing-git/README.md)
+
+Run from the repository root.
+
+| I want to... | Run | How often |
+|---|---|---|
+| Turn on this repository's guard | `git config core.hooksPath .githooks` | Once per clone |
+| See who authored a repository's commits | `git shortlog -sne --all` | Before publishing |
+| Scan a repository's whole history | `python3 chapters/08-securing-git/audit_history.py audit <repo>` | Before publishing, after a rewrite |
+| Read one hit in context | `python3 chapters/08-securing-git/audit_history.py show <repo> <id>` | Once per hit |
+| Check that the scan itself works | `python3 chapters/08-securing-git/audit_history.py control` | When in doubt |
+| Check a repository before making it public | `python3 chapters/08-securing-git/prepublic_check.py <clone>` | Before the flip, and after changing settings |
+| Find repositories that step around the hooks | `python3 chapters/08-securing-git/drift_check.py <folder>` | Weekly |
+| Push a rewritten history safely | `git push --force-with-lease` | After a rewrite |
+
 ## [Chapter 10: Vetting skills before you install them](chapters/10-skill-security/README.md)
 
 Run from the repository root.
