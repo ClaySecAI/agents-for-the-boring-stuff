@@ -2,7 +2,7 @@
 
 Agents commit for you. They are fast, they do not get tired, and they will commit a home-directory path, a real name, or a
 token as readily as anything else. This chapter sets up the checks that stop that before it reaches GitHub, shows how to find
-and fix what already got through, and adds three small tools that make the checks repeatable. It is for a reader who is about to
+and fix what already got through, and adds four small tools that make the checks repeatable. It is for a reader who is about to
 make a repository public, or has just done so. The method is the book's usual one: rules give guarantees, a person decides, and
 every check is tested by planting a fake leak and watching it get caught.
 
@@ -80,7 +80,21 @@ its own author once: an example word in a code comment was a name on the blockli
 A repository that is meant to hold personal data opts in, in its own `.git/config`, so a cloned repository cannot switch your
 checks off. It may then push only to a repository GitHub confirms is private. Secret scanning still runs there.
 
-The hook scripts for this section are not in this repository yet. Sections 8.5 to 8.8 do not need them.
+The author's hook scripts stay in a private repository, because the personal-data check is built around one person's blocklist and
+paths. This repository ships `example_personal_data_check.py` instead. It is a short, separate script that shows the idea: it reads
+the lines you are about to commit and refuses on a blocklist word, your home folder path, or a commit email that is not a noreply
+address. It prints the file and line number, never the text that matched. To try it, run it from a hook in a practice repository:
+
+```bash
+printf '#!/bin/sh\nexec python3 <path to this repository>/chapters/08-securing-git/example_personal_data_check.py\n' > <practice>/repo/.git/hooks/pre-commit
+```
+
+```bash
+chmod +x <practice>/repo/.git/hooks/pre-commit
+```
+
+The example does not run gitleaks, call the repository's own hook, or let a repository opt out. Add those before you rely on it
+across every repository. Sections 8.5 to 8.8 do not need any of it.
 
 ## 8.5 Checking what is already there
 
@@ -186,12 +200,16 @@ not report the setting, usually because your account lacks admin access to the r
 
 ## 8.8 Where agents fit
 
-Agent commits go through the same hooks, which is the point of making them global. Two agents in `.claude/agents/` run the tools in
-this chapter, and neither one can change anything.
+Agent commits go through the same hooks, which is the point of making them global. Three agents in `.claude/agents/` run the tools in
+this chapter. None of them changes anything, and none runs `retention_check.py --apply`.
 
 - `history-auditor` runs the audit and reports counts and ids. It reads the report, not the history, so it never sees the text that
   matched. It never says a hit is safe, because the verdicts came from a small model reading untrusted text.
 - `git-security-checker` runs `prepublic_check.py` or `drift_check.py` and explains what to do about each line.
+- `push-verifier` is the last stop before a push to a public repository. It runs the repository guard, gitleaks on the commits
+  that would be pushed, the changed tests, the pre-public check, and checks that the history audit report is newer than the last
+  commit. It then reads the outgoing diff and gives one verdict: NOT PUSHABLE, PUSHABLE WITH WARNINGS, or PUSHABLE. Any hit, stale
+  audit, or check that could not run means NOT PUSHABLE. PUSHABLE means no check found a problem, not that the push is safe.
 
 `drift_check.py` answers a different question: has anything stepped around the hooks since you set them up? It walks a folder of
 repositories and reports a local email override, a local `core.hooksPath` that replaces the global hooks, a credential inside a
@@ -205,6 +223,15 @@ python3 chapters/08-securing-git/drift_check.py <folder of repositories>
 
 Once it passes, run it on a schedule with the method in [Chapter 1E](../01-files-and-folders/1e-schedule/README.md).
 
+`retention_check.py` covers a setting the other tools do not. CI artifacts and run logs become public with a repository, and a new
+repository keeps them for 90 days. GitHub has no default for a personal account, so the script lists every repository you own,
+reports the ones whose retention differs from your target (7 days unless you pass `--days`), and sets them when you add `--apply`.
+It reads each setting back to confirm. It never deletes existing artifacts or logs.
+
+```bash
+python3 chapters/08-securing-git/retention_check.py
+```
+
 Chapter 9 is a design note for a local model that reads each diff for what the rules miss. Chapter 10's skill gate covers what agents
 are told, not what they commit.
 
@@ -213,8 +240,9 @@ are told, not what they commit.
 Rules find what someone wrote down. A friend's name that is not on the blocklist passes every check here. History fixes do not
 reach copies that already exist. The blocklist is itself personal data and has no backup by design. Push protection catches only
 known secret formats. The history audit's model is small and reads untrusted text, which is why it can order the list and never
-shorten it. The pre-public check reads settings; it cannot tell you whether the content of a CI log is fine. The hook scripts in
-8.4 are described here but not yet shipped in this repository.
+shorten it. The pre-public check reads settings; it cannot tell you whether the content of a CI log is fine. The hook
+scripts in 8.4 are described, and only a short example of the personal-data check ships here. The retention check changes a
+setting; it does not remove artifacts that are already stored.
 
 What we tested, and what we did not: [TESTED.md](TESTED.md).
 
@@ -231,6 +259,8 @@ Run from the repository root.
 | Check that the scan itself works | `python3 chapters/08-securing-git/audit_history.py control` | When in doubt |
 | Check a repository before making it public | `python3 chapters/08-securing-git/prepublic_check.py <clone>` | Before the flip, and after changing settings |
 | Find repositories that step around the hooks | `python3 chapters/08-securing-git/drift_check.py <folder>` | Weekly |
+| Find repositories whose CI artifacts live longer than you want | `python3 chapters/08-securing-git/retention_check.py` | After creating a repository |
+| Set them all to the target | `python3 chapters/08-securing-git/retention_check.py --apply` | After the report above shows a difference |
 | Push a rewritten history safely | `git push --force-with-lease` | After a rewrite |
 
 ## Exercises

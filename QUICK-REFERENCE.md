@@ -132,6 +132,8 @@ Run from the repository root.
 | Check that the scan itself works | `python3 chapters/08-securing-git/audit_history.py control` | When in doubt |
 | Check a repository before making it public | `python3 chapters/08-securing-git/prepublic_check.py <clone>` | Before the flip, and after changing settings |
 | Find repositories that step around the hooks | `python3 chapters/08-securing-git/drift_check.py <folder>` | Weekly |
+| Find repositories whose CI artifacts live longer than you want | `python3 chapters/08-securing-git/retention_check.py` | After creating a repository |
+| Set them all to the target | `python3 chapters/08-securing-git/retention_check.py --apply` | After the report above shows a difference |
 | Push a rewritten history safely | `git push --force-with-lease` | After a rewrite |
 
 ## [Chapter 10: Vetting skills before you install them](chapters/10-skill-security/README.md)

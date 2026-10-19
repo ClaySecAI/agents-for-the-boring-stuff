@@ -25,20 +25,37 @@ Back to the [chapter](README.md).
   `core.hooksPath`, a credential in a remote URL, personal-data repositories with private, public, unknown, and non-GitHub remotes,
   and the depth limit.
 - The same script on the author's machine: three repositories, no drift.
+- `example_personal_data_check.py`: 10 tests on scratch repositories with a scratch home folder and an invented blocklist term. They
+  cover a clean change, a term found and never printed, whole-word matching, case, only added lines counting, a home path found and
+  not printed, a non-noreply email refused and not printed, `hooks.allowEmail`, a missing blocklist, and running outside a repository.
+- `retention_check.py`: 10 tests against a fake GitHub, with no network. They cover a report that changes nothing, `--apply` setting
+  only the repositories that differ and reading each back, a setting that does not stick, one that cannot be read, archived
+  repositories, a custom target, days outside 1 to 90, and a failed repository listing.
+- The retention check on the author's account: it found one new repository at 90 days, `--apply` set it to 7 and read it back, and
+  a second run showed all 33 repositories at 7 days. The author deleted older artifacts and runs with separate `gh api` commands;
+  the script does not do that and no test covers it.
+- `push-verifier` three times on this repository before a push. The first run said NOT PUSHABLE because the history audit report was
+  older than the last commit, and it also showed that its own guard command needed a flag. After we fixed both, the later runs said
+  PUSHABLE WITH WARNINGS with no blockers.
+- The first three tools' tests on Python 3.9 and 3.12 in CI: all passed.
 
 ## Not tested
 
-- The hook scripts in 8.4. The author ran them on one Mac while preparing this book's repositories, but the scripts are not in this
-  repository yet, so those runs cannot be repeated from here.
+- The author's own hook scripts in 8.4. The author ran them on one Mac while preparing this book's repositories, but they are in a
+  private repository, so those runs cannot be repeated from here. The example script is tested, but it is a separate, shorter program.
 - A history rewrite. 8.6 describes how to check one; nothing in this chapter's tests rewrites history.
 - The force-push rule against an actual force push.
 - LM Studio as the model server, and any model other than `ministral-3:8b`.
 - How accurate the model's verdicts are. We looked at a handful, not a measured set.
-- `audit_history.py` on a large repository. The largest we ran had 98 commits.
+- `audit_history.py` on a large repository. The largest we ran had 101 commits.
 - `prepublic_check.py` against a repository that is actually misconfigured. The failing cases run against a fake GitHub.
 - The signed-out check against a private repository on the real service.
-- Python 3.9. We checked that the syntax parses as 3.9; the test suites ran on the Python 3 that is on the author's Mac. The
-  continuous-integration workflow runs them on 3.9 and 3.12.
+- Python 3.9 and 3.12 for the retention check and the example hook. The first three tools' test suites passed on both in CI after
+  the first push. The two newer suites had not run there when this was written.
+- `retention_check.py` setting a repository it cannot change, such as one where you lack admin rights, and an archived repository on
+  the real service. Those cases run against a fake GitHub.
+- `push-verifier` on a repository with a real problem. We did not plant a fake leak in a commit and check that its diff read and its
+  verdict catch it, and we did not measure how often its reading of a diff misses something.
 - A second machine, Linux, and Windows.
 
 ## How much to trust it

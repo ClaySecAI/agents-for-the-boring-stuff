@@ -57,6 +57,8 @@ jobs:
         run: python3 chapters/08-securing-git/test_drift_check.py
       - name: Chapter 8 retention check
         run: python3 chapters/08-securing-git/test_retention_check.py
+      - name: Chapter 8 example hook
+        run: python3 chapters/08-securing-git/test_example_personal_data_check.py
       - name: Style linter
         run: python3 scripts/test_style_check.py
       - name: Quick reference builder

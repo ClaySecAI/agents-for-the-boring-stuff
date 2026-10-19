@@ -146,9 +146,10 @@ Decided 2026-10-18. Each has a next step that is not done yet.
   Chapter 10, and the editor is Chapter 11. The scan agent builds on these hooks, so the reader meets the hooks
   first. Done 2026-10-19: the README table, the quick reference, the chapter folders, and the cross-references use
   the new numbers.
-- Where the hook code lives in public: in this chapter's own folder, the way Chapter 10 ships `skillgate.py`.
-  Today the dispatcher and the personal-data check live in the author's private setup repository. The private setup
-  will then copy them from the book. Not done: the code has not been moved.
+- Where the hook code lives in public. Decided 2026-10-19: the author's hook scripts stay in the private setup repository, because
+  the personal-data check is built around one person's blocklist and paths. The chapter folder ships
+  `example_personal_data_check.py`, a short, separate script that shows the idea, with tests. The earlier plan to move the
+  dispatcher and the check into the book is dropped.
 - How much of the publishing checklist (8.7) stays in the chapter: a short section keeps the order that
   matters (scan, CI, make it public, branch rules, look at the result signed out). The community files and the
   "what CI publishes" item move to a short appendix, so the chapter stays on git and off GitHub's settings
