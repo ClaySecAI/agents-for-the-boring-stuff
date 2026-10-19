@@ -1,15 +1,15 @@
-# Chapter 9: Vetting skills before you install them
+# Chapter 10: Vetting skills before you install them
 
 A skill is text and scripts that an agent follows with your permissions. A downloaded skill can read your
 files, run commands, and change your agent's own settings, and it arrives looking like a README. This
 chapter builds a gate: nothing installs until it has been scanned by rules, reviewed by an agent, and
 released by you.
 
-[Chapter 9B](9b-session-hook/README.md) makes the gate check
-automatically every time you start a session. [Chapter 9C](9c-agents/README.md) covers agents, which are single files
+[Chapter 10B](10b-session-hook/README.md) makes the gate check
+automatically every time you start a session. [Chapter 10C](10c-agents/README.md) covers agents, which are single files
 and needed their own handling.
 
-## 9.1 Why two reviewers
+## 10.1 Why two reviewers
 
 | | Deterministic scan | Reviewer agent |
 |---|---|---|
@@ -34,7 +34,7 @@ Most skill problems are the second and third kind: instructions that do not matc
 that quietly reads a secret. Those have no signature to look up. A hash lookup rounds out the set by catching the
 first kind, a known-bad binary or script, and it sends only file hashes.
 
-## 9.2 The flow
+## 10.2 The flow
 
 ```
 downloaded skill --> quarantine --> scan ----------+
@@ -47,7 +47,7 @@ downloaded skill --> quarantine --> scan ----------+
 
 - **Quarantine:** `skillgate.py quarantine <folder>` copies the skill into a holding area, removes execute
   permission, and records where it came from. Nothing in it is ever run.
-- **Scan:** our rules, plus any outside scanners you have installed (section 9.3). Each scanner is an adapter that
+- **Scan:** our rules, plus any outside scanners you have installed (section 10.3). Each scanner is an adapter that
   reports whether it ran, whether it sends anything off your machine, and how many high findings it has.
 - **Review:** the `skill-reviewer` agent can only read files. It answers "would this cause harm?" as JSON, and
   every claim carries an exact quote.
@@ -61,7 +61,7 @@ downloaded skill --> quarantine --> scan ----------+
 - **Audit:** `skillgate.py audit --target <skills folder>` flags a released skill that changed since release,
   and any skill that never went through the gate.
 
-## 9.3 The scanners
+## 10.3 The scanners
 
 `skillgate.py` needs only Python 3.9. Outside scanners add independent opinions. They differ in what leaves your
 machine, so the gate treats them differently.
@@ -100,7 +100,7 @@ To keep it between sessions, save it the way VirusTotal's guide does, in a file 
 A hash VirusTotal has never seen returns 404, which most new skills will, and means nothing about safety.
 
 Install SkillSpector. It is code too; read what you install. Without it, or another local scanner, no skill reaches
-`release-candidate` (9.2).
+`release-candidate` (10.2).
 
 Its setup uses `uv`, a Python package manager. Check whether you have it:
 
@@ -147,35 +147,35 @@ uv tool install snyk-agent-scan==0.6.8
 
 Then `skillgate.py` finds `snyk-agent-scan` on your PATH. Without installing, pass `--agent-scan "uvx snyk-agent-scan@0.6.8"`. You need a Snyk account and token; the book cannot create one for you.
 
-## 9.4 Vetting a skill
+## 10.4 Vetting a skill
 
 ```bash
-python3 chapters/09-skill-security/skillgate.py quarantine ~/Downloads/some-skill --origin "where I found it"
-python3 chapters/09-skill-security/skillgate.py scan <id>                   # local scanners only
-python3 chapters/09-skill-security/skillgate.py scan <id> --vt --remote     # also VirusTotal hashes and Snyk
+python3 chapters/10-skill-security/skillgate.py quarantine ~/Downloads/some-skill --origin "where I found it"
+python3 chapters/10-skill-security/skillgate.py scan <id>                   # local scanners only
+python3 chapters/10-skill-security/skillgate.py scan <id> --vt --remote     # also VirusTotal hashes and Snyk
 ```
 
 Then ask your agent to review it, or invoke the flow directly with the `vet-skill` skill. It calls the reviewer
 and saves its reply:
 
 ```bash
-python3 chapters/09-skill-security/skillgate.py verify-review <id> review.json
-python3 chapters/09-skill-security/skillgate.py decide <id>
+python3 chapters/10-skill-security/skillgate.py verify-review <id> review.json
+python3 chapters/10-skill-security/skillgate.py decide <id>
 ```
 
 Read the reasons. If you agree, release it:
 
 ```bash
-python3 chapters/09-skill-security/skillgate.py release <id> --target .claude/skills --yes
+python3 chapters/10-skill-security/skillgate.py release <id> --target .claude/skills --yes
 ```
 
 Run it yourself, in your terminal. The repository's `.claude/settings.json` has deny rules for `skillgate.py release`
 and `adopt`, but treat them as a speed bump. They match only commands that begin with `python3 ` or `python `. An agent
 that types `/usr/bin/python3 …`, calls the script from a shell script, or runs it through `python3 -c` and `runpy` gets
-past them, and an agent allowed to edit files can change `released.json` directly. Section 9B.7 describes the stronger
+past them, and an agent allowed to edit files can change `released.json` directly. Section 10B.7 describes the stronger
 layer, a hook that asks you before a write, and why we have not built it.
 
-## 9.5 What the rules look for
+## 10.5 What the rules look for
 
 High: pipe-to-shell (`curl … | sh`), decoding and running, reading `~/.ssh` and other credential stores, writing
 to agent settings, hooks, or shell profiles, persistence (cron, launchd), text telling the agent to hide things
@@ -188,7 +188,7 @@ executable bits, installs.
 A finding is evidence, not a verdict. Our own skills scan with no high findings, and one false positive (a
 `curl` to localhost) led to a fix.
 
-## 9.6 What the gate touches
+## 10.6 What the gate touches
 
 A tool that guards your machine should be easy to inspect. This is everything `skillgate.py` does.
 
@@ -199,14 +199,14 @@ A tool that guards your machine should be easy to inspect. This is everything `s
 | Scanner reports | `<state>/meta/<id>.reports/` | Raw SkillSpector output, and others if you ran them |
 | What you released or adopted | `<state>/released.json` | Path and hash of each trusted item |
 | History | `<state>/audit.log` | One line per action; read it with `cat` |
-| Scanner install | `~/.local/share/skillgate-tools/` | Only if you followed 9.3 |
+| Scanner install | `~/.local/share/skillgate-tools/` | Only if you followed 10.3 |
 
 `<state>` is `~/.local/state/skillgate` on Linux and `~/Library/Application Support/skillgate` on a Mac. Override it with
 `SKILLGATE_HOME`.
 
 - Network: none by default. SkillSpector runs with `--no-llm`. Snyk needs `--remote` and VirusTotal needs `--vt`, and
   VirusTotal gets hashes only.
-- No background process: it runs when you run it, or when the hook in 9B fires at session start.
+- No background process: it runs when you run it, or when the hook in 10B fires at session start.
 - It never edits your skills. It copies them in, and only `release` or `adopt` (a person, with `--yes`) records
   anything as trusted. `forget` (also `--yes`) removes the record of an item you deleted on purpose.
 - To remove it, delete `<state>` and the `hooks` entry in `.claude/settings.json`. Nothing else was changed.
@@ -217,13 +217,13 @@ To see exactly what happened, read the log:
 cat ~/.local/state/skillgate/audit.log     # or the Mac path above
 ```
 
-## 9.7 Limits
+## 10.7 Limits
 
 - A skill can be harmful in ways no rule names and a reviewer misses. The gate lowers the risk; it does not remove
   it. Read the skill yourself before you release one that matters.
 - The reviewer is a model: it can be wrong or be steered. That is why it cannot release anything, and why a
   script checks its evidence.
-- The deny rules on `release` and `adopt` stop only the plain `python3 …` command (9.4), and `forget` has none (9B.5).
+- The deny rules on `release` and `adopt` stop only the plain `python3 …` command (10.4), and `forget` has none (10B.5).
   Run all three yourself.
 - Released skills can change on disk. `audit` finds that; run it on a schedule (Chapter 7).
 - Agents and slash commands are text with the same powers. Run the same flow on them.
@@ -236,22 +236,22 @@ Run from the repository root.
 
 | I want to... | Run | How often |
 |---|---|---|
-| Quarantine a skill I downloaded | `python3 chapters/09-skill-security/skillgate.py quarantine <folder> --origin "<where>"` | Each download |
-| Scan it | `python3 chapters/09-skill-security/skillgate.py scan <id>` | Each download |
-| Check the reviewer's quotes | `python3 chapters/09-skill-security/skillgate.py verify-review <id> <review.json>` | Each download |
-| See the decision and its reasons | `python3 chapters/09-skill-security/skillgate.py decide <id>` | Each download |
-| Release it, after reading the reasons | `python3 chapters/09-skill-security/skillgate.py release <id> --target .claude/skills --yes` | You, not an agent |
-| Vet an agent I downloaded | The same commands, with the `.md` file (9C) | Each download |
-| Trust skills and agents I already have | `python3 chapters/09-skill-security/skillgate.py adopt <paths> --yes` (9B.3) | Once per setup |
-| Re-trust something I edited | The same `adopt` command, after reading the change (9B.5) | Each edit |
-| Clear something I deleted on purpose | `python3 chapters/09-skill-security/skillgate.py forget <path> --yes` (9B.5) | When the hook says missing |
-| See if anything changed | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
-| Look at the history | `cat` the `audit.log` (9.6) | When curious |
-| Add a scanner | Section 9.3 | Once |
-| Stop using it | Delete the state folder and the `hooks` entry (9.6) | Rarely |
+| Quarantine a skill I downloaded | `python3 chapters/10-skill-security/skillgate.py quarantine <folder> --origin "<where>"` | Each download |
+| Scan it | `python3 chapters/10-skill-security/skillgate.py scan <id>` | Each download |
+| Check the reviewer's quotes | `python3 chapters/10-skill-security/skillgate.py verify-review <id> <review.json>` | Each download |
+| See the decision and its reasons | `python3 chapters/10-skill-security/skillgate.py decide <id>` | Each download |
+| Release it, after reading the reasons | `python3 chapters/10-skill-security/skillgate.py release <id> --target .claude/skills --yes` | You, not an agent |
+| Vet an agent I downloaded | The same commands, with the `.md` file (10C) | Each download |
+| Trust skills and agents I already have | `python3 chapters/10-skill-security/skillgate.py adopt <paths> --yes` (10B.3) | Once per setup |
+| Re-trust something I edited | The same `adopt` command, after reading the change (10B.5) | Each edit |
+| Clear something I deleted on purpose | `python3 chapters/10-skill-security/skillgate.py forget <path> --yes` (10B.5) | When the hook says missing |
+| See if anything changed | `python3 chapters/10-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
+| Look at the history | `cat` the `audit.log` (10.6) | When curious |
+| Add a scanner | Section 10.3 | Once |
+| Stop using it | Delete the state folder and the `hooks` entry (10.6) | Rarely |
 
 `release`, `adopt`, and `forget` are yours to run. The repository's deny rules cover only the first two, and only
-commands that begin with `python3 ` or `python ` (9.4).
+commands that begin with `python3 ` or `python ` (10.4).
 
 ## Exercises
 
@@ -267,7 +267,7 @@ export SKILLGATE_HOME=<practice>/gate
 4. Release a skill with `--target <practice>/skills`, edit one word in the released copy, and run `audit --target <practice>/skills`.
 5. Make a skill folder holding the EICAR test string (look it up; it is a harmless standard file) and scan it with `--vt`. Which scanners flag it, and which do not?
 
-When you finish, so the next real `adopt` does not land in the practice folder (9B.4):
+When you finish, so the next real `adopt` does not land in the practice folder (10B.4):
 
 ```bash
 unset SKILLGATE_HOME

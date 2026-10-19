@@ -51,7 +51,7 @@ request and change the guard and its tests in the same commit. Do not get past i
   python3 chapters/01-files-and-folders/test_roundtrip.py
   python3 chapters/01-files-and-folders/1d-projects/test_projects.py
   python3 chapters/01-files-and-folders/1d-projects/test_sweep.py
-  python3 chapters/09-skill-security/test_skillgate.py
+  python3 chapters/10-skill-security/test_skillgate.py
   python3 scripts/test_check_repo_clean.py
   python3 scripts/test_style_check.py
   python3 scripts/test_build_quick_reference.py

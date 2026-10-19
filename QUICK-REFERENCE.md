@@ -42,7 +42,7 @@ From the repository root.
 | I want to... | Run | How often |
 |---|---|---|
 | Check an editor agent's report | `python3 scripts/verify_editor_ledger.py <report.txt>` | After each editorial pass |
-| Check a skill reviewer's quotes | `python3 chapters/09-skill-security/skillgate.py verify-review <id> <review.json>` | Each vetting |
+| Check a skill reviewer's quotes | `python3 chapters/10-skill-security/skillgate.py verify-review <id> <review.json>` | Each vetting |
 | Check that no file was lost | `python3 chapters/01-files-and-folders/verify.py check <folder>` | After each apply |
 
 ## [Chapter 1: Files and folders](chapters/01-files-and-folders/README.md)
@@ -119,48 +119,48 @@ Run from `chapters/01-files-and-folders/1d-projects`.
 | See which Python the schedule runs | `plutil -p ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist` | Before granting Full Disk Access |
 | Turn the schedule off | `launchctl unload ~/Library/LaunchAgents/local.boringstuff.downloads-sweep.plist` | Rarely |
 
-## [Chapter 9: Vetting skills before you install them](chapters/09-skill-security/README.md)
+## [Chapter 10: Vetting skills before you install them](chapters/10-skill-security/README.md)
 
 Run from the repository root.
 
 | I want to... | Run | How often |
 |---|---|---|
-| Quarantine a skill I downloaded | `python3 chapters/09-skill-security/skillgate.py quarantine <folder> --origin "<where>"` | Each download |
-| Scan it | `python3 chapters/09-skill-security/skillgate.py scan <id>` | Each download |
-| Check the reviewer's quotes | `python3 chapters/09-skill-security/skillgate.py verify-review <id> <review.json>` | Each download |
-| See the decision and its reasons | `python3 chapters/09-skill-security/skillgate.py decide <id>` | Each download |
-| Release it, after reading the reasons | `python3 chapters/09-skill-security/skillgate.py release <id> --target .claude/skills --yes` | You, not an agent |
-| Vet an agent I downloaded | The same commands, with the `.md` file (9C) | Each download |
-| Trust skills and agents I already have | `python3 chapters/09-skill-security/skillgate.py adopt <paths> --yes` (9B.3) | Once per setup |
-| Re-trust something I edited | The same `adopt` command, after reading the change (9B.5) | Each edit |
-| Clear something I deleted on purpose | `python3 chapters/09-skill-security/skillgate.py forget <path> --yes` (9B.5) | When the hook says missing |
-| See if anything changed | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
-| Look at the history | `cat` the `audit.log` (9.6) | When curious |
-| Add a scanner | Section 9.3 | Once |
-| Stop using it | Delete the state folder and the `hooks` entry (9.6) | Rarely |
+| Quarantine a skill I downloaded | `python3 chapters/10-skill-security/skillgate.py quarantine <folder> --origin "<where>"` | Each download |
+| Scan it | `python3 chapters/10-skill-security/skillgate.py scan <id>` | Each download |
+| Check the reviewer's quotes | `python3 chapters/10-skill-security/skillgate.py verify-review <id> <review.json>` | Each download |
+| See the decision and its reasons | `python3 chapters/10-skill-security/skillgate.py decide <id>` | Each download |
+| Release it, after reading the reasons | `python3 chapters/10-skill-security/skillgate.py release <id> --target .claude/skills --yes` | You, not an agent |
+| Vet an agent I downloaded | The same commands, with the `.md` file (10C) | Each download |
+| Trust skills and agents I already have | `python3 chapters/10-skill-security/skillgate.py adopt <paths> --yes` (10B.3) | Once per setup |
+| Re-trust something I edited | The same `adopt` command, after reading the change (10B.5) | Each edit |
+| Clear something I deleted on purpose | `python3 chapters/10-skill-security/skillgate.py forget <path> --yes` (10B.5) | When the hook says missing |
+| See if anything changed | `python3 chapters/10-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
+| Look at the history | `cat` the `audit.log` (10.6) | When curious |
+| Add a scanner | Section 10.3 | Once |
+| Stop using it | Delete the state folder and the `hooks` entry (10.6) | Rarely |
 
 `release`, `adopt`, and `forget` are yours to run. The repository's deny rules cover only the first two, and only
-commands that begin with `python3 ` or `python ` (9.4).
+commands that begin with `python3 ` or `python ` (10.4).
 
-## [Chapter 9B: Checking automatically at session start](chapters/09-skill-security/9b-session-hook/README.md)
+## [Chapter 10B: Checking automatically at session start](chapters/10-skill-security/10b-session-hook/README.md)
 
 Run from the repository root.
 
 | I want to... | Run | How often |
 |---|---|---|
-| Trust the skills and agents I have | `python3 chapters/09-skill-security/skillgate.py adopt <paths> --yes` | Once per setup |
+| Trust the skills and agents I have | `python3 chapters/10-skill-security/skillgate.py adopt <paths> --yes` | Once per setup |
 | Re-trust something I edited | The same `adopt` command, after reading the change | Each edit |
-| Clear something I deleted on purpose | `python3 chapters/09-skill-security/skillgate.py forget <path> --yes` | When the hook says missing |
-| See what the hook found | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
+| Clear something I deleted on purpose | `python3 chapters/10-skill-security/skillgate.py forget <path> --yes` | When the hook says missing |
+| See what the hook found | `python3 chapters/10-skill-security/skillgate.py audit --target .claude/skills` | When the hook warns |
 | Make a new hook take effect | Start a new session, or `/clear` in the CLI | After editing `settings.json` |
 | Find where it recorded things | The last line `adopt` prints | If the hook says "not vetted" |
 
-## [Chapter 9C: Agents are files, not folders](chapters/09-skill-security/9c-agents/README.md)
+## [Chapter 10C: Agents are files, not folders](chapters/10-skill-security/10c-agents/README.md)
 
 Run from the repository root.
 
 | I want to... | Run | How often |
 |---|---|---|
-| Vet an agent I downloaded | `python3 chapters/09-skill-security/skillgate.py quarantine <agent.md> --origin "<where>"`, then `scan` | Each download |
-| Install it after review | `python3 chapters/09-skill-security/skillgate.py release <id> --target .claude/agents --yes` | You, after reading |
-| Check my agents for changes | `python3 chapters/09-skill-security/skillgate.py audit --target .claude/agents` | When the hook warns |
+| Vet an agent I downloaded | `python3 chapters/10-skill-security/skillgate.py quarantine <agent.md> --origin "<where>"`, then `scan` | Each download |
+| Install it after review | `python3 chapters/10-skill-security/skillgate.py release <id> --target .claude/agents --yes` | You, after reading |
+| Check my agents for changes | `python3 chapters/10-skill-security/skillgate.py audit --target .claude/agents` | When the hook warns |

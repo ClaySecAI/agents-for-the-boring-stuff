@@ -1,4 +1,4 @@
-# Chapter 9C: what we tested
+# Chapter 10C: what we tested
 
 Back to the [chapter](README.md).
 
@@ -9,7 +9,7 @@ Back to the [chapter](README.md).
 - Frontmatter written other ways: a quoted `permissionMode`, one followed by a `# comment`, a tool list in YAML list form and in
   `[Read, Write]` form, and an empty `tools:` line. One test covers them, and it fails on the code before the fix.
 - We also ran the scan on this repository's own four agents: three medium notes for broad tools, and the `skill-reviewer`
-  false positive (9C.4).
+  false positive (10C.4).
 
 **Not tested**
 

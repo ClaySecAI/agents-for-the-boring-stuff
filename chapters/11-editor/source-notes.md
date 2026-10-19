@@ -1,4 +1,4 @@
-# Chapter 10 source notes: when the agent fights back
+# Chapter 11 source notes: when the agent fights back
 
 Notes for the chapter on the editorial agent. Not yet prose.
 

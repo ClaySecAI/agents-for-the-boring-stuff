@@ -1,4 +1,4 @@
-# Chapter 9: what we tested
+# Chapter 10: what we tested
 
 Back to the [chapter](README.md).
 
@@ -38,10 +38,10 @@ The gate used to count every entry as high, so it blocked a skill that had no fi
   `defines-mcp-servers`, `defines-hooks`, `hidden-file`, `large-file`, and `executable-bit`. They run on every scan, but no
   test shows each one catching what it names.
 - The deny rules in `.claude/settings.json`. We did not try each way of running `release`; their pattern alone shows they
-  miss several (9.4).
+  miss several (10.4).
 - A real Snyk finding, as above.
 - The reviewer on more than one trap.
-- The SkillSpector install steps in 9.3 on a fresh machine.
+- The SkillSpector install steps in 10.3 on a fresh machine.
 - Any system other than a Mac. The tests set the state folder themselves, so the Linux default path never runs.
 
 **How much to trust it**

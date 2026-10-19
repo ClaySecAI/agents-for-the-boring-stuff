@@ -382,7 +382,7 @@ def adapter_virustotal(folder: Path, allowed: bool) -> dict:
         return not_run("virustotal", "remote", "skipped: pass --vt to look up file hashes (hashes only, no content)")
     token = os.environ.get("VT_AGENT_TOKEN") or vt_token_from_file()
     if not token:
-        return not_run("virustotal", "remote", "no Agent Token: set VT_AGENT_TOKEN (section 9.3)")
+        return not_run("virustotal", "remote", "no Agent Token: set VT_AGENT_TOKEN (section 10.3)")
     import urllib.error
     import urllib.request
     base = os.environ.get("VT_BASE_URL", "https://ai.virustotal.com/api/v3").rstrip("/")

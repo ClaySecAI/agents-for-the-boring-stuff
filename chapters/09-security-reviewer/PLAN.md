@@ -1,10 +1,10 @@
-# Chapter 8 plan: A model that reads your commits (not yet a chapter)
+# Chapter 9 plan: A model that reads your commits (not yet a chapter)
 
 This is a design note for a candidate chapter. It contains no code. It settles the decisions a
 chapter would need before anything is built: where the model runs, what it may and may not do, what
 it should look for, what it prints, when it runs, how it fails and how to measure it.
 
-## 8.1 The idea
+## 9.1 The idea
 
 Three layers already stop personal data before it reaches GitHub. The first two ship with this
 repository; the third is a setup on the author's machine, described here because the reviewer would
@@ -34,7 +34,7 @@ supplies guarantees: what the model is shown, what shape its answer must take, a
 that answer. You supply the decision about what counts as private, through the blocklist and through
 reading what the model flags.
 
-## 8.2 Where the model runs
+## 9.2 Where the model runs
 
 The default is a local model, either LM Studio or Ollama as in
 [Chapter 1B](../01-files-and-folders/1b-local-model/README.md), or Apple's on-device model as in
@@ -45,7 +45,7 @@ defeats the purpose.
 
 On a Mac, Apple's on-device model is the better default for this job in particular. It needs no
 server, so there is nothing to start before a commit, and there is no server log to clean up (see
-8.6). Its context window is small, which suits a hook that should only ever see a short diff. LM
+9.6). Its context window is small, which suits a hook that should only ever see a short diff. LM
 Studio or Ollama are the default everywhere else, and on a Mac when you want a larger model.
 
 **A hosted model is acceptable only in narrow cases, and never by default:**
@@ -60,7 +60,7 @@ Studio or Ollama are the default everywhere else, and on a Mac when you want a l
 
 The chapter should state the same rule as Chapter 0.5: each stage says who sees what.
 
-## 8.3 The trust boundary
+## 9.3 The trust boundary
 
 The diff is untrusted input. Any file can contain text addressed to the model, such as a comment
 saying that this commit has been checked and should be approved. Chapter 0.4 describes this as
@@ -83,7 +83,7 @@ The reviewer is designed so that it can only add a warning or a block. It cannot
   is an enum and `confidence` is a number between 0 and 1. There is no free-text field such as
   `reason`. A free-text field is the channel through which matched text, or injected text, would
   reach your terminal. The parser drops anything outside the schema and treats an answer that does
-  not parse as a failure (8.6), not as "no findings".
+  not parse as a failure (9.6), not as "no findings".
 
 With those limits, the worst a successful injection can do is one of two things:
 
@@ -93,9 +93,9 @@ With those limits, the worst a successful injection can do is one of two things:
    to look at their own line. It is a nuisance, not a leak.
 
 Neither is worse than the baseline without a reviewer. This is the property the chapter should
-test (8.7), not assume.
+test (9.7), not assume.
 
-## 8.4 What it should catch, and what it should ignore
+## 9.4 What it should catch, and what it should ignore
 
 The model is there for what a pattern cannot express. Its categories, as a fixed list:
 
@@ -127,7 +127,7 @@ The false-positive list matters as much as the catch list. This repository is a 
 data, so its prose talks about tax returns, medical bills and identity documents constantly. A
 reviewer that flags every mention of the word "medical" will be switched off within a week.
 
-## 8.5 What it prints
+## 9.5 What it prints
 
 The output matches the existing guards: where, never what.
 
@@ -137,7 +137,7 @@ Each finding the model returns has four fields:
 |---|---|---|
 | `file` | string | Must be one of the files in the diff; anything else is dropped |
 | `line` | integer | A line number in the new version of the file; must be one of the added lines |
-| `category` | enum | One of the categories in 8.4 |
+| `category` | enum | One of the categories in 9.4 |
 | `confidence` | number | 0 to 1 |
 
 The hook checks `file` and `line` against the diff it sent, so a model that invents a location
@@ -157,7 +157,7 @@ Findings are printed, not written to a file. If a chapter later needs to save th
 `practice*` folder, and the name must avoid the guard's list of generated-output names (`review*.md`
 is already on it).
 
-## 8.6 When it runs, how fast, and how it fails
+## 9.6 When it runs, how fast, and how it fails
 
 The hook runs at pre-commit and at pre-push, with different strictness:
 
@@ -175,7 +175,7 @@ one file's text cannot influence the judgment of another. A diff over the budget
 silently: the hook says how many lines it did not read. A large commit, such as a generated fixture,
 is a reason to look at it yourself.
 
-Confidence to action: starting thresholds, to be set from the evaluation in 8.7, not from intuition:
+Confidence to action: starting thresholds, to be set from the evaluation in 9.7, not from intuition:
 
 | Confidence | Pre-commit | Pre-push to a public remote |
 |---|---|---|
@@ -209,7 +209,7 @@ commit into that log, including the ones it flagged. The chapter should:
   file to delete.
 - Never send a diff to a model whose logs you cannot find.
 
-## 8.7 Measuring it
+## 9.7 Measuring it
 
 The chapter would follow the pattern of
 [`bakeoff.py`](../01-files-and-folders/1d-projects/bakeoff.py) and
@@ -224,7 +224,7 @@ generator's own source contains no literal match. Every value is made up.
 
 The fixture is a set of small diffs of four kinds:
 
-1. **Planted leaks the rules miss**, one or more per category in 8.4: a made-up full name beside "my
+1. **Planted leaks the rules miss**, one or more per category in 9.4: a made-up full name beside "my
    brother", a sentence about a prescription, a made-up street address, a hostname ending in
    `.internal`, a fixture row with a plausible name, address and birth date, a file name such as a
    tax form for a year.
@@ -252,10 +252,10 @@ As in Chapter 1D, the costly mistake decides between models. In 1D it was a file
 wrong project. Here it is a missed leak on push, and next to it a high count of clean lines flagged,
 because a noisy hook gets bypassed and then catches nothing.
 
-The thresholds in 8.6 come from this table. Run it with several models, as section 1D.12 does, and
+The thresholds in 9.6 come from this table. Run it with several models, as section 1D.12 does, and
 set the block threshold where clean lines flagged is close to zero.
 
-## 8.8 Placement
+## 9.8 Placement
 
 Two options:
 
@@ -272,13 +272,13 @@ project makes sense later, if the hook turns out to be useful outside the book. 
 scripts would then be its first version. The README's chapter table lists it as a design
 note until the chapter is written.
 
-## 8.9 Open questions
+## 9.9 Open questions
 
 - Whether Apple's on-device model, with its guardrails, refuses diffs that contain health or
   financial text. Chapter 1C saw one refusal in 60 files. For a reviewer, a refusal should count as
   "did not run", not as a finding or a pass.
 - How large a diff the small on-device context window can take per call before quality drops.
-- Whether the ignore list in 8.6 should live in the repository (shared, but it names lines) or
+- Whether the ignore list in 9.6 should live in the repository (shared, but it names lines) or
   inside `.git/` like the private blocklist (private, but lost on a fresh clone).
 - Whether a cheap first pass, such as an embedding model, can skip lines that are clearly clean, as
   section 1D.12 suggests for project assignment.

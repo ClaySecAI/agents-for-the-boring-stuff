@@ -5,7 +5,7 @@ description: Vet a downloaded or newly written skill or agent before it is insta
 
 # Vet a skill
 
-Paths: `$G` = `chapters/09-skill-security/skillgate.py`. Replies are short: state, reasons, next step.
+Paths: `$G` = `chapters/10-skill-security/skillgate.py`. Replies are short: state, reasons, next step.
 
 1. `python3 $G quarantine <folder> --origin "<where it came from>"` prints an id. Ask for the origin if you do not have it.
 2. `python3 $G scan <id>`: our rules, plus SkillSpector if installed (local). Then ask the user one question:

@@ -1,4 +1,4 @@
-# Chapter 9B: what we tested
+# Chapter 10B: what we tested
 
 Back to the [chapter](README.md).
 

@@ -12,7 +12,7 @@ comparison in section 1D.12.
   `swiftc` as ok, and reported no model server running. It changes nothing on the machine.
 - **Chapter 0C:** `scripts/test_verify_editor_ledger.py` covers the ledger verifier (7 tests), and the quote and hash checks have
   their own tests in Chapters 1 and 9. The editor story in section 0C.1 comes from a real sequence of runs, recorded in
-  [Chapter 10's source notes](../10-editor/source-notes.md): two runs that skipped the skill, one that stopped at line 431 of the
+  [Chapter 11's source notes](../11-editor/source-notes.md): two runs that skipped the skill, one that stopped at line 431 of the
   catalog, one that skipped the catalog after its definition file changed, and one with the rules in the prompt whose ledger
   passed. That is five runs, not a measurement.
 

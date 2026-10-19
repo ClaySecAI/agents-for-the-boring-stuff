@@ -1,4 +1,4 @@
-# Chapter 11 outline: Securing git before you publish
+# Chapter 8 outline: Securing git before you publish
 
 An outline for a chapter, not yet prose. It records what the chapter will teach, what was built and tested
 while preparing this book's own repositories for publication, and the decisions still open.
@@ -15,7 +15,7 @@ planting a fake leak and watching it get caught.
 
 ## Planned sections
 
-### 11.1 What leaks, and where it hides
+### 8.1 What leaks, and where it hides
 
 - Secrets (keys, tokens) and personal data (names, emails, addresses, account numbers, file names) are
   different problems with different tools.
@@ -23,14 +23,14 @@ planting a fake leak and watching it get caught.
   artifacts, and issue and pull request text.
 - History is permanent in practice. Deleting a file in a new commit leaves it in every earlier one.
 
-### 11.2 Your commit identity
+### 8.2 Your commit identity
 
 - Use GitHub's noreply address as `user.email`, globally.
 - A repository can override it locally, and one of ours did, with a personal address. Another had a personal
   address on commits from years before the switch.
 - How to check: list the distinct author and committer emails in a repository's history.
 
-### 11.3 The repository's own guard
+### 8.3 The repository's own guard
 
 - `.gitignore` is a request; `git add -f` overrides it.
 - The book's guard, `scripts/check_repo_clean.py`: an allowlist of file types, fixed patterns, a size limit, and
@@ -40,7 +40,7 @@ planting a fake leak and watching it get caught.
   worktree points somewhere else, so the blocklist silently did not run. The fix is `--git-common-dir`, with a
   test that fails on the old line.
 
-### 11.4 One set of hooks for every repository
+### 8.4 One set of hooks for every repository
 
 - `core.hooksPath` set globally sends every repository's hooks to one folder.
 - A dispatcher runs, in order: gitleaks on the staged changes, a personal-data check, then the repository's own
@@ -54,7 +54,7 @@ planting a fake leak and watching it get caught.
   repository GitHub confirms is private. Secret scanning still runs there.
 - The hook caught its own author: an example word in a code comment was a name on the blocklist.
 
-### 11.5 Checking what is already there
+### 8.5 Checking what is already there
 
 - Scan full history with gitleaks, with redaction on.
 - Scan history, file names and commit metadata against the blocklist, printing counts only.
@@ -63,7 +63,7 @@ planting a fake leak and watching it get caught.
 - Read every hit in context. Most of ours were public records, documentation of the patterns themselves, or a
   name the author put on a profile page on purpose.
 
-### 11.6 Fixing history, and what it cannot fix
+### 8.6 Fixing history, and what it cannot fix
 
 - Rewriting author emails across a repository, keeping tags in step, and checking that the file tree is
   byte-for-byte unchanged.
@@ -71,11 +71,11 @@ planting a fake leak and watching it get caught.
 - What a rewrite does not reach: existing clones, forks, caches, and GitHub's hidden references to pull request
   commits. Only GitHub Support can purge those.
 
-### 11.7 Before you flip a repository public
+### 8.7 Before you flip a repository public
 
 A checklist, in the order it was done for this book:
 
-- Scan history (11.5) and fix it (11.6) while the repository is still private.
+- Scan history (8.5) and fix it (8.6) while the repository is still private.
 - CI that runs the repository's guard and a gitleaks history scan on every push and pull request.
 - Make it public, then at once turn on what GitHub offers only for public repositories on a free plan: secret
   scanning with push protection, private vulnerability reporting, and branch rules.
@@ -87,11 +87,11 @@ A checklist, in the order it was done for this book:
   that ask people not to paste their own file names, hostnames, or tokens.
 - Look at the result signed out.
 
-### 11.8 Where agents fit
+### 8.8 Where agents fit
 
 - Agent commits go through the same hooks, which is the point of making them global.
-- Chapter 9's skill gate covers what agents are told, not what they commit.
-- Chapter 8's design note adds a local model that reads diffs for what the rules miss.
+- Chapter 10's skill gate covers what agents are told, not what they commit.
+- Chapter 9's design note adds a local model that reads diffs for what the rules miss.
 
 ### Limits, Common tasks, Exercises
 
@@ -121,13 +121,14 @@ These become TESTED.md once the chapter is written. Single runs on one Mac.
 
 Decided 2026-10-18. Each has a next step that is not done yet.
 
-- The chapter number: this becomes Chapter 8, and the pre-commit security scan agent moves to Chapter 9. That
-  agent builds on these hooks, so the reader meets the hooks first. Not done: the README table, the quick
-  reference, the chapter folders, and every cross-reference still use the old numbers.
-- Where the hook code lives in public: in this chapter's own folder, the way Chapter 9 ships `skillgate.py`.
+- The chapter number: this is Chapter 8. The pre-commit security scan agent is Chapter 9, the skill gate is
+  Chapter 10, and the editor is Chapter 11. The scan agent builds on these hooks, so the reader meets the hooks
+  first. Done 2026-10-19: the README table, the quick reference, the chapter folders, and the cross-references use
+  the new numbers.
+- Where the hook code lives in public: in this chapter's own folder, the way Chapter 10 ships `skillgate.py`.
   Today the dispatcher and the personal-data check live in the author's private setup repository. The private setup
   will then copy them from the book. Not done: the code has not been moved.
-- How much of the publishing checklist (11.7) stays in the chapter: a short section keeps the order that
+- How much of the publishing checklist (8.7) stays in the chapter: a short section keeps the order that
   matters (scan, CI, make it public, branch rules, look at the result signed out). The community files and the
   "what CI publishes" item move to a short appendix, so the chapter stays on git and off GitHub's settings
-  screens. Not done: 11.7 still lists everything.
+  screens. Not done: 8.7 still lists everything.

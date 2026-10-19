@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/chapters/09-skill-security/skillgate.py hook"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/chapters/10-skill-security/skillgate.py hook"
           }
         ]
       }

@@ -21,7 +21,7 @@ or later. The scripts use only the standard library, and the agent does the actu
 
 ## How each chapter is built
 
-A full chapter, such as 1, 1D, or 9, uses the parts below. Concept chapters and notes do not. Agent
+A full chapter, such as 1, 1D, or 10, uses the parts below. Concept chapters and notes do not. Agent
 files and skills are not in the chapter folder: they live in `.claude/`, where Claude Code finds them.
 
 | Part | Contents |
@@ -60,10 +60,10 @@ One row per chapter. Variants and follow-ups sit in the last column.
 | 5 | Checking websites with a browser agent | Planned | |
 | 6 | GUI automation with computer use | Planned | |
 | 7 | Scheduling it all | Source notes | [Notes: material cut from Chapter 1E](chapters/07-scheduling/source-notes.md) |
-| 8 | A pre-commit security scan agent | Design note | [Plan: a model that reads your commits](chapters/08-security-reviewer/PLAN.md) |
-| 9 | [Vetting skills before you install them](chapters/09-skill-security/) | Ready | [9B Checking automatically at session start](chapters/09-skill-security/9b-session-hook/) · [9C Agents are files, not folders](chapters/09-skill-security/9c-agents/) |
-| 10 | An editorial agent: how this book is edited | Source notes | [Notes: when the agent fights back](chapters/10-editor/source-notes.md) |
-| 11 | Securing git before you publish | Outline | [Outline: hooks, history, and going public](chapters/11-securing-git/OUTLINE.md) |
+| 8 | Securing git before you publish | Outline | [Outline: hooks, history, and going public](chapters/08-securing-git/OUTLINE.md) |
+| 9 | A pre-commit security scan agent | Design note | [Plan: a model that reads your commits](chapters/09-security-reviewer/PLAN.md) |
+| 10 | [Vetting skills before you install them](chapters/10-skill-security/) | Ready | [10B Checking automatically at session start](chapters/10-skill-security/10b-session-hook/) · [10C Agents are files, not folders](chapters/10-skill-security/10c-agents/) |
+| 11 | An editorial agent: how this book is edited | Source notes | [Notes: when the agent fights back](chapters/11-editor/source-notes.md) |
 
 Also: [Quick reference](QUICK-REFERENCE.md) (every common task in one page) and [House style](STYLE.md).
 
