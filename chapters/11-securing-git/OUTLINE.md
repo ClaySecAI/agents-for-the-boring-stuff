@@ -117,10 +117,17 @@ These become TESTED.md once the chapter is written. Single runs on one Mac.
   force push guarded by a lease.
 - Not tested: the force-push rule against an actual force push; a second machine; Linux; Windows.
 
-## Decisions still open
+## Decisions made
 
-- The chapter number. It reads best before Chapter 8, which builds on these hooks.
-- Where the hook code lives in public. Today the dispatcher and the personal-data check live in the author's
-  private setup repository. The chapter needs them here, in its own folder, the way Chapter 9 ships
-  `skillgate.py`; the private setup would then copy them from the book.
-- How much of the publishing checklist (11.7) belongs here and how much in a short appendix.
+Decided 2026-10-18. Each has a next step that is not done yet.
+
+- The chapter number: this becomes Chapter 8, and the pre-commit security scan agent moves to Chapter 9. That
+  agent builds on these hooks, so the reader meets the hooks first. Not done: the README table, the quick
+  reference, the chapter folders, and every cross-reference still use the old numbers.
+- Where the hook code lives in public: in this chapter's own folder, the way Chapter 9 ships `skillgate.py`.
+  Today the dispatcher and the personal-data check live in the author's private setup repository. The private setup
+  will then copy them from the book. Not done: the code has not been moved.
+- How much of the publishing checklist (11.7) stays in the chapter: a short section keeps the order that
+  matters (scan, CI, make it public, branch rules, look at the result signed out). The community files and the
+  "what CI publishes" item move to a short appendix, so the chapter stays on git and off GitHub's settings
+  screens. Not done: 11.7 still lists everything.
