@@ -9,6 +9,10 @@ released by you.
 automatically every time you start a session. [Chapter 10C](10c-agents/README.md) covers agents, which are single files
 and needed their own handling.
 
+The `skillgate.py` in this folder is the version this chapter built and tested. It stays as it was, so every command
+here keeps working, and it gets no new features. The author's own copy has moved on, mainly to the root-owned setup
+named in the limits (10.7).
+
 ## 10.1 Why two reviewers
 
 | | Deterministic scan | Reviewer agent |
@@ -225,6 +229,10 @@ cat ~/.local/state/skillgate/audit.log     # or the Mac path above
   script checks its evidence.
 - The deny rules on `release` and `adopt` stop only the plain `python3 …` command (10.4), and `forget` has none (10B.5).
   Run all three yourself.
+- The gate runs as you, so anything that runs as you can turn it off. A script, a shell command, or the agent's own
+  shell can remove the hook from `.claude/settings.json` or edit `skillgate.py`, and the deny rules do not stop that.
+  The fix is to have root own the code, the state folder, and the hooks, and to put the hooks in Claude Code's managed
+  settings, which your own settings cannot override. This chapter does not build that.
 - Released skills can change on disk. `audit` finds that; run it on a schedule (Chapter 7).
 - Agents and slash commands are text with the same powers. Run the same flow on them.
 
