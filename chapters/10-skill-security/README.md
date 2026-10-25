@@ -35,8 +35,8 @@ A skill raises three different questions, and no one tool answers all of them:
 | Does it do what it says it does, and could that cause harm? | The reviewer agent |
 
 Most skill problems are the second and third kind: instructions that do not match the stated purpose, or a script
-that quietly reads a secret. Those have no signature to look up. A hash lookup rounds out the set by catching the
-first kind, a known-bad binary or script, and it sends only file hashes.
+that quietly reads a secret. Those have no signature to look up. A hash lookup covers the first kind, a
+known-bad binary or script, and it sends only file hashes.
 
 ## 10.2 The flow
 
@@ -87,9 +87,9 @@ plan that shows 200 tests a month, every scan came back "Daily usage limit reach
 (HTTP 429). We could not find out why. On 2026-10-18, with a token from a new free account, one scan of a public skill
 worked. It found nothing, and it showed what "nothing" looks like: the skill's files listed with an empty `risk_indexes`.
 
-The gate used to count every entry as high and blocked that skill. Now an empty `risk_indexes` is an inventory, not a
-finding. Any other entry, including one the gate does not recognize, counts as high, and an error still means "did not
-run", never clean. We have not yet seen a report with a real finding.
+The gate treats an entry with an empty `risk_indexes` as an inventory, so that skill passes. Any other entry, including
+one the gate does not recognize, counts as high, and an error means "did not run", never clean.
+We have not yet seen a report with a real finding.
 
 VirusTotal needs no account. Its Agent Token comes from one anonymous request. This keeps the token in a shell
 variable and prints only its length:
@@ -174,7 +174,7 @@ python3 chapters/10-skill-security/skillgate.py release <id> --target .claude/sk
 ```
 
 Run it yourself, in your terminal. The repository's `.claude/settings.json` has deny rules for `skillgate.py release`
-and `adopt`, but treat them as a speed bump. They match only commands that begin with `python3 ` or `python `. An agent
+and `adopt`, but do not rely on them. They match only commands that begin with `python3 ` or `python `. An agent
 that types `/usr/bin/python3 …`, calls the script from a shell script, or runs it through `python3 -c` and `runpy` gets
 past them, and an agent allowed to edit files can change `released.json` directly. Section 10B.7 describes the stronger
 layer, a hook that asks you before a write, and why we have not built it.
@@ -189,7 +189,7 @@ injection risks, network calls (unless every address on the line is your own mac
 localhost does not count), destructive commands, secret-looking environment reads. Low: scripts, hidden files,
 executable bits, installs.
 
-A finding is evidence, not a verdict. Our own skills scan with no high findings, and one false positive (a
+A finding is evidence for you to weigh. Our own skills scan with no high findings, and one false positive (a
 `curl` to localhost) led to a fix.
 
 ## 10.6 What the gate touches
