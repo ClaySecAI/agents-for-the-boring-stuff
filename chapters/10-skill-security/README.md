@@ -35,8 +35,8 @@ A skill raises three different questions, and no one tool answers all of them:
 | Does it do what it says it does, and could that cause harm? | The reviewer agent |
 
 Most skill problems are the second and third kind: instructions that do not match the stated purpose, or a script
-that quietly reads a secret. Those have no signature to look up. A hash lookup covers the first kind, a
-known-bad binary or script, and it sends only file hashes.
+that quietly reads a secret. Those have no signature to look up. A hash lookup covers the first kind, a known-bad
+binary or script, and it sends only file hashes.
 
 ## 10.2 The flow
 
