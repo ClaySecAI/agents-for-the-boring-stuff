@@ -78,10 +78,14 @@ def check_machine(terms_file: Path) -> list:
                 out.append(Finding("FAIL", "machine", f"the global {name} hook is not the dispatch script", "rerun the installer"))
         if not any(f.where == "machine" for f in out):
             out.append(Finding("PASS", "machine", "global hooks folder is set and complete"))
-    if shutil.which("gitleaks"):
-        out.append(Finding("PASS", "machine", "gitleaks is installed"))
+    install = "brew install gitleaks, or a release of 8.19 or later from github.com/gitleaks/gitleaks/releases on Linux"
+    if not shutil.which("gitleaks"):
+        out.append(Finding("FAIL", "machine", "gitleaks is not installed, so every commit is refused", install))
+    elif subprocess.run(["gitleaks", "git", "--help"], capture_output=True, check=False).returncode != 0:
+        out.append(Finding("FAIL", "machine", "gitleaks is too old: no `git` subcommand (added in 8.19.0), so every commit is refused",
+                           install))
     else:
-        out.append(Finding("FAIL", "machine", "gitleaks is not installed, so every commit is refused", "brew install gitleaks"))
+        out.append(Finding("PASS", "machine", "gitleaks is installed"))
     email = git_config(None, "--global", "--get", "user.email").lower()
     out.append(Finding("PASS" if email.endswith(NOREPLY) else "FAIL", "machine",
                        "global commit email is a GitHub noreply address" if email.endswith(NOREPLY)

@@ -111,6 +111,10 @@ for:
 python3 chapters/08-securing-git/audit_history.py audit <path to a repository>
 ```
 
+The audit needs gitleaks 8.19 or later, the first version with the `gitleaks git` subcommand. On a Mac, `brew install gitleaks`
+is current. On Ubuntu, the apt package is 8.16, so download a release from the gitleaks GitHub page instead. With an older
+version, the control below fails and the message says so, rather than reporting that the planted token was not found.
+
 A clean result means nothing until a control passes, so the script runs one first. It plants a fake token in a scratch repository,
 commits it, deletes it in a second commit, and checks that the scan still finds it. If the control fails, the exit code is 2 and the
 script says the scan cannot be trusted. Without this, "no hits" could mean the scanner was broken.

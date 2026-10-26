@@ -141,6 +141,48 @@ class Case(unittest.TestCase):
             self.assertNotIn(text, saved)
 
 
+class GitleaksVersionTests(unittest.TestCase):
+    """A stub gitleaks on PATH stands in for an old or a current build. No real gitleaks is needed."""
+
+    def stub(self, script: str) -> None:
+        folder = Path(tempfile.mkdtemp(prefix="gitleaks-stub-"))
+        self.addCleanup(shutil.rmtree, folder, True)
+        tool = folder / "gitleaks"
+        tool.write_text("#!/bin/sh\n" + script)
+        tool.chmod(0o755)
+        old_path = os.environ["PATH"]
+        self.addCleanup(os.environ.__setitem__, "PATH", old_path)
+        os.environ["PATH"] = f"{folder}{os.pathsep}{old_path}"
+
+    def test_old_gitleaks_is_named_as_the_cause(self) -> None:
+        self.stub('case "$1" in git) echo \'Error: unknown command "git" for "gitleaks"\' >&2; exit 1;; esac\nexit 0\n')
+        problem = ah.check_gitleaks()
+        self.assertIsNotNone(problem)
+        self.assertIn("8.19", problem)
+        ok, message = ah.run_control()
+        self.assertFalse(ok)
+        self.assertIn("8.19", message)
+        self.assertNotIn("did not find", message)
+
+    def test_current_gitleaks_passes_the_check(self) -> None:
+        self.stub("exit 0\n")
+        self.assertIsNone(ah.check_gitleaks())
+
+    def test_missing_gitleaks_says_so(self) -> None:
+        folder = Path(tempfile.mkdtemp(prefix="no-gitleaks-"))
+        self.addCleanup(shutil.rmtree, folder, True)
+        for name in ("git", "sh"):
+            found = shutil.which(name)
+            if found:
+                os.symlink(found, folder / name)
+        old_path = os.environ["PATH"]
+        self.addCleanup(os.environ.__setitem__, "PATH", old_path)
+        os.environ["PATH"] = str(folder)
+        problem = ah.check_gitleaks()
+        self.assertIsNotNone(problem)
+        self.assertIn("not installed", problem)
+
+
 class MatchingTests(unittest.TestCase):
     def test_whole_words_only(self) -> None:
         m = ah.Matchers([TERM], "/nowhere")
