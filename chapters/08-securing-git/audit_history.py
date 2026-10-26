@@ -244,9 +244,28 @@ def scan_metadata(repo: Path, matchers: Matchers, allowed_emails: set[str]) -> l
     return hits + list(emails.values())
 
 
-def run_gitleaks(repo: Path) -> list[dict]:
+GITLEAKS_INSTALL = ("install gitleaks 8.19 or later: brew install gitleaks on a Mac, or a release from "
+                    "github.com/gitleaks/gitleaks/releases on Linux (Ubuntu's apt package is 8.16, which is too old)")
+
+
+def check_gitleaks() -> str | None:
+    """None when gitleaks is usable, otherwise what is wrong and how to fix it.
+
+    The audit uses the `gitleaks git` subcommand, which arrived in 8.19.0. Older builds answer it with
+    'unknown command', and some distribution builds do not report a version number at all, so this asks for
+    the subcommand instead of parsing a version."""
     if not shutil.which("gitleaks"):
-        raise RuntimeError("gitleaks is not installed (brew install gitleaks)")
+        return "gitleaks is not installed; " + GITLEAKS_INSTALL
+    done = subprocess.run(["gitleaks", "git", "--help"], capture_output=True, text=True, errors="replace")
+    if done.returncode != 0:
+        return "this gitleaks is too old: it has no `git` subcommand (added in 8.19.0); " + GITLEAKS_INSTALL
+    return None
+
+
+def run_gitleaks(repo: Path) -> list[dict]:
+    problem = check_gitleaks()
+    if problem:
+        raise RuntimeError(problem)
     with tempfile.TemporaryDirectory() as tmp:
         report = Path(tmp) / "report.json"
         done = subprocess.run(
@@ -289,8 +308,9 @@ def collect(repo: Path, matchers: Matchers, allowed_emails: set[str]) -> list[Hi
 
 def run_control() -> tuple[bool, str]:
     """Plant a fake token, commit it, delete it in a second commit, and confirm gitleaks still finds it."""
-    if not shutil.which("gitleaks"):
-        return False, "gitleaks is not installed (brew install gitleaks)"
+    problem = check_gitleaks()
+    if problem:
+        return False, problem
     token = "ghp_" + "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(36))
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp)

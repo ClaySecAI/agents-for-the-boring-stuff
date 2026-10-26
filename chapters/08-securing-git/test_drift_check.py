@@ -75,6 +75,17 @@ class MachineTests(Case):
     def test_healthy_machine(self) -> None:
         self.assertEqual(self.machine_fails(), [])
 
+    def test_old_gitleaks_fails_with_the_cause(self) -> None:
+        folder = self.dir / "stub-bin"
+        folder.mkdir()
+        tool = folder / "gitleaks"
+        tool.write_text('#!/bin/sh\ncase "$1" in git) exit 1;; esac\nexit 0\n')
+        tool.chmod(0o755)
+        old_path = os.environ["PATH"]
+        self.addCleanup(os.environ.__setitem__, "PATH", old_path)
+        os.environ["PATH"] = f"{folder}{os.pathsep}{old_path}"
+        self.assertTrue(any("too old" in d for d in self.machine_fails()))
+
     def test_hooks_folder_not_set(self) -> None:
         subprocess.run(["git", "config", "--global", "--unset", "core.hooksPath"], check=True)
         self.assertTrue(any("core.hooksPath" in d for d in self.machine_fails()))

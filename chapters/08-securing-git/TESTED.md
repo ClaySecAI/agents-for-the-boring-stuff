@@ -38,6 +38,11 @@ Back to the [chapter](README.md).
   older than the last commit, and it also showed that its own guard command needed a flag. After we fixed both, the later runs said
   PUSHABLE WITH WARNINGS with no blockers.
 - All five test suites in this chapter on Python 3.9 and 3.12 in CI, on macOS: all passed.
+- `audit_history.py` on one Ubuntu 24.04 machine (Python 3.12): with Ubuntu's apt gitleaks 8.16 the control failed, because that
+  build has no `gitleaks git` subcommand, and the message said only that the planted token was not found. With a gitleaks 8.30.1
+  release binary the control passed and the audit ran on 16 private repositories, the largest with 682 commits. The version check
+  that now names the cause came from that run. Its three tests, with a stub gitleaks on PATH standing in for an old, a
+  current, and a missing build, and the matching `drift_check.py` test, pass on that machine.
 
 ## Not tested
 
@@ -54,7 +59,7 @@ Back to the [chapter](README.md).
   the real service. Those cases run against a fake GitHub.
 - `push-verifier` on a repository with a real problem. We did not plant a fake leak in a commit and check that its diff read and its
   verdict catch it, and we did not measure how often its reading of a diff misses something.
-- A second machine, Linux, and Windows.
+- A second Mac, and Windows. On Linux, only `audit_history.py` has run (above); `drift_check.py` and the other scripts have not.
 
 ## How much to trust it
 
